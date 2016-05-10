@@ -1,18 +1,8 @@
 # Horizons
 
-**TODO:** Figure out how to deal with private repos for these services (then update badge URLs):
-
-```
-[![Build Status](https://travis-ci.org/invenia/Horizons.jl.svg?branch=master)](https://travis-ci.org/invenia/Horizons.jl)
-[![Build status](https://ci.appveyor.com/api/projects/status/.........?svg=true)](https://ci.appveyor.com/project/spurll/Horizons-jl)
-[![codecov.io](https://codecov.io/github/invenia/Horizons.jl/coverage.svg?branch=master)](https://codecov.io/github/invenia/Horizons.jl?branch=master)
-```
-
 `Horizons.jl` provides generators for forecast input and output offsets. Given a base
 `DateTime` (or any other `TimeType`) and some rules, a `Task` (like a Python generator) is
 created that produces `DateTimes`s accordingly.
-
-Here's a link to this feature's [specification document](https://gitlab.invenia.ca/invenia/replatforming/blob/master/feature-specs/horizons.md).
 
 **TODO:** The tasks/generators for horizons could be replaced by simple `StepRange`s, now
 that Gem got those working for `ZonedDateTime`s, but `StepRange`s are too simplistic to work
