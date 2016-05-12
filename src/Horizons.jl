@@ -1,6 +1,7 @@
 module Horizons
 
 using Base.Dates
+import Base: .+, +, .-, -
 
 
 # We'll want basic horizon constructors for:
@@ -44,7 +45,7 @@ Or:
 
 #=
 NOTE: The tasks/generators for horizons could be replaced by simple `StepRange`s, now that
-that Gem got those working for `ZonedDateTime`s, but `StepRange`s are to simplistic to work
+that Gem got those working for `ZonedDateTime`s, but `StepRange`s are too simplistic to work
 for the dynamic data offsets (offsets that can be defined like, "most recent data available
 for the same hour of week as the target"). The plan is currently to use taks for everything,
 but this is still kind of up in the air right now. (Another possibility would be to separate
@@ -63,19 +64,11 @@ a good idea to couple these two concepts.)
 Basic horizons.
 """
 function horizon(
-    d::TimeType, range::Range;
+    due_date::TimeType, range::Range;
     include::Function=x->true, exclude::Function=x->false
 )
-    @task horizon_producer(d + range, include, exclude)
+    @task horizon_producer(due_date + range; include=include, exclude=exclude)
 end
-
-function horizon(
-    d::TimeType, range::Range, period::DataType=Hour;
-    include::Function=x->true, exclude::Function=x->false
-)
-    @task horizon_producer(d + map(period, range), include, exclude)
-end
-# I'm not convinced that we want the above version. —Gem
 
 """
 Horizons for each hour (or whatever) of a day (or whatever). (Uh, clean that up and name
@@ -87,8 +80,8 @@ function horizon_next_day(
     include::Function=x->true, exclude::Function=x->false
 )
     start = trunc(due_date, Day) + days_ahead + resolution
-    finish = trunc(a, Day) + days_ahead + days_covered
-    @task horizon_producer(start:resolution:finish, include, exclude)
+    finish = trunc(due_date, Day) + days_ahead + days_covered
+    @task horizon_producer(start:resolution:finish; include=include, exclude=exclude)
 end
 
 # TODO: Test all horizon functions for normal dates, spring forward, fall back (both on due
@@ -157,6 +150,7 @@ match_hourofweek(target::Integer) = d -> hourofweek(d) == target
 
 # UTILITY FUNCTIONS
 # Generic utility functions required by Horizons.jl (but not necessarily specific to it).
+# Should probably go in Curt's DateUtils.jl repo.
 
 """
 Returns an integer indicating the hour of week (0 through 167). For locales in which weeks
@@ -167,13 +161,13 @@ preferable to having a potential 169th hour for our use case.
 hourofweek(d::TimeType) = (dayofweek(d) - 1) * 24 + hour(d)
 
 
-# Allows arithmetic between a single `DateTime`/`ZonedDateTime` and a range of `Period`s.
-.+{T<:Period}(x::TimeType, r::Range{T}) = (x + first(r)):step(r):(x + last(r))
-.+{T<:Period}(r::Range{T}, x::TimeType) = x .+ r
-+{T<:Period}(r::Range{T}, x::TimeType) = x .+ r
-+{T<:Period}(x::TimeType, r::Range{T}) = x .+ r
-.-{T<:Period}(r::Range{T}, x::TimeType) = (first(r) - x):step(r):(last(r) - x)
--{T<:Period}(r::Range{T}, x::TimeType) = r .- x
+# Allows arithmetic between a `DateTime`/`ZonedDateTime`/`Period` and a range of `Period`s.
+.+{T<:Period}(x::Union{TimeType, Period}, r::Range{T}) = (x + first(r)):step(r):(x + last(r))
+.+{T<:Period}(r::Range{T}, x::Union{TimeType, Period}) = x .+ r
++{T<:Period}(r::Range{T}, x::Union{TimeType, Period}) = x .+ r
++{T<:Period}(x::Union{TimeType, Period}, r::Range{T}) = x .+ r
+.-{T<:Period}(r::Range{T}, x::Union{TimeType, Period}) = (first(r) - x):step(r):(last(r) - x)
+-{T<:Period}(r::Range{T}, x::Union{TimeType, Period}) = r .- x
 
 
 # Math between a single `Period` and a range of `DateTime`/`ZonedDateTime`s already works.
@@ -205,5 +199,7 @@ function single_day(
     @task horizon_producer(DateTime(d):step:DateTime(d + Day(1)) - Second(1), include, exclude)
 end
 =#
+
+export horizon, horizon_next_day
 
 end
