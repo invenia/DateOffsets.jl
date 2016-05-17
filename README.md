@@ -50,30 +50,57 @@ take a due date as input and produce target dates.
 Horizon `Task`s are designed to address these issues, replacing the following components of
 the Matlab Autopredictor:
 
-  * Forecast **horizons**. For a given due (batch) date, the Matlab Autopredictor would make
-    predictions for a series of horizons, each of which were `timedelta`s (`Period`s). These
-	horizons would eventually be added to the due (batch) dates to obtain the target date.
-	Instead of returning `Period`s, `Horizons.jl` returns `DateTime`s (or `ZonedDateTime`s)
-	directly.
-  * Static and dynamic **offsets**. When defining the data source features to use as model
-    input, the Matlab Autopredictor took a base date (either the due date or the target date
-	of the forecast) and for both static (e.g., three hours) and dynamic (e.g., same hour of
-	the week) offsets.
+  * Forecast **horizons**.
+    * For a given due date, the Matlab Autopredictor would make predictions for a series
+      of horizons, each of which were `timedelta`s (`Period`s). These horizons would
+      eventually be added to the due dates to obtain the target date.
+    * The Julia Autopredictor replaces "due dates" (batch dates) with `sim_now` (which
+      defaults to `now(TimeZone("UTC"))`). Instead of returning `Period`s, `Horizons.jl`
+      returns the target dates as `DateTime`s (or `ZonedDateTime`s) directly.
+  * Source **offsets**.
+    * When defining the data source features to use as model input, the Matlab
+      Autopredictor took a vector of base dates (either due dates or forecast target
+      dates) and used both static (e.g., three hours) and dynamic (e.g., same hour of the
+      week) offsets to determine the appropriate target date to look for.
+    * The Julia Autopredictor takes an interable of target dates and a `sim_now`. Most
+      offsets will be calculated from the target date, but calculating from `sim_now`
+      (for items like "most recent available actuals") will also be supported.
 
-**TODO:** Ensure that we can have offets based on target date (often used for forecast
-data, such as NWP) and offsets based on due date (often used for "most recent actuals" data,
-such as recent actual generation). It's important to make the distinction between the two
-non-ambiguous, as confusing one for the other will result in cheating.
+Among data source offsets, some offsets are based on target date (often used for forecast
+data, such as NWP) and some are based on due date (often used for "most recent actuals"
+data, such as recent actual generation). It's important to make the distinction between the
+two non-ambiguous, as confusing one for the other will result in cheating.
+
+## `sim_now`
+
+The variable `sim_now` (which defaults everywhere to `now(TimeZone("UTC"))`) is used to
+allow backrun simulations to accurate reflect the behaviour of a live system.
+
+Live runs can typically use the default value for `sim_now` (`now(TimeZone("UTC"))`) to
+represent the current date, but in some cases the time zone will be relevant, and in those
+cases a value for `sim_now` (zoned appropriately) should be passed in.
+
+For example, for forecast horizons for the next four hours, you might call
+`horizon_hourly(Dates.Hour(1):Dates.Hour(4))`. The resulting target dates would have a UTC
+time zone, but would represent the appropriate instant.
+
+However, calling `horizon_next_day()` without providing a `sim_now` results in target
+dates for every hour of the next UTC day. So if you're forecasting for EST, and the
+current time is 20:00 EST on Friday, it is currently 01:00 UTC on Saturday, and the target
+dates passed back would be for 01:00 UTC Sunday through 00:00 UTC Monday (20:00 EST on
+Saturday through 21:00 EST on Sunday), which is probably not what you want. In this case,
+call `horizon_next_day(now(FixedTimeZone("-05:00")))`, and the result will be 01:00 EST
+on Saturday through 00:00 EST on Sunday instead.
 
 ## Examples
 
-### Basic Horizons
+### Hourly Horizons
 
 ```julia
 using TimeZones
 
-due_date = ZonedDateTime(DateTime(2016, 3, 13, 0, 0, 0), TimeZone("America/Winnipeg"))
-target_dates = horizon(due_date, Dates.Hour(1):Dates.Hour(8))
+sim_now = ZonedDateTime(DateTime(2016, 3, 12, 23, 15, 1), TimeZone("America/Winnipeg"))
+target_dates = horizon_hourly(sim_now, Dates.Hour(1):Dates.Hour(8))
 
 for t in target_dates
     println(t)
@@ -101,8 +128,8 @@ for static/dynamic offsets (but they're available for horizons).
 ### Next Day Horizons
 
 ```julia
-due_date = ZonedDateTime(DateTime(2016, 3, 12, 3, 0, 0), TimeZone("America/Winnipeg"))
-target_dates = horizon_next_day(due_date)
+sim_now = ZonedDateTime(DateTime(2016, 3, 12, 3, 0, 0), TimeZone("America/Winnipeg"))
+target_dates = horizon_next_day(sim_now)
 
 for t in target_dates
     println(t)
@@ -144,8 +171,8 @@ days ahead you want the target dates to begin) with reasonable defaults (in this
 Another example, that does a single target date, two days ahead, at 15 minute resolution:
 
 ```julia
-due_date = ZonedDateTime(DateTime(2016, 11, 4, 12, 0, 0), TimeZone("America/Winnipeg"))
-target_dates = horizon_next_day(due_date, Dates.Minute(15), Dates.Day(2))
+sim_now = ZonedDateTime(DateTime(2016, 11, 4, 12, 0, 0), TimeZone("America/Winnipeg"))
+target_dates = horizon_next_day(sim_now, Dates.Minute(15), Dates.Day(2))
 collect(target_dates)
 ```
 
@@ -170,4 +197,15 @@ Output:
 
 Note that in both examples, daylight saving time is handled properly.
 
-### Data Sources
+### Source Offsets
+
+
+Target/Current Offsets?
+
+Also pass back available dates for querying. All are the same. Necessary?
+
+Example: Ignore holiday data. (Assuming there's a function that returns `true` for a holiday).
+
+```julia
+dates = source_offset(target_date; exclude=holiday)
+```

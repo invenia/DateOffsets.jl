@@ -3,10 +3,10 @@ module Horizons
 using Base.Dates
 import Base: .+, +, .-, -
 
+using TimeZones
 
-# We'll want basic horizon constructors for:
-#   X:(Z):Y hours
-#   every [hour, minute, ...] in a [day, week, ...]
+utc = TimeZone("UTC")
+
 
 
 #=
@@ -54,35 +54,73 @@ a good idea to couple these two concepts.)
 =#
 
 
+# TODO: Should we support non-range iterables (like lists) for horizons and source_offsets?
+
+
 # HORIZON FUNCTIONS
 # These are the topmost things that people will use.
 # A horizon function takes a `TimeType` and a set of other criteria and returns a `Task`.
 # Whenever `consume` is called on the `Task` (typically via a foreach loop) a `DateTime` is
 # returned, representing a target date (not an offset).
 
-"""
-Basic horizons.
-"""
-function horizon(
-    due_date::TimeType, range::Range;
-    include::Function=x->true, exclude::Function=x->false
-)
-    @task horizon_producer(due_date + range; include=include, exclude=exclude)
-end
+# TODO: Clean up docstrings.
 
 """
-Horizons for each hour (or whatever) of a day (or whatever). (Uh, clean that up and name
-properly.) See the example in the README.
+Basic horizons. Probably not used in practice.
+"""
+function horizon(
+    sim_now::TimeType, range::Range; include::Function=x->true, exclude::Function=x->false
+)
+    @task horizon_producer(sim_now + range; include=include, exclude=exclude)
+end
+
+horizon(sim_now::Function, range::Range; kwargs...) = horizon(sim_now(), range; kwargs...)
+
+"""
+Hourly horizons. Takes sim_now and rounds it to the start of the next hour.
+"""
+
+function horizon_hourly(
+    sim_now::TimeType, range::Range; include::Function=x->true, exclude::Function=x->false
+)
+    start = trunc(sim_now + Hour(1) - Millisecond(1), Hour)
+    horizon(start, range; include=include, exclude=exclude)
+end
+
+function horizon_hourly(sim_now::Function, range::Range; kwargs...)
+    horizon_hourly(sim_now(), range; kwargs...)
+end
+
+horizon_hourly(range::Range; kwargs...) = horizon_hourly(now(utc), range; kwargs...)
+
+"""
+Horizons for each hour (or whatever) of a day (or whatever). See the example in the README.
 """
 function horizon_next_day(
-    due_date::TimeType, resolution::Period=Hour(1),
+    sim_now::TimeType, resolution::Period=Hour(1),
     days_ahead::Period=Day(1), days_covered::Period=Day(1);
     include::Function=x->true, exclude::Function=x->false
 )
-    start = trunc(due_date, Day) + days_ahead + resolution
-    finish = trunc(due_date, Day) + days_ahead + days_covered
+    start = trunc(sim_now, Day) + days_ahead + resolution
+    finish = trunc(sim_now, Day) + days_ahead + days_covered
+
     @task horizon_producer(start:resolution:finish; include=include, exclude=exclude)
 end
+
+function horizon_next_day(
+    sim_now::Function, resolution::Period=Hour(1),
+    days_ahead::Period=Day(1), days_covered::Period=Day(1); kwargs...
+)
+    horizon_next_day(sim_now(), resolution, days_ahead, days_covered; kwargs...)
+end
+
+function horizon_next_day(
+    resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1);
+    kwargs...
+)
+    horizon_next_day(now(utc), resolution, days_ahead, days_covered; kwargs...)
+end
+
 
 # TODO: Test all horizon functions for normal dates, spring forward, fall back (both on due
 # date and target date).
@@ -91,14 +129,81 @@ end
 
 
 
-# DATA SOURCE FUNCTIONS
+# TODO: Probably need to support multiple types of iterable (not just ranges). Maybe?
+# The ..._producers do.
+
+
+
+# SOURCE OFFSET FUNCTIONS
 # These are also top-level, but are specialized versions of horizons designed for static
-# and dynamic offsets.
+# and dynamic offsets for input data.
 
-# TODO: Prototype and write data source tasks.
+# Basically for these, we'll pass in a series of target_dates (and a virtual now) and for
+# each they should generate a corresponding data source date (and more?) based on the
+# appropriate rules.
 
-# TODO: Because these will take available dates into account, they will need to know what
-# `now` is. Support passing in a value for `now` (or a function?); defaults to `Base.now()`.
+"""
+Basic. Just passes back the target_dates, ignoring any that do/don't match
+inclusion/exclusion criteria.
+"""
+function target_offset(
+    sim_now::TimeType, target_date::Range;
+    shift::Period=Hour(0), include::Function=x->true, exclude::Function=x->false
+)
+    @task offset_producer(sim_now, target_date + shift; include=include, exclude=exclude)
+end
+
+function target_offset(sim_now::Function, target_date::Range; kwargs...)
+    target_offset(sim_now(), target_date; kwargs...)
+end
+
+function target_offset(target_date::Range; kwargs...)
+    target_offset(now(utc), target_date; kwargs...)
+end
+
+
+# Do we need include/exclude functions themselves?
+
+
+
+# TODO: Assuming that we want the signature to be the same, but maybe we don't, so we could
+# just pass in an integer (number to generate) instead.
+# TODO: This function is potentially problemmatic if there is a long delay in actuals
+# appearing in the DB? Perhaps in our data fetching code we want to just have a way of
+# ignoring the target_date and querying the DB (or whatever) for the most recent data <
+# sim_now.
+function current_offset(
+    sim_now::TimeType, target_date::Range; resolution::Period=Hour(1),
+    shift::Period=Hour(0), match::Function=x->true
+)
+# TODO: Once date rounding is implemented, this will work:
+#    target_date = repmat([floor(sim_now, resolution)], length(target_date))
+# Until then, we can round to hour, minute, etc., but not to a multiple of any resolution.
+    target_date = repmat([trunc(sim_now, typeof(resolution))], length(target_date))
+    @task offset_producer(sim_now, target_date; match=match, shift=shift)
+end
+
+function current_offset(sim_now::Function, target_date::Range; kwargs...)
+    current_offset(sim_now(), target_date; kwargs...)
+end
+
+function current_offset(target_date::Range; kwargs...)
+    current_offset(now(utc), target_date; kwargs...)
+end
+
+# Example: most recent actuals for same hour of day
+current_offset(sim_now, target_date; match=match_hourofday)
+
+# Example: most recent actuals for twelve hours before same hour of day
+current_offset(sim_now, target_date; match=match_hourofday, shift=-Hour(12))
+# TODO: Shift has to happen last!
+
+# Example: most recent actuals for twelve hours after same hour of day
+current_offset(sim_now, target_date; match=match_hourofday, shift=Hour(12))
+
+
+# TODO: TEST ALL OF THESE!
+
 
 
 
@@ -119,8 +224,50 @@ function horizon_producer(
     end
 end
 
+"""
+Version for non-Range iterables.
+"""
+function horizon_producer(
+    iterable; include::Function=x->true, exclude::Function=x->false
+)
+    # Combine include and exclude functions into a single include function.
+    master_include = x -> include(x) && ~exclude(x)
+
+    for d in iterable
+        if master_include(d)
+            produce(d)
+        end
+    end
+end
+
 # TODO: Test. This.
 
+
+"""
+Like the horizon_producer, but also spits back the available_date that we need to worry
+about.
+"""
+function target_offset_producer(
+    sim_now::TimeType, target_date; include::Function=x->true, exclude::Function=x->false
+)
+    # This include/exclude stuff is unnecessary bullshit.
+    for d in @task horizon_producer(target_date; include=include, exclude=exclude)
+        produce((d, sim_now))
+    end
+end
+
+function current_offset_producer(
+    sim_now::TimeType, target_date;
+    match::Function=x->true
+)
+    for d in target_date
+        produce((toprev(match(d), sim_now), sim_now))
+    end
+end
+
+# TODO: Test. This.
+
+# TODO: Remove all include/exclude functions in favour of a single match function.
 
 
 
@@ -200,6 +347,6 @@ function single_day(
 end
 =#
 
-export horizon, horizon_next_day
+export horizon, horizon_hourly, horizon_next_day, source_offset
 
 end
