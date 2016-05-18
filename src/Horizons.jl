@@ -147,10 +147,9 @@ Basic. Just passes back the target_dates, ignoring any that do/don't match
 inclusion/exclusion criteria.
 """
 function target_offset(
-    sim_now::TimeType, target_date::Range;
-    shift::Period=Hour(0), include::Function=x->true, exclude::Function=x->false
+    sim_now::TimeType, target_date::Range; match::Function=x->true, shift::Period=Hour(0)
 )
-    @task offset_producer(sim_now, target_date + shift; include=include, exclude=exclude)
+    @task offset_producer(sim_now, target_date; match=match, shift=shift)
 end
 
 function target_offset(sim_now::Function, target_date::Range; kwargs...)
@@ -173,8 +172,8 @@ end
 # ignoring the target_date and querying the DB (or whatever) for the most recent data <
 # sim_now.
 function current_offset(
-    sim_now::TimeType, target_date::Range; resolution::Period=Hour(1),
-    shift::Period=Hour(0), match::Function=x->true
+    sim_now::TimeType, target_date::Range;
+    resolution::Period=Hour(1), match::Function=x->true, shift::Period=Hour(0)
 )
 # TODO: Once date rounding is implemented, this will work:
 #    target_date = repmat([floor(sim_now, resolution)], length(target_date))
@@ -192,15 +191,13 @@ function current_offset(target_date::Range; kwargs...)
 end
 
 # Example: most recent actuals for same hour of day
-current_offset(sim_now, target_date; match=match_hourofday)
+#current_offset(sim_now, target_date; match=match_hourofday)
 
 # Example: most recent actuals for twelve hours before same hour of day
-current_offset(sim_now, target_date; match=match_hourofday, shift=-Hour(12))
-# TODO: Shift has to happen last!
+#current_offset(sim_now, target_date; match=match_hourofday, shift=-Hour(12))
 
-# Example: most recent actuals for twelve hours after same hour of day
-current_offset(sim_now, target_date; match=match_hourofday, shift=Hour(12))
-
+# Example: most recent actuals for one hour after same hour of week
+#current_offset(sim_now, target_date; match=match_hourofweek, shift=Hour(1))
 
 # TODO: TEST ALL OF THESE!
 
@@ -213,13 +210,8 @@ For each element in a range, return a target date. The kwargs `include` and `exc
 and/or excluded (default: none). This may be helpful when creating dynamic offsets for data
 source functions, for example.
 """
-function horizon_producer(
-    range::Range; include::Function=x->true, exclude::Function=x->false
-)
-    # Combine include and exclude functions into a single include function.
-    master_include = x -> include(x) && ~exclude(x)
-
-    for d in recur(master_include, range)
+function horizon_producer(range::Range; match::Function=x->true, shift::Period=Hour(0))
+    for d in recur(match, range + shift)
         produce(d)
     end
 end
@@ -227,14 +219,9 @@ end
 """
 Version for non-Range iterables.
 """
-function horizon_producer(
-    iterable; include::Function=x->true, exclude::Function=x->false
-)
-    # Combine include and exclude functions into a single include function.
-    master_include = x -> include(x) && ~exclude(x)
-
-    for d in iterable
-        if master_include(d)
+function horizon_producer(iterable; match::Function=x->true, shift::Period=Hour(0))
+    for d in iterable + shift
+        if match(d)
             produce(d)
         end
     end
@@ -243,25 +230,63 @@ end
 # TODO: Test. This.
 
 
+
+
+
+# TODO
+# Okay, one proposal for a big rewrite:
+# First, apply match (dynamic offset) if applicable
+# Second, apply shift
+#
+# BUUUUUUUT.....
+# Do we even need exclusion/inclusion criteria? I say rewrite it without.
+# Do we need match for target_offsets in addition to current_offsets?
+
+Call it match_target
+Add available_shift kwarg which indicates how long after sim_now something is available
+(or how long before the target? But what about forecast data with overlapping horizons?
+No, it's just for actuals)
+
+
+
+
+
 """
 Like the horizon_producer, but also spits back the available_date that we need to worry
 about.
 """
 function target_offset_producer(
-    sim_now::TimeType, target_date; include::Function=x->true, exclude::Function=x->false
+    sim_now::TimeType, target_date::Range; match::Function=x->true, shift::Period=Hour(0)
 )
-    # This include/exclude stuff is unnecessary bullshit.
-    for d in @task horizon_producer(target_date; include=include, exclude=exclude)
-        produce((d, sim_now))
+    # TODO: Match does something a little different than current_offset. Call it include instead?
+    for d in recur(match, target_date)
+        produce((d + shift, sim_now))
     end
 end
 
-function current_offset_producer(
-    sim_now::TimeType, target_date;
-    match::Function=x->true
+"""
+Version for non-Range iterables.
+"""
+function target_offset_producer(
+    sim_now::TimeType, target_date; match::Function=x->true, shift::Period=Hour(0)
 )
     for d in target_date
-        produce((toprev(match(d), sim_now), sim_now))
+        # TODO: Match does something a little different than below. Call it include instead?
+        if match(d)
+            produce((d + shift, sim_now))
+        end
+    end
+end
+
+# TODO: Test. This.
+
+function current_offset_producer(
+    sim_now::TimeType, target_date; match::Function=x->true, shift::Period=Hour(0)
+)
+    # TODO: Will this be for the right minute/second/etc.?
+    for d in target_date
+        # Matches some criteria between target_date and sim_now; bases offsets on sim_now.
+        produce((toprev(match(d), sim_now) + shift, sim_now))
     end
 end
 
