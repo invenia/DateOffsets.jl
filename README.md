@@ -1,4 +1,4 @@
-# Horizons
+# Horizons.jl
 
 `Horizons.jl` provides the tools necessary to generate dates with specific temporal
 offsets for forecast and input data.
@@ -16,11 +16,15 @@ Our systems uses temporal offsets for two primary purposes: to define **horizons
 **data source offsets**.
 
 **Horizon:** Horizons define the target dates for a given set of forecasts. Horizon
-offsets are determined by reference to the current date (`sim_now`).
+offsets are determined by reference to the current date (`sim_now`). Horizons are handled
+using the `horizon_hourly` and `horizon_next_day` functions described in the
+[Horizons](#horizons) section below.
 
 **Data Source Offset:** Data source offsets define the target dates for input data (data
 used to generate forecasts). Data source offsets are typically determined by reference to
-the forecast target date (although they can use `sim_now` instead).
+the forecast target date (although they can use `sim_now` instead).  Data source offsets
+are handled using the `SourceOffsets` and `Fallback` types described in the [Data Source
+Offsets](#data-source-offsets) section below.
 
 ### Static and Dynamic Offsets
 
@@ -81,19 +85,24 @@ on Saturday through 00:00 EST on Sunday instead.
 
 The most common use cases for data source offsets are:
 
-1. For forecast input data (like NWP), in which case the forecast `target_date` is simply
-   used as the input data's `target_date` (with no offset).
+
+**TODO**: Fix the below. SourceOffsets "objects" aren't "returned" this way.
+
+
+1. For forecast input data (like NWP) the forecast `target_date` is simply used as the
+   input data's `target_date` (with no offset).
     * In this case there's no need to create fallback dates; for each forecast
       `target_date`, either that data point is available or not, so the data fetching code
       can simple use the target date appropriately (in conjunction with whatever `sim_now`
       happens to be).
-    * This can also be supported by creating a `SourceOffset` with the appropriate
-      `target_date` and `limit=1`, meaning that no fallback dates will be calculated.
+    * This can also be supported by creating a `SourceOffsets` with the appropriate
+      `target_date` and `limit=target_date`, meaning that no fallback dates will be
+      calculated.
 2. For actuals data (like recent load or price) with some dynamic offset, the forecast
    `target_date` is used as the base date, and using the dynamic offset criteria (a
-   `DateFunction`, which `SourceOffset`s and `Fallback`s call `match`) a `SourceOffset` is
+   `DateFunction`, which `SourceOffsets` and `Fallback`s call `match`) a `SourceOffsets` is
    returned.
-    * The `SourceOffset` contains a `Fallback` for each forecast `target_date`. The
+    * The `SourceOffsets` contains a `Fallback` for each forecast `target_date`. The
       `Fallback` is an iterator that initially returns the `target_date`, then
       subsequently returns the next earlier date that meets the `match` criteria (using
       `toprev`), up to a maximum of `limit` iterations.
@@ -105,8 +114,8 @@ The most common use cases for data source offsets are:
       `available_date` against `sim_now`), the data fetching code can request the next
       fallback date to see if that's available instead.
 3. For actuals data (like recent load or price) **without** a dynamic offset, `sim_now` can
-   be passed into the `SourceOffset` constructor.
-    * The resulting `SourceOffset` will contain only one `Fallback` (as only a single date
+   be passed into the `SourceOffsets` constructor.
+    * The resulting `SourceOffsets` will contain only one `Fallback` (as only a single date
       was passed in). The dates returned by `Fallback` begin (near) the `sim_now` and
       iterate backward (using `toprev`? what's the `match` value?) up to a maximum of
       `limit` iterations.
@@ -137,14 +146,12 @@ basis for the offset(s).
 Don't implement static offsets (those can be done before/after in the data feeds code, or
 the configuration, or whatever, but we don't need them here).
 
-Dynamic offsets only need target dates as the input
-
 Explain fallback dates
 
-For each forecast target date passed in to the constructor, 
+For each forecast target date passed in to the constructor...
 
 ```
--------  SourceOffset type (or just a list?)
+-------  SourceOffsets type (can't be a list because it needs to store forecast targets too)
 |     |
 -------
 |     |
@@ -154,13 +161,13 @@ For each forecast target date passed in to the constructor,
 |     |
 -------
 |     |
--------           -------  Fallback type
-|     |   <-----  |     |
--------           -------
-				  |     |
-				  -------
-				  |     |
-				  -------
+-------          -------  Fallback type
+|     |  <-----  |     |
+-------          -------
+			     |     |
+			     -------
+			     |     |
+			     -------
 ```
 
 For all dynamic offsets, round the date input to the appropriate input data resolution
@@ -174,16 +181,7 @@ Make sure you include examples for all three use cases
 one based on number of target dates, because each forecast target wants the same point)
 
 
-the SourceOffset type contains the `target_date` (or whatever) and an associated Fallback object
-(it's not just a list of Fallbacks)
 
-
-Configurable max # of fallbacks (`limit`)
-
-
-
-**BRAINSTORM:** For `SourceOffset` constructors, accept both a "base date" and an "earliest date"?
-More efficient, because you can pass in `sim_now` and get it started at an earlier data point?
 
 
 ## Horizons
@@ -194,6 +192,8 @@ Returns
 ### Examples
 
 #### Hourly Horizons
+
+**TODO:** Make all examples into doctests.
 
 ```julia
 using TimeZones
@@ -266,32 +266,45 @@ Another example, that does a single target date, two days ahead, at 15 minute re
 
 ```julia
 sim_now = ZonedDateTime(DateTime(2016, 11, 4, 12, 0, 0), TimeZone("America/Winnipeg"))
-target_dates = horizon_next_day(sim_now, Dates.Minute(15), Dates.Day(2))
+target_dates = horizon_next_day(sim_now; resolution=Dates.Minute(15), days_covered=Dates.Day(2))
 collect(target_dates)
 ```
 
 Output:
 
 ```
-100-element Array{Any,1}:
- 2016-11-06T00:15:00-05:00
- 2016-11-06T00:30:00-05:00
- 2016-11-06T00:45:00-05:00
- 2016-11-06T01:00:00-05:00
- 2016-11-06T01:15:00-05:00
- 2016-11-06T01:30:00-05:00
- 2016-11-06T01:45:00-05:00
- 2016-11-06T01:00:00-06:00
- 2016-11-06T01:15:00-06:00
- 2016-11-06T01:30:00-06:00
- 2016-11-06T01:45:00-06:00
- 2016-11-06T02:00:00-06:00
+196-element Array{TimeZones.ZonedDateTime,1}:
+ 2016-11-05T00:15:00-05:00
+ 2016-11-05T00:30:00-05:00
+ 2016-11-05T00:45:00-05:00
+ 2016-11-05T01:00:00-05:00
+ 2016-11-05T01:15:00-05:00
  ...
+ 2016-11-06T23:00:00-06:00
+ 2016-11-06T23:15:00-06:00
+ 2016-11-06T23:30:00-06:00
+ 2016-11-06T23:45:00-06:00
+ 2016-11-07T00:00:00-06:00
 ```
 
 Note that in both examples, daylight saving time is handled properly.
 
 ## Data Source Offsets
+
+
+The `SourceOffsets` type can't simply be replaced by a list of `Fallback`s, because in
+addition to returning the `Fallback` for each forecast `target_date` it also returns the
+forecast `target_date` itself as part of the tupel.
+the SourceOffsets type contains the `target_date` (or whatever) and an associated Fallback object
+(it's not just a list of Fallbacks)
+
+
+### `SourceOffsets` Type
+
+
+
+
+### `Fallback` Type
 
 
 We're not doing static offsets here: just do math
@@ -300,6 +313,9 @@ We're not doing static offsets here: just do math
 
 In order for offsets to be meaningful (and to prevent cheating) systems that fetch input
 data from the database must, in addition to using the `target_date` supplied by the
+`SourceOffsets`'s `Fallback`, take the current value of `sim_now` into account, comparing
+it to the `available_date` in the database. This check is very imoprtant, but falls
+outside the scope of `Horizons.jl`.
 
 ***TODO***: example of the above
 
@@ -323,6 +339,12 @@ same hour of week
 is a holiday
 
 isn't a holiday
+
+***TODO:*** For examples with matches, make sure you include how the adjustment functions would
+work. (Include code that checks against `sim_now` in the example.)
+
+
+
 
 
 

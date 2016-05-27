@@ -1,7 +1,7 @@
 module Horizons
 
 using Base.Dates
-import Base: .+, +, .-, -
+import Base: .+, +, .-, -, start, next, done, length, eltype
 
 using TimeZones
 
@@ -28,7 +28,7 @@ horizon_hourly(period_iterable) = horizon_hourly(now(utc), period_iterable)
 Horizons for each hour (or whatever) of a day (or whatever). See the example in the README.
 """
 function horizon_next_day(
-    sim_now::TimeType,
+    sim_now::TimeType=now(utc);
     resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1)
 )
     start = trunc(sim_now, Day) + days_ahead + resolution
@@ -37,22 +37,125 @@ function horizon_next_day(
 end
 
 function horizon_next_day(
-    sim_now::Function,
+    sim_now::Function;
     resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1)
 )
     horizon_next_day(sim_now(), resolution, days_ahead, days_covered)
 end
 
-function horizon_next_day(
-    resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1)
-)
-    horizon_next_day(now(utc), resolution, days_ahead, days_covered)
+
+# TODO: Rename one of the match functions. One is a factory for date functions and the other
+# is a date function itself.
+# Add explanation for date functions and factories.
+
+typealias Limit Union{TimeType, Period}
+
+# Source Offsets
+# Iterable; each element is a tuple containing the target date and the associated Fallback.
+immutable SourceOffsets{T<:TimeType, L<:Limit}
+    target_dates::AbstractArray{T}        # Forecast target dates.
+    match::Function
+    resolution::Period
+    limit::Nullable{L}
 end
 
+function SourceOffsets{T<:TimeType, L<:Limit}(
+    target_dates::AbstractArray{T},
+    match::Function,
+    resolution::Period,
+    limit::L
+)
+    return SourceOffsets(target_dates, match, resolution, Nullable(limit))
+end
+
+function SourceOffsets{T<:TimeType}(
+    target_dates::AbstractArray{T};
+    match::Function=x -> y -> true,
+    resolution::Period=Hour(1),
+    limit=Nullable{TimeType}()
+)
+    return SourceOffsets(target_dates, match, resolution, limit)
+end
+
+start(::SourceOffsets) = 1
+
+function next(iter::SourceOffsets, state)
+    args = [iter.target_dates[state], iter.match(iter.target_dates[state]), iter.resolution]
+
+    if !isnull(iter.limit)
+        push!(args, get(iter.limit))
+    end
+
+    return ((iter.target_dates[state], Fallback(args...)), state + 1)
+end
+
+done(iter::SourceOffsets, state) = state > length(iter.target_dates)
+
+eltype{T}(::Type{SourceOffsets{T}}) = Tuple{T, T}
+
+length(iter::SourceOffsets) = length(iter.target_dates)
 
 
+immutable Fallback
+    base::TimeType
+    match::Function
+    resolution::Period
+    limit::TimeType
 
+    function Fallback(
+        base::TimeType, match::Function, resolution::Period, limit::TimeType
+    )
+        # TODO: Once date rounding is implemented, this will work:
+        # base = floor(base, resolution)
+        # Until then we can round to hour, min, etc but not to a multiple of any resolution.
+        base = trunc(base, typeof(resolution))
+        new(base, match, resolution, limit)
+    end
+end
 
+# TODO: Does the resolution need to be stored after the initial rounding?
+
+# Handle the case where the limit is provided as a Period instead of a TimeType.
+function Fallback(base::TimeType, match::Function, resolution::Period, limit::Period)
+    return Fallback(base, match, resolution, base - limit)
+end
+
+# The default value for limit essentially boils down to "only return one thing".
+function Fallback(
+    base::TimeType,
+    match::Function,
+    resolution::Period,
+)
+    # TODO: Once date rounding is implemented, this will work:
+    # return Fallback(base, match, resolution, floor(base, resolution))
+    # Until then we can round to hour, minute, etc. but not to a multiple of any resolution.
+    return Fallback(base, match, resolution, trunc(base, typeof(resolution)))
+end
+
+# Allow using kwargs for optional parameters.
+function Fallback(
+    base::TimeType;
+    match::Function=x -> true,
+    resolution::Period=Hour(1),
+    # TODO: Once date rounding is implemented, this will work:
+    # limit::Union{TimeType, Period}=floor(base, resolution)
+    # Until then we can round to hour, minute, etc. but not to a multiple of any resolution.
+    limit::Union{TimeType, Period}=trunc(base, typeof(resolution))
+)
+    return Fallback(base, match, resolution, limit)
+end
+
+start(iter::Fallback) = iter.base
+
+function next(iter::Fallback, state)
+    return (state, toprev(iter.match, state; step=-iter.resolution))
+end
+
+done(iter::Fallback, state) = state < iter.limit
+
+eltype(::Type{Fallback}) = TimeType
+
+# TODO: OH DEAR GOD TEST ALL OF THIS WITH EVERY TYPE OF LIMIT
 
 
 # DATE FUNCTIONS
@@ -76,9 +179,6 @@ match_hourofweek(target::TimeType) = d -> hourofweek(d) == hourofweek(target)
 match_hourofweek(target::Integer) = d -> hourofweek(d) == target
 
 
-
-
-
 # UTILITY FUNCTIONS
 # Generic utility functions required by Horizons.jl (but not necessarily specific to it).
 # Should probably go in Curt's DateUtils.jl repo.
@@ -93,11 +193,11 @@ hourofweek(d::TimeType) = (dayofweek(d) - 1) * 24 + hour(d)
 
 
 # Allows arithmetic between a `DateTime`/`ZonedDateTime`/`Period` and a range of `Period`s.
-.+{T<:Period}(x::Union{TimeType, Period}, r::Range{T}) = (x + first(r)):step(r):(x + last(r))
+.+{T<:Period}(x::Union{TimeType,Period}, r::Range{T}) = (x + first(r)):step(r):(x + last(r))
 .+{T<:Period}(r::Range{T}, x::Union{TimeType, Period}) = x .+ r
 +{T<:Period}(r::Range{T}, x::Union{TimeType, Period}) = x .+ r
 +{T<:Period}(x::Union{TimeType, Period}, r::Range{T}) = x .+ r
-.-{T<:Period}(r::Range{T}, x::Union{TimeType, Period}) = (first(r) - x):step(r):(last(r) - x)
+.-{T<:Period}(r::Range{T}, x::Union{TimeType,Period}) = (first(r) - x):step(r):(last(r) - x)
 -{T<:Period}(r::Range{T}, x::Union{TimeType, Period}) = r .- x
 
 
@@ -113,205 +213,11 @@ hourofweek(d::TimeType) = (dayofweek(d) - 1) * 24 + hour(d)
 -{T<:TimeType}(r::Range{T},x::Period) = r .- x
 =#
 
-export horizon_hourly, horizon_next_day, source_offset
-
-
-# -------- OLD STUFF ---------
-
-
-
-# TODO: Test all horizon functions for normal dates, spring forward, fall back (both on due
-# date and target date).
-
-
-
-
-
-# TODO: Probably need to support multiple types of iterable (not just ranges). Maybe?
-# The ..._producers do.
-
-
-
-# SOURCE OFFSET FUNCTIONS
-# These are also top-level, but are specialized versions of horizons designed for static
-# and dynamic offsets for input data.
-
-# Basically for these, we'll pass in a series of target_dates (and a virtual now) and for
-# each they should generate a corresponding data source date (and more?) based on the
-# appropriate rules.
-
-"""
-Basic. Just passes back the target_dates, ignoring any that do/don't match
-inclusion/exclusion criteria.
-"""
-function target_offset(
-    sim_now::TimeType, target_date::Range; match::Function=x->true, shift::Period=Hour(0)
-)
-    @task offset_producer(sim_now, target_date; match=match, shift=shift)
-end
-
-function target_offset(sim_now::Function, target_date::Range; kwargs...)
-    target_offset(sim_now(), target_date; kwargs...)
-end
-
-function target_offset(target_date::Range; kwargs...)
-    target_offset(now(utc), target_date; kwargs...)
-end
-
-
-# Do we need include/exclude functions themselves?
-
-
-
-# TODO: Assuming that we want the signature to be the same, but maybe we don't, so we could
-# just pass in an integer (number to generate) instead.
-# TODO: This function is potentially problemmatic if there is a long delay in actuals
-# appearing in the DB? Perhaps in our data fetching code we want to just have a way of
-# ignoring the target_date and querying the DB (or whatever) for the most recent data <
-# sim_now.
-function current_offset(
-    sim_now::TimeType, target_date::Range;
-    resolution::Period=Hour(1), match::Function=x->true, shift::Period=Hour(0)
-)
-# TODO: Once date rounding is implemented, this will work:
-#    target_date = repmat([floor(sim_now, resolution)], length(target_date))
-# Until then, we can round to hour, minute, etc., but not to a multiple of any resolution.
-    target_date = repmat([trunc(sim_now, typeof(resolution))], length(target_date))
-    @task offset_producer(sim_now, target_date; match=match, shift=shift)
-end
-
-function current_offset(sim_now::Function, target_date::Range; kwargs...)
-    current_offset(sim_now(), target_date; kwargs...)
-end
-
-function current_offset(target_date::Range; kwargs...)
-    current_offset(now(utc), target_date; kwargs...)
-end
-
-# Example: most recent actuals for same hour of day
-#current_offset(sim_now, target_date; match=match_hourofday)
-
-# Example: most recent actuals for twelve hours before same hour of day
-#current_offset(sim_now, target_date; match=match_hourofday, shift=-Hour(12))
-
-# Example: most recent actuals for one hour after same hour of week
-#current_offset(sim_now, target_date; match=match_hourofweek, shift=Hour(1))
-
-# TODO: TEST ALL OF THESE!
-
-
-
-
-"""
-For each element in a range, return a target date. The kwargs `include` and `exclude` are
-`DateFunction`s; if supplied, they indicate which elements should be included (default: all)
-and/or excluded (default: none). This may be helpful when creating dynamic offsets for data
-source functions, for example.
-"""
-function horizon_producer(range::Range; match::Function=x->true, shift::Period=Hour(0))
-    for d in recur(match, range + shift)
-        produce(d)
-    end
-end
-
-"""
-Version for non-Range iterables.
-"""
-function horizon_producer(iterable; match::Function=x->true, shift::Period=Hour(0))
-    for d in iterable + shift
-        if match(d)
-            produce(d)
-        end
-    end
-end
-
-# TODO: Test. This.
-
-
-
-
-
-# TODO
-# Okay, one proposal for a big rewrite:
-# First, apply match (dynamic offset) if applicable
-# Second, apply shift
-#
-# BUUUUUUUT.....
-# Do we even need exclusion/inclusion criteria? I say rewrite it without.
-# Do we need match for target_offsets in addition to current_offsets?
-#=
-Call it match_target
-Add available_shift kwarg which indicates how long after sim_now something is available
-(or how long before the target? But what about forecast data with overlapping horizons?
-No, it's just for actuals)
-=#
-
-
-
-
-
-"""
-Like the horizon_producer, but also spits back the available_date that we need to worry
-about.
-"""
-function target_offset_producer(
-    sim_now::TimeType, target_date::Range; match::Function=x->true, shift::Period=Hour(0)
-)
-    # TODO: Match does something a little different than current_offset. Call it include instead?
-    for d in recur(match, target_date)
-        produce((d + shift, sim_now))
-    end
-end
-
-"""
-Version for non-Range iterables.
-"""
-function target_offset_producer(
-    sim_now::TimeType, target_date; match::Function=x->true, shift::Period=Hour(0)
-)
-    for d in target_date
-        # TODO: Match does something a little different than below. Call it include instead?
-        if match(d)
-            produce((d + shift, sim_now))
-        end
-    end
-end
-
-# TODO: Test. This.
-
-function current_offset_producer(
-    sim_now::TimeType, target_date; match::Function=x->true, shift::Period=Hour(0)
-)
-    # TODO: Will this be for the right minute/second/etc.?
-    for d in target_date
-        # Matches some criteria between target_date and sim_now; bases offsets on sim_now.
-        produce((toprev(match(d), sim_now) + shift, sim_now))
-    end
-end
-
-# TODO: Test. This.
-
-# TODO: Remove all include/exclude functions in favour of a single match function.
-
-
-
-
-
-
-
-
-
-#=
-Previous version of what is now `horizon_next_day`. We're doing this differently. (But I'm
-keeping this code here in case it's useful later, or we change our minds again.)
-
-"All horizons for a single day. Note that the input is of type `Date`, not `DateTime`."
-function single_day(
-    d::Date, step::Period=Hour(1);
-    include::Function=x->true, exclude::Function=x->false
-)
-    @task horizon_producer(DateTime(d):step:DateTime(d + Day(1)) - Second(1), include, exclude)
-end
-=#
+export horizon_hourly,
+       horizon_next_day,
+       SourceOffsets,
+       Fallback,
+       match_hourofday,
+       match_hourofweek
 
 end
