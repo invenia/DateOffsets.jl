@@ -54,33 +54,42 @@ typealias Limit Union{TimeType, Period}
 # Iterable; each element is a tuple containing the target date and the associated Fallback.
 immutable SourceOffsets{T<:TimeType, L<:Limit}
     target_dates::AbstractArray{T}        # Forecast target dates.
+    base::Nullable{T}
     match::Function
     resolution::Period
     limit::Nullable{L}
 end
 
+# Convert non-nullable args to nullables.
 function SourceOffsets{T<:TimeType, L<:Limit}(
     target_dates::AbstractArray{T},
+    base::T,
     match::Function,
     resolution::Period,
     limit::L
 )
-    return SourceOffsets(target_dates, match, resolution, Nullable(limit))
+    return SourceOffsets(target_dates, Nullable(base), match, resolution, Nullable(limit))
 end
 
+# Support for keyword args.
 function SourceOffsets{T<:TimeType}(
     target_dates::AbstractArray{T};
+    base=Nullable{TimeType}(),
     match::Function=x -> y -> true,
     resolution::Period=Hour(1),
     limit=Nullable{TimeType}()
 )
-    return SourceOffsets(target_dates, match, resolution, limit)
+    return SourceOffsets(target_dates, base, match, resolution, limit)
 end
 
 start(::SourceOffsets) = 1
 
 function next(iter::SourceOffsets, state)
-    args = [iter.target_dates[state], iter.match(iter.target_dates[state]), iter.resolution]
+    args = [
+        get(iter.base, iter.target_dates[state]),
+        iter.match(iter.target_dates[state]),
+        iter.resolution
+    ]
 
     if !isnull(iter.limit)
         push!(args, get(iter.limit))
