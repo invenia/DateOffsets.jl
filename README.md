@@ -1,5 +1,7 @@
 # Horizons.jl
 
+### Much of the implementation specifics in this document is currently out of date. Stand by for updates.
+
 `Horizons.jl` provides the tools necessary to generate dates with specific temporal
 offsets for forecast and input data.
 
@@ -134,14 +136,14 @@ the resolution of the data.)
 **TODO:** Check the match against the first one, too, to make sure it's a match.
 
 
-SourceOffsets iterator type
-    (Returns tuple of target_date, fallback)
-Fallback iterator type
-
-
 # -----------------
 # old meeting notes
 # -----------------
+
+
+SourceOffsets iterator type
+    (Returns tuple of target_date, fallback)
+Fallback iterator type
 
 Don't implement static offsets (those can be done before/after in the data feeds code, or
 the configuration, or whatever, but we don't need them here).
@@ -180,6 +182,15 @@ Make sure you include examples for all three use cases
 (include the fact that you'll have to duplicate the results of the "most recent data"
 one based on number of target dates, because each forecast target wants the same point)
 
+Dynamic offsets...
+Provides dynamic (complex, non-arithmetic) offsets. These offsets are specified by passing
+in `DateFunction` factories (like `match_hourofday` or `match_hourofweek`). A `DateFunction`
+is a function that takes a single `TimeType` as input and returns `true` when the input
+matches the important criteria. A `DateFunction` factory is a function that takes a single
+`TimeType` and returns a `DateFunction` to match new dates against an aspect of the date
+passed into the factory.
+
+# TODO: Most of the above no longer applies.
 
 
 # -----------------
@@ -198,8 +209,55 @@ Take in the sim now and the column/table name, call curt's function to figure ou
 latest available target date is
 
 
+Input can basically be like the kwargs you're using for SourceOffsets right now
+
+
+Might want to make use of `:symbols` for references to things like `:target_date`
+
+Input requires vector of target dates; returns abstractarray MxN of target dates, where
+M is length(target dates) and N is number of static offsets?
+
+
+Can we accomplish this using just successive function calls? Maybe not, but we should build
+it that way first and use those in the back end?
+e.g.
+```
+target_dates (10x1)
+sim_now
+
+# Needs release offset and resolution, both from the DB.
+julia> source_targets = dynamic_offsets(target_dates, data_identifier (table/column), match_hourofweek, match_hourofday)
+
+source_targets (10x2)
+
+julia> source_targets = static_offset(source_targets, Day(-1), Hour(-12), Hour(+2))
+
+source_targets (10x6)
+```
+
+
+Curt's math: `target_date + release_offset + datafeed_runtime <= sim_now`
+
+So this means that if my dynamic offset functions *don't* take `sim_now` as an input,
+I can take the `target_date` vector (passed in), subtract the `release_offset + datafeed_runtime`,
+and then do my `toprev(match_function, target_date)`, and I'll be guaranteed something that
+is <= `sim_now` anyway. Right? WRONG!
+
+Specifically call out that in the old system, `"target_date"` was a dynamic offset. It is now the default.
+WRONG!
+
+
+DO WE NEED A `recent_offset`, which will just roll back the target dates to the latest available date?
+
+
 # -----------------
 
+
+`DateFunction` factories (like `match_hourofday` or `match_hourofweek`): a `DateFunction`
+is a function that takes a single `TimeType` as input and returns `true` when the input
+matches the important criteria. A `DateFunction` factory is a function that takes a single
+`TimeType` and returns a `DateFunction` to match new dates against an aspect of the date
+passed into the factory.
 
 
 
