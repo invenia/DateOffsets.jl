@@ -135,9 +135,9 @@ We just want the most recent data point that is less than or equal to the target
 We need to take training set into account (each row of which will have its own "sim_now").
 """
 function recent_offset{T<:TimeType}(
-    dates::AbstractArray{T}, sim_now::AbstractArray{T}, tablename::AbstractString
+    dates::AbstractArray{T}, sim_now::AbstractArray{T}, table::Table
 )
-    return broadcast(min, dates, query_latest_target(sim_now, tablename))
+    return broadcast(min, dates, latest_target(table, sim_now))
 end
 
 # NOTE: step should be divisible by the data resolution (if you're doing a dynamic match function)
@@ -166,8 +166,8 @@ a lambda function which is the `DateFunction` we'll use for inclusion.
 # Probably needs to use broadcast to function like static_offset
 # TODO: Should probably work with multiple dimensions now, but test it!
 function dynamic_offset{T<:TimeType}(
-    dates::AbstractArray{T}, sim_now::AbstractArray{T}, step::Period,
-    tablename::AbstractString; match::Function=current -> true
+    dates::AbstractArray{T}, sim_now::AbstractArray{T}, step::Period, table::Table;
+    match::Function=current -> true
 )
     step > Millisecond(0) && throw(ArgumentError("step cannot be positive"))
 
@@ -175,22 +175,22 @@ function dynamic_offset{T<:TimeType}(
         current -> current <= latest && match(current), date; step=step, same=true
     )
 
-    return broadcast(fall_back, dates, query_latest_target(sim_now, tablename))
+    return broadcast(fall_back, dates, latest_target(table, sim_now))
 end
 
 function dynamic_offset_hourofday{T<:TimeType}(
-    dates::AbstractArray{T}, sim_now::AbstractArray{T}, tablename::AbstractString
+    dates::AbstractArray{T}, sim_now::AbstractArray{T}, table::Table
 )
-    return dynamic_offset(dates, sim_now, Day(-1), tablename)
+    return dynamic_offset(dates, sim_now, Day(-1), table)
 end
 
 # hourofday and hourofweek have no underscores because they follow the pattern laid out by
 # Dates.dayofweek
 
 function dynamic_offset_hourofweek{T<:TimeType}(
-    dates::AbstractArray{T}, sim_now::AbstractArray{T}, tablename::AbstractString
+    dates::AbstractArray{T}, sim_now::AbstractArray{T}, table::Table
 )
-    return dynamic_offset(dates, sim_now, Week(-1), tablename)
+    return dynamic_offset(dates, sim_now, Week(-1), table)
 end
 
 # NOTE to Curtis: I think this meets our requirements, and provides sufficient

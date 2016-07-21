@@ -1,38 +1,36 @@
-#=
-TODO: Rework to use a table type
-
-So instead of querying for the latest data by passing in the table name:
-
-    query_latest_target(sim_now, "pjm_load")
-
-we could instantiate (say) a `Table` variable, and that would hold the cache:
-
-    pjm_load = Table(:pjm_load)
-    query_latest_target(sim_now, pjm_load)
-=#
-
 # ----- TABLE METADATA -----
+
+type Table
+    name::Symbol
+    latest::Dict{ZonedDateTime, ZonedDateTime}
+
+    Table(name::Symbol) = new(name, Dict{ZonedDateTime, ZonedDateTime}())
+end
+
+Table(name::AbstractString) = Table(Symbol(name))
 
 """
 Given a sim_now and a table name, estimates the latest available target_date.
 """
-function query_latest_target(sim_now::ZonedDateTime, table::Table)
-    # TODO: We're going to make LOTS of repeated calls too this function, and it will
-    # probably be very inefficient as written.
-    meta = table_metadata(tablename)
-    sim_now = astimezone(sim_now, meta[:feed_tz])
+function latest_target(table::Table, sim_now::ZonedDateTime)
+    if !haskey(table.latest, sim_now)
+        meta = table_metadata(table.name)
+        sim_now = astimezone(sim_now, meta[:feed_tz])
 
-    latest_release = estimate_latest_release(
-        sim_now, meta[:publish_interval], meta[:publish_offset], meta[:feed_runtime]
-    )
+        latest_release = estimate_latest_release(
+            sim_now, meta[:publish_interval], meta[:publish_offset], meta[:feed_runtime]
+        )
 
-    return estimate_content_end(
-        latest_release, meta[:content_interval], meta[:content_offset]
-    )
+        table.latest[sim_now] = estimate_content_end(
+            latest_release, meta[:content_interval], meta[:content_offset]
+        )
+    end
+
+    return table.latest[sim_now]
 end
 
-function query_latest_target(sim_now::AbstractArray{ZonedDateTime}, table::Table)
-    return map(s -> query_latest_target(s, tablename), sim_now)
+function latest_target(table::Table, sim_now::AbstractArray{ZonedDateTime})
+    return map(s -> query_latest_target(table, s), sim_now)
 end
 
 
@@ -66,7 +64,7 @@ function table_metadata(tablename)
     content_offset = Second(Hour(0))
     datafeed_runtime = Second(Minute(20))  # Ballparked
     =#
-    if tablename == "pjm_shadow"
+    if tablename == :pjm_shadow
         return Dict(
             :publish_interval => Day(1),
             :publish_offset => Hour(13),
@@ -75,7 +73,7 @@ function table_metadata(tablename)
             :feed_runtime => Minute(20),
             :feed_tz => TimeZone("America/New_York")
         )
-    elseif tablename == "pjm_load"
+    elseif tablename == :pjm_load
         return Dict(
             :publish_interval => Minute(30),
             :publish_offset => Minute(20),
@@ -84,7 +82,7 @@ function table_metadata(tablename)
             :feed_runtime => Minute(20),
             :feed_tz => TimeZone("America/New_York")
         )
-    elseif tablename == "pjm_http"
+    elseif tablename == :pjm_http
         return Dict(
             :publish_interval => Day(1),
             :publish_offset => Hour(11),
@@ -93,7 +91,7 @@ function table_metadata(tablename)
             :feed_runtime => Minute(20),
             :feed_tz => TimeZone("America/New_York")
         )
-    elseif tablename == "pjm_edf"
+    elseif tablename == :pjm_edf
         return Dict(
             :publish_interval => Hour(1),
             :publish_offset => Minute(30),

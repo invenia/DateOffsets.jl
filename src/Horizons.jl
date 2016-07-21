@@ -5,9 +5,9 @@ using TimeZones
 import Base: .+, +, .-, -
 
 include("intervals.jl")     # Originally from AxisArrays.jl
+include("utils.jl")         # Should eventually go in base julia and/or DateUtils.jl
 include("tables.jl")
 include("offsets.jl")
-include("utils.jl")         # Should eventually go in base julia and/or DateUtils.jl
 
 export Interval,
        Table,
