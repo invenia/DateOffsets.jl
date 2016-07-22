@@ -39,8 +39,8 @@ end
 
 # ------- OBSERVATION DATES -------
 
-# TODO: Write a function that takes a target date, the training window(s), and the sim_now,
-# then returns all target dates/sim_nows <----- THIS ONE WAS APPROVED BY CURTIS
+# Takes a target date, the training window(s), and the sim_now, then returns all target
+# dates/sim_nows
 
 # Note: assumes that all markets are siloed and run idependently. If we had a situation in
 # which another market's DST transition affects the time that this market runs (say, if all
@@ -75,8 +75,8 @@ function observation_dates{T<:TimeType, P<:Period}(
     # within_windows(dt) = any(window -> in(dt, window), training_window)
     # Can be reverted once https://github.com/JuliaLang/julia/issues/17513 is fixed.
 
-    # Generate all sim_nows that are within the training windows.j
-    sim_nows = recur(within_windows, sim_now:-run_frequency:earliest)
+    # Generate all sim_nows that are within the training windows.
+    sim_nows = flipdim(recur(within_windows, sim_now:-run_frequency:earliest), 1)
 
     # Determine the horizon offsets between target_dates and sim_now.
     offsets = target_dates - sim_now
@@ -127,12 +127,11 @@ function static_offset{T<:TimeType}(dates::AbstractArray{T}, offsets::Period...)
 end
 
 """
-Probably need this, taking in sim_now and a table name(?), to provide "most recent" data.
-The dates array is taken only to provide dimensions for the output.
-
+Provides dates for the "most recent" data from at or before the target dates.
 We just want the most recent data point that is less than or equal to the target.
 
-We need to take training set into account (each row of which will have its own "sim_now").
+For dynamic and recent offsets, we need a vector of sim_nows with length equal to the number
+of rows in the dates array.
 """
 function recent_offset{T<:TimeType}(
     dates::AbstractArray{T}, sim_now::AbstractArray{T}, table::Table
@@ -162,9 +161,7 @@ factories: they take a single target `TimeType` (the date we're trying to match)
 a lambda function which is the `DateFunction` we'll use for inclusion.
 =#
 
-# These need to be able to take a 2-dimensional dates array like static offsets.
-# Probably needs to use broadcast to function like static_offset
-# TODO: Should probably work with multiple dimensions now, but test it!
+# Can take a 2-dimensional dates array like static offsets.
 function dynamic_offset{T<:TimeType}(
     dates::AbstractArray{T}, sim_now::AbstractArray{T}, step::Period, table::Table;
     match::Function=current -> true
@@ -178,14 +175,14 @@ function dynamic_offset{T<:TimeType}(
     return broadcast(fall_back, dates, latest_target(table, sim_now))
 end
 
+# Note: hourofday and hourofweek have no underscores because they follow the pattern laid
+# out by Dates.dayofweek
+
 function dynamic_offset_hourofday{T<:TimeType}(
     dates::AbstractArray{T}, sim_now::AbstractArray{T}, table::Table
 )
     return dynamic_offset(dates, sim_now, Day(-1), table)
 end
-
-# hourofday and hourofweek have no underscores because they follow the pattern laid out by
-# Dates.dayofweek
 
 function dynamic_offset_hourofweek{T<:TimeType}(
     dates::AbstractArray{T}, sim_now::AbstractArray{T}, table::Table

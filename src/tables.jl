@@ -30,7 +30,7 @@ function latest_target(table::Table, sim_now::ZonedDateTime)
 end
 
 function latest_target(table::Table, sim_now::AbstractArray{ZonedDateTime})
-    return map(s -> query_latest_target(table, s), sim_now)
+    return map(s -> latest_target(table, s), sim_now)
 end
 
 

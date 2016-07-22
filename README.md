@@ -1,5 +1,105 @@
 # Horizons.jl
 
+
+
+
+Overview
+
+
+Explain Horizons
+List functions
+
+Explain Observation Dates
+List function
+
+Explain Offsets
+List functions
+
+Explain what a Table is
+List constructor and show how it's used
+
+Cookbook example
+(Add comments explaining what's held where.)
+
+
+
+
+## Cookbook Example
+
+```julia
+julia> using TimeZones
+
+julia> using Horizons
+
+julia> sim_now = now(TimeZone("America/Winnipeg"))
+2016-07-22T15:26:23.284-05:00
+
+julia> target_dates = horizon_next_day(sim_now)
+2016-07-23T01:00:00-05:00:1 hour:2016-07-24T00:00:00-05:00
+
+julia> observations, sim_nows = observation_dates(target_dates, sim_now, Dates.Day(1), Dates.Day(10))
+(TimeZones.ZonedDateTime[2016-07-13T01:00:00-05:00,2016-07-13T02:00:00-05:00,2016-07-13T03:00:00-05:00,2016-07-13T04:00:00-05:00,2016-07-13T05:00:00-05:00,2016-07-13T06:00:00-05:00,2016-07-13T07:00:00-05:00,2016-07-13T08:00:00-05:00,2016-07-13T09:00:00-05:00,2016-07-13T10:00:00-05:00  …  2016-07-23T15:00:00-05:00,2016-07-23T16:00:00-05:00,2016-07-23T17:00:00-05:00,2016-07-23T18:00:00-05:00,2016-07-23T19:00:00-05:00,2016-07-23T20:00:00-05:00,2016-07-23T21:00:00-05:00,2016-07-23T22:00:00-05:00,2016-07-23T23:00:00-05:00,2016-07-24T00:00:00-05:00],^[[ATimeZones.ZonedDateTime[2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00  …  2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00])
+
+julia> pjm_http = Table(:pjm_http)
+Horizons.Table(:pjm_http,Dict{TimeZones.ZonedDateTime,TimeZones.ZonedDateTime}())
+
+julia> data_source_targets_1 = recent_offset(observations, sim_nows, pjm_http)
+264-element Array{TimeZones.ZonedDateTime,1}:
+ 2016-07-12T00:00:00-04:00
+ 2016-07-12T00:00:00-04:00
+ 2016-07-12T00:00:00-04:00
+ 2016-07-12T00:00:00-04:00
+ 2016-07-12T00:00:00-04:00
+ ⋮                        
+ 2016-07-22T00:00:00-04:00
+ 2016-07-22T00:00:00-04:00
+ 2016-07-22T00:00:00-04:00
+ 2016-07-22T00:00:00-04:00
+ 2016-07-22T00:00:00-04:00
+
+julia> data_source_targets_2 = static_offset(observations, Dates.Day(-1), Dates.Day(1))
+264×2 Array{TimeZones.ZonedDateTime,2}:
+ 2016-07-12T01:00:00-05:00  2016-07-14T01:00:00-05:00
+ 2016-07-12T02:00:00-05:00  2016-07-14T02:00:00-05:00
+ 2016-07-12T03:00:00-05:00  2016-07-14T03:00:00-05:00
+ 2016-07-12T04:00:00-05:00  2016-07-14T04:00:00-05:00
+ 2016-07-12T05:00:00-05:00  2016-07-14T05:00:00-05:00
+ ⋮                                                   
+ 2016-07-22T20:00:00-05:00  2016-07-24T20:00:00-05:00
+ 2016-07-22T21:00:00-05:00  2016-07-24T21:00:00-05:00
+ 2016-07-22T22:00:00-05:00  2016-07-24T22:00:00-05:00
+ 2016-07-22T23:00:00-05:00  2016-07-24T23:00:00-05:00
+ 2016-07-23T00:00:00-05:00  2016-07-25T00:00:00-05:00
+
+julia> data_source_targets_2 = dynamic_offset_hourofweek(data_source_targets_2, sim_nows, pjm_http)
+264×2 Array{TimeZones.ZonedDateTime,2}:
+ 2016-07-05T01:00:00-05:00  2016-07-07T01:00:00-05:00
+ 2016-07-05T02:00:00-05:00  2016-07-07T02:00:00-05:00
+ 2016-07-05T03:00:00-05:00  2016-07-07T03:00:00-05:00
+ 2016-07-05T04:00:00-05:00  2016-07-07T04:00:00-05:00
+ 2016-07-05T05:00:00-05:00  2016-07-07T05:00:00-05:00
+ ⋮                                                   
+ 2016-07-15T20:00:00-05:00  2016-07-17T20:00:00-05:00
+ 2016-07-15T21:00:00-05:00  2016-07-17T21:00:00-05:00
+ 2016-07-15T22:00:00-05:00  2016-07-17T22:00:00-05:00
+ 2016-07-15T23:00:00-05:00  2016-07-17T23:00:00-05:00
+ 2016-07-16T00:00:00-05:00  2016-07-18T00:00:00-05:00
+```
+
+Once the code above has been run, `data_source_targets_1` has the target dates
+representing the most recent data that should be available in the `pjm_http` table, while
+`data_source_targets_2` has target dates with (1) a static offset of one day in the future
+and one day in the past that (2) have been dynamically shifted into the past such that
+they have the same target hour of week (as the statically shifted dates) but should still
+be available as of the appropriate `sim_now`.
+
+Note that the time zone for `data_source_targets_1` is `UTC-4` instead of `UTC-5`. That's
+because its dates were generated using most recent data from PJM, which is `UTC-4` at this
+time. Note that in Julia it's perfectly acceptable to compare and reason about
+`ZonedDateTime`s that are in different time zones, so this isn't a problem.
+
+
+
 ### Much of the implementation specifics in this document is currently out of date. Stand by for updates.
 
 `Horizons.jl` provides the tools necessary to generate dates with specific temporal
