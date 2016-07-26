@@ -2,10 +2,6 @@
 
 
 
-
-Overview
-
-
 Explain Horizons
 List functions
 
@@ -19,114 +15,297 @@ Explain what a Table is
 List constructor and show how it's used
 
 Cookbook example
-(Add comments explaining what's held where.)
 
 
 
 
-## Cookbook Example
-
-```julia
-julia> using TimeZones
-
-julia> using Horizons
-
-julia> sim_now = now(TimeZone("America/Winnipeg"))
-2016-07-22T15:26:23.284-05:00
-
-julia> target_dates = horizon_next_day(sim_now)
-2016-07-23T01:00:00-05:00:1 hour:2016-07-24T00:00:00-05:00
-
-julia> observations, sim_nows = observation_dates(target_dates, sim_now, Dates.Day(1), Dates.Day(10))
-(TimeZones.ZonedDateTime[2016-07-13T01:00:00-05:00,2016-07-13T02:00:00-05:00,2016-07-13T03:00:00-05:00,2016-07-13T04:00:00-05:00,2016-07-13T05:00:00-05:00,2016-07-13T06:00:00-05:00,2016-07-13T07:00:00-05:00,2016-07-13T08:00:00-05:00,2016-07-13T09:00:00-05:00,2016-07-13T10:00:00-05:00  …  2016-07-23T15:00:00-05:00,2016-07-23T16:00:00-05:00,2016-07-23T17:00:00-05:00,2016-07-23T18:00:00-05:00,2016-07-23T19:00:00-05:00,2016-07-23T20:00:00-05:00,2016-07-23T21:00:00-05:00,2016-07-23T22:00:00-05:00,2016-07-23T23:00:00-05:00,2016-07-24T00:00:00-05:00],^[[ATimeZones.ZonedDateTime[2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00  …  2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00])
-
-julia> pjm_http = Table(:pjm_http)
-Horizons.Table(:pjm_http,Dict{TimeZones.ZonedDateTime,TimeZones.ZonedDateTime}())
-
-julia> data_source_targets_1 = recent_offset(observations, sim_nows, pjm_http)
-264-element Array{TimeZones.ZonedDateTime,1}:
- 2016-07-12T00:00:00-04:00
- 2016-07-12T00:00:00-04:00
- 2016-07-12T00:00:00-04:00
- 2016-07-12T00:00:00-04:00
- 2016-07-12T00:00:00-04:00
- ⋮                        
- 2016-07-22T00:00:00-04:00
- 2016-07-22T00:00:00-04:00
- 2016-07-22T00:00:00-04:00
- 2016-07-22T00:00:00-04:00
- 2016-07-22T00:00:00-04:00
-
-julia> data_source_targets_2 = static_offset(observations, Dates.Day(-1), Dates.Day(1))
-264×2 Array{TimeZones.ZonedDateTime,2}:
- 2016-07-12T01:00:00-05:00  2016-07-14T01:00:00-05:00
- 2016-07-12T02:00:00-05:00  2016-07-14T02:00:00-05:00
- 2016-07-12T03:00:00-05:00  2016-07-14T03:00:00-05:00
- 2016-07-12T04:00:00-05:00  2016-07-14T04:00:00-05:00
- 2016-07-12T05:00:00-05:00  2016-07-14T05:00:00-05:00
- ⋮                                                   
- 2016-07-22T20:00:00-05:00  2016-07-24T20:00:00-05:00
- 2016-07-22T21:00:00-05:00  2016-07-24T21:00:00-05:00
- 2016-07-22T22:00:00-05:00  2016-07-24T22:00:00-05:00
- 2016-07-22T23:00:00-05:00  2016-07-24T23:00:00-05:00
- 2016-07-23T00:00:00-05:00  2016-07-25T00:00:00-05:00
-
-julia> data_source_targets_2 = dynamic_offset_hourofweek(data_source_targets_2, sim_nows, pjm_http)
-264×2 Array{TimeZones.ZonedDateTime,2}:
- 2016-07-05T01:00:00-05:00  2016-07-07T01:00:00-05:00
- 2016-07-05T02:00:00-05:00  2016-07-07T02:00:00-05:00
- 2016-07-05T03:00:00-05:00  2016-07-07T03:00:00-05:00
- 2016-07-05T04:00:00-05:00  2016-07-07T04:00:00-05:00
- 2016-07-05T05:00:00-05:00  2016-07-07T05:00:00-05:00
- ⋮                                                   
- 2016-07-15T20:00:00-05:00  2016-07-17T20:00:00-05:00
- 2016-07-15T21:00:00-05:00  2016-07-17T21:00:00-05:00
- 2016-07-15T22:00:00-05:00  2016-07-17T22:00:00-05:00
- 2016-07-15T23:00:00-05:00  2016-07-17T23:00:00-05:00
- 2016-07-16T00:00:00-05:00  2016-07-18T00:00:00-05:00
-```
-
-Once the code above has been run, `data_source_targets_1` has the target dates
-representing the most recent data that should be available in the `pjm_http` table, while
-`data_source_targets_2` has target dates with (1) a static offset of one day in the future
-and one day in the past that (2) have been dynamically shifted into the past such that
-they have the same target hour of week (as the statically shifted dates) but should still
-be available as of the appropriate `sim_now`.
-
-Note that the time zone for `data_source_targets_1` is `UTC-4` instead of `UTC-5`. That's
-because its dates were generated using most recent data from PJM, which is `UTC-4` at this
-time. Note that in Julia it's perfectly acceptable to compare and reason about
-`ZonedDateTime`s that are in different time zones, so this isn't a problem.
 
 
-
-### Much of the implementation specifics in this document is currently out of date. Stand by for updates.
 
 `Horizons.jl` provides the tools necessary to generate dates with specific temporal
-offsets for forecast and input data.
+offsets for use in training and forecasting.
 
-For example, if we are generating a set of forecasts on a date, the system needs to know
-what the appropriate `target_date`s for those forecasts would be. Or given a forecast
-`target_date`, you might want to know which input datapoints need to be fetched from the
-database to produce that forecast.
+## Overview
 
-## Overview and Terminology
+This package is concerned with three primary use cases:
 
-### Horizons and Data Source Offsets
+1. Generating the `target_date`s for a batch of forecasts
+2. Determining the `target_date`s for the input data to be passed into the models
+3. Determining the `target_date`s for the input data used to train the models
 
-Our systems uses temporal offsets for two primary purposes: to define **horizons** and
-**data source offsets**.
+The functions used in each case are referred to as:
 
-**Horizon:** Horizons define the target dates for a given set of forecasts. Horizon
-offsets are determined by reference to the current date (`sim_now`). Horizons are handled
-using the `horizon_hourly` and `horizon_next_day` functions described in the
-[Horizons](#horizons) section below.
+1. Horizon functions
+2. Data feature offset functions
+3. Observation date function
 
-**Data Source Offset:** Data source offsets define the target dates for input data (data
-used to generate forecasts). Data source offsets are typically determined by reference to
-the forecast target date (although they can use `sim_now` instead).  Data source offsets
-are handled using the `SourceOffsets` and `Fallback` types described in the [Data Source
+### Period Ending Standard
+
+While some data represent instantaneous values, often data are aggregated over a period
+of time. It is common practice to use a single `DateTime` (or preferably `ZonedDateTime`)
+to represent this contiguous stretch.
+
+Someone (or maybe a database) might say, "Here's the forecast for Thursday at 11:00." Does
+this mean the forecast for the period `[11:00, 12:00)`? Or is it perhaps `(10:00, 11:00]`?
+Unless you've specified a standard, it's ambiguous.
+
+ISOs typically use the **hour ending** standard (the second possibility in the example
+above), and our system follows suit.
+
+Since we also deal with data at resolutions finer than one hour, we use the more general
+period ending standard (a data point that has a resolution of 15 minutes and is stamped
+`15:45` represents values for the period `(15:30, 15:45]`).
+
+**Note:** The general period ending standard only applies to data at resolution finer than
+one day. Data at resolutions of one day and courser (think `Date`s, rather than
+`DateTime`s) will often ignore the period ending rule because following it would result in
+confusion (aggregate data for the day of `2016-01-31` being stamped `2016-02-01T00:00:00`,
+for example).
+
+### Current Date: `sim_now`
+
+In a live system, there are many cases in which it is necessary to know the current date
+and time in order to calculate an offset. In many cases a call to `now()` might suffice.
+
+But when simulating historical performance of the system in a backrun (or training a
+model), the actual current time would not be useful. Instead, we need some way to inform
+the system what the "current" time **would be** if this were a live forecast. This ensures
+that backrun simulations perform identically (or near as possible) to the live system, and
+that the data fetched to train a model accurately represents the data that is passed into
+that model to generate a forecast.
+
+In addition to being used to generate `target_date`s, when data fetching occurs the
+"current" time must be compared to the `available_date` of the data in the database to
+ensure that the system is not cheating (that is to say: making use of data that would not
+be available in the database yet if this were live run).
+
+This is accomplised with `sim_now`, a variable that represents the "current time" in a
+live forecast and the simulated historical time during a backrun or when fetching training
+data.
+
+Where a default value for `sim_now` is provided, it defaults to `now(TimeZone("UTC"))`).
+(We may decide to remove default values entirely.)
+
+A time zone must always be provided for `sim_now`, and there are cases in which an
+incorrect time zone will result in erroneous behaviour. For example, when calling
+`horizon_daily` (a function that provides all `target_date`s for the next day at hourly
+resolution), what exactly constitutes "the next day" is determined by reference to the
+time zone. If your `sim_now` is set to UTC, this will result in `target_date`s for every
+hour of the next UTC day. So if you're forecasting for EST, and the current time is 20:00
+EST on Friday, it is currently 01:00 UTC on Saturday, and the target dates passed back
+would be for 01:00 UTC Sunday through 00:00 UTC Monday (20:00 EST on Saturday through
+21:00 EST on Sunday), which is probably not what you want. In this case, call
+`horizon_daily` with a `sim_now` of `now(FixedTimeZone("-05:00")))`, and the result will
+be 01:00 EST on Saturday through 00:00 EST on Sunday instead.
+
+## Horizon Functions
+
+When the system is instructed to generate a new set of forecasts, the system needs to
+determine what the appropriate `target_date`s for those forecasts would be. Horizon
+functions are used to determine the target dates for a given set of forecasts.
+
+**Legacy System:** In the legacy Matlab system, the offset between the time a forecast was
+due and the time it targeted was called the "horizon", and these offsets (timedeltas) were
+used for indexing the forecasts. Because the new system has no concept of a forecast "due
+date" we refer to the `target_date` and `sim_now` instead of `target_date` and `horizon`.
+
+The new system uses horizon functions to generate the `target_date`s of the forecasts
+based on the current date (`sim_now`).
+
+### Hourly Horizons
+
+To calculate the `target_date`s for a batch of forecasts defined by discrete set of
+offsets from the current time, use the `horizon_hourly` function. The function takes
+`sim_now`, rounds it **up** to the nearest hour, and produces `target_date`s by adding
+the offsets to the result.
+
+**Legacy System:** This function produces `target_date`s in a very similar fashion to the
+old Hydro Wind and Load systems.
+
+#### Signature
+
+```julia
+function horizon_hourly{P<:Period}(sim_now::ZonedDateTime, periods::AbstractArray{P}; ceil_to=Hour(1))
+```
+
+#### Example
+
+```julia
+julia> sim_now = now(TimeZone("America/Winnipeg"))
+2016-07-26T13:56:39.036-05:00
+
+julia> target_dates = horizon_hourly(sim_now, Dates.Hour(1):Dates.Hour(8))
+2016-07-26T15:00:00-05:00:1 hour:2016-07-26T22:00:00-05:00
+
+julia> collect(target_dates)
+8-element Array{TimeZones.ZonedDateTime,1}:
+ 2016-07-26T15:00:00-05:00
+ 2016-07-26T16:00:00-05:00
+ 2016-07-26T17:00:00-05:00
+ 2016-07-26T18:00:00-05:00
+ 2016-07-26T19:00:00-05:00
+ 2016-07-26T20:00:00-05:00
+ 2016-07-26T21:00:00-05:00
+ 2016-07-26T22:00:00-05:00
+```
+
+**Reminder:** The `target_date`s are period ending.
+
+#### Advanced Usage
+
+Despite the name, the `horizon_hourly` function you can be used generate `target_date`s at
+any arbitrary resolution: simply specify the `step` in the range of offsets you pass into
+the function.
+
+**Note:** Even when a higher resolution for the output is specified, the `sim_now` will
+still be rounded up to the nearest hour before the offsets are applied. This behaviour may
+be modified by specifying a different value for the keyword argument `ceil_to`.
+
+### Daily Horizons
+
+To calculate the `target_date`s for a batch of forecasts for a specific day, use the
+`horizon_daily` function. The function takes `sim_now`, rounds it to the **following
+day**, and produces `target_date`s for each hour of that day.
+
+Since `sim_now` must be a `ZonedDateTime`, Daylight Saving Time will be properly accounted
+for: no `target_date`s will be produced for hours that don't exist in the time zone and
+hours that are "duplicated" will appear twice (with each being zoned correctly).
+
+**Legacy System:** This function produces avoids some of the pitfalls of the legacy Matlab
+system, which required that horizons be specified by a simple range of offsets, for when
+dealing with markets that observe Daylight Saving Time (or other similar transitions) days
+may be of variable length. This is difficult to account for using a set of timedeltas.
+
+#### Signature
+
+```julia
+function horizon_daily(sim_now::ZonedDateTime=now(TimeZone("UTC")); resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1), floor_to=Day(1))
+```
+
+#### Example
+
+```julia
+julia> sim_now = now(TimeZone("America/Winnipeg"))
+2016-07-26T13:56:39.036-05:00
+
+julia> target_dates = horizon_daily(sim_now)
+2016-07-27T01:00:00-05:00:1 hour:2016-07-28T00:00:00-05:00
+
+julia> collect(target_dates)
+24-element Array{TimeZones.ZonedDateTime,1}:
+ 2016-07-27T01:00:00-05:00
+ 2016-07-27T02:00:00-05:00
+ 2016-07-27T03:00:00-05:00
+ 2016-07-27T04:00:00-05:00
+ 2016-07-27T05:00:00-05:00
+ 2016-07-27T06:00:00-05:00
+ 2016-07-27T07:00:00-05:00
+ 2016-07-27T08:00:00-05:00
+ 2016-07-27T09:00:00-05:00
+ 2016-07-27T10:00:00-05:00
+ 2016-07-27T11:00:00-05:00
+ 2016-07-27T12:00:00-05:00
+ 2016-07-27T13:00:00-05:00
+ 2016-07-27T14:00:00-05:00
+ 2016-07-27T15:00:00-05:00
+ 2016-07-27T16:00:00-05:00
+ 2016-07-27T17:00:00-05:00
+ 2016-07-27T18:00:00-05:00
+ 2016-07-27T19:00:00-05:00
+ 2016-07-27T20:00:00-05:00
+ 2016-07-27T21:00:00-05:00
+ 2016-07-27T22:00:00-05:00
+ 2016-07-27T23:00:00-05:00
+ 2016-07-28T00:00:00-05:00
+```
+
+**Reminder:** The `target_date`s are period ending.
+
+#### Advanced Usage
+
+Here's a secret: `sim_now` isn't actually rounded **up** to the nearest day; instead, it's
+rounded **down** and then the value of the `days_ahead` keyword argument (which defaults
+to `Day(1)`) is added to it. This means that if you would like to produce forecasts
+starting two days from now, you can simply specify a different value for `days_ahead` (in
+this case, `Day(2)`).
+
+The following keyword arguments are available for use:
+* `resolution` (default: `Hour(1)`): the temporal resolution of the `target_date`s
+  returned
+* `days_ahead` (default: `Day(1)`): defines the offset between `floor(sim_now, ...)` and
+  the first `target_date` (`Day(1)` means start with the first hour of the following day)
+* `days_covered` (default: `Day(1)`): defines the total length of time covered by the
+  range
+* `floor_to` (default: `Day(1)`): the second argument passed into the
+  `floor(sim_now, ...)` call referenced in the description of `days_ahead` above
+
+**Note:** While the values of `days_ahead` and `days_covered` don't **have** to represent
+a number of days, if they aren't then you're probably sufficiently far off the beaten path
+that you should probably consider writing a new function.
+
+## Data Feature Offsets
+
+When the system is instructed to fetch input data to produce a forecast or train a model,
+data feature offset functions are used to determine which data to fetch. Given a forecast
+`target_date`, the data feature offsets give us the `target_date`s of the input data we
+need to fetch.
+
+Generally, data feature offsets fall into two categories:
+* [static offsets](#static-offsets), which represent a simple arithmetic transformation
+  on a `target_date` (e.g., subtract two hours)
+* [dynamic offsets](#dynamic-offsets), which represent a more complex transformation that
+  also takes `sim_now` into account (e.g., the most recent datapoint available that has
+  the same hour of day as the `target_date`).
+
+**Legacy System:** In the legacy Matlab system, the offset between the time a forecast was
+due and the time it targeted was called the "horizon", and these offsets (timedeltas) were
+used for indexing the forecasts. Because the new system has no concept of a forecast "due
+date" we refer to the `target_date` and `sim_now` instead of `target_date` and `horizon`.
+
+### Static Offsets
+
+
+
+
+
+
+2. When selecting input data to produce a forecast for a given `target_date`, the system
+   needs to know which input datapoints need to be fetched from the database to produce
+   that forecast.
+    * In the Matlab system, the offsets between the `target_date` of the forecast and the
+      `target_date` of the input data used were called "data source offsets"; in some
+      cases, these offsets were calculated based on the "due date" instead of the
+      `target_date`.
+    * In the new system, these offsets are called "data feature offsets", and they are
+      calculated based on the `target_date`. In many cases both `sim_now` and information
+      about the DB table are also required to ensure that the requested data are available
+      at the time of the forecast.
+3. When training a model, the system needs to fetch historical data (both inputs and
+   targets) to use to train the models. The relationship between the `target_date` (and
+   `sim_now`) for the forecast and the dates for the input data should be analoguous
+   between the training dataset and the data used for prediction.
+    * In the Matlab system, the `target_dates` of the historical data used for training
+      were called "observations".
+    * In the new system, the additional set of dates required for the training set are
+      called "observation dates".
+
+
+
+
+
+**Data Feature Offset:** Data feature offsets define the target dates of the input data
+used to generate forecasts. Data feature offsets are typically determined by reference to
+the forecast target date (although some also require access to the "current time",
+represented by `sim_now`).  Data feature offsets are handled using the `SourceOffsets` and `Fallback` types described in the [Data Source
 Offsets](#data-source-offsets) section below.
+
+**Observation Dates:**
+
+
+Takes a target date, the training window(s), and the sim_now, then returns all target dates/sim_nows
+
+
+
 
 ### Static and Dynamic Offsets
 
@@ -153,35 +332,6 @@ wanted "the next hour after `d1` that has the same hour of day as `d1`", this co
 defined as a static offset of one day (irrespective of DST, because TimeZones.jl handles
 that just fine).
 
-### `sim_now`
-
-In a live system, horizons and some data source offsets are calculated with reference to
-the current time. But when backruns are performed, they cannot use the actual current
-time; instead, we need some way to inform `Horizons.jl` what the "current" time would be
-if this were a live run, to ensure that backrun simulations perform identically to the
-live system.
-
-Additionally, when data fetching occurs a backrun's "current" time must be compared to the
-`available_date` of the data to ensure that the system is not cheating (making use of data
-that would not be available yet in a live run).
-
-This is accomplised with `sim_now`, a variable which defaults to `now(TimeZone("UTC"))`).
-
-Live runs can sometimes use the default value for `sim_now` (`now(TimeZone("UTC"))`) to
-represent the current date, but in some cases the time zone will be relevant, and in those
-cases a value for `sim_now` (zoned appropriately) should be passed in.
-
-For example, for forecast horizons for the next four hours, you might call
-`horizon_hourly(Dates.Hour(1):Dates.Hour(4))`. The resulting target dates would have a UTC
-time zone, but would represent the appropriate instant.
-
-However, calling `horizon_next_day()` without providing a `sim_now` results in target
-dates for every hour of the next UTC day. So if you're forecasting for EST, and the
-current time is 20:00 EST on Friday, it is currently 01:00 UTC on Saturday, and the target
-dates passed back would be for 01:00 UTC Sunday through 00:00 UTC Monday (20:00 EST on
-Saturday through 21:00 EST on Sunday), which is probably not what you want. In this case,
-call `horizon_next_day(now(FixedTimeZone("-05:00")))`, and the result will be 01:00 EST
-on Saturday through 00:00 EST on Sunday instead.
 
 ### Our Use Case
 
@@ -236,128 +386,11 @@ the resolution of the data.)
 **TODO:** Check the match against the first one, too, to make sure it's a match.
 
 
-# -----------------
-# old meeting notes
-# -----------------
 
-
-SourceOffsets iterator type
-    (Returns tuple of target_date, fallback)
-Fallback iterator type
-
-Don't implement static offsets (those can be done before/after in the data feeds code, or
-the configuration, or whatever, but we don't need them here).
-
-Explain fallback dates
-
-For each forecast target date passed in to the constructor...
-
-```
--------  SourceOffsets type (can't be a list because it needs to store forecast targets too)
-|     |
--------
-|     |
--------
-|     |
--------
-|     |
--------
-|     |
--------          -------  Fallback type
-|     |  <-----  |     |
--------          -------
-			     |     |
-			     -------
-			     |     |
-			     -------
-```
-
-For all dynamic offsets, round the date input to the appropriate input data resolution
-before doing any calculations. This usually won't matter when the input is a forecast
-target date (although it might, if the forecast target dates are at higher resolution than
-the input data), but it is crucial if the input is a `sim_now`.
-(**TODO:** `round` or `floor`?)
-
-Make sure you include examples for all three use cases
-(include the fact that you'll have to duplicate the results of the "most recent data"
-one based on number of target dates, because each forecast target wants the same point)
-
-Dynamic offsets...
-Provides dynamic (complex, non-arithmetic) offsets. These offsets are specified by passing
-in `DateFunction` factories (like `match_hourofday` or `match_hourofweek`). A `DateFunction`
-is a function that takes a single `TimeType` as input and returns `true` when the input
-matches the important criteria. A `DateFunction` factory is a function that takes a single
-`TimeType` and returns a `DateFunction` to match new dates against an aspect of the date
-passed into the factory.
-
-# TODO: Most of the above no longer applies.
-
-
-# -----------------
-# NEW MEETING NOTES
-# -----------------
-
-
-Look into data sources interface
-
-**TODO:** Add in static offsets. (Support before and after, but after is most important.)
-
-Looks like we always have access to the target date. Therefore, we don't need to "fall back"
-at all!
-
-Take in the sim now and the column/table name, call curt's function to figure out what your
-latest available target date is
-
-
-Input can basically be like the kwargs you're using for SourceOffsets right now
-
-
-Might want to make use of `:symbols` for references to things like `:target_date`
-
-Input requires vector of target dates; returns abstractarray MxN of target dates, where
-M is length(target dates) and N is number of static offsets?
-
-
-Can we accomplish this using just successive function calls? Maybe not, but we should build
-it that way first and use those in the back end?
-e.g.
-```
-target_dates (10x1)
-sim_now
-
-# Needs release offset and resolution, both from the DB.
-julia> source_targets = dynamic_offsets(target_dates, data_identifier (table/column), match_hourofweek, match_hourofday)
-
-source_targets (10x2)
-
-julia> source_targets = static_offset(source_targets, Day(-1), Hour(-12), Hour(+2))
-
-source_targets (10x6)
-```
-
-
-Curt's math: `target_date + release_offset + datafeed_runtime <= sim_now`
-
-So this means that if my dynamic offset functions *don't* take `sim_now` as an input,
-I can take the `target_date` vector (passed in), subtract the `release_offset + datafeed_runtime`,
-and then do my `toprev(match_function, target_date)`, and I'll be guaranteed something that
-is <= `sim_now` anyway. Right? WRONG!
-
-Specifically call out that in the old system, `"target_date"` was a dynamic offset. It is now the default.
-WRONG!
-
-
-DO WE NEED A `recent_offset`, which will just roll back the target dates to the latest available date?
 
 
 # -----------------
 
-
-`DateFunction` factories (like `match_hourofday` or `match_hourofweek`): a `DateFunction`
-is a function that takes a single `TimeType` as input and returns `true` when the input
-matches the important criteria. A `DateFunction` factory is a function that takes a single
-`TimeType` and returns a `DateFunction` to match new dates against an aspect of the date
-passed into the factory.
 
 
 
@@ -399,8 +432,8 @@ Output:
 #### Next Day Horizons
 
 ```julia
-sim_now = ZonedDateTime(DateTime(2016, 3, 12, 3, 0, 0), TimeZone("America/Winnipeg"))
-target_dates = horizon_next_day(sim_now)
+sim_now = ZonedDateTime(2016, 3, 12, 3, TimeZone("America/Winnipeg"))
+target_dates = horizon_daily(sim_now)
 
 for t in target_dates
     println(t)
@@ -435,7 +468,7 @@ Output:
 2016-03-14T00:00:00-05:00
 ```
 
-The horizon functions (like `horizon_next_day`) have optional parameters (like how many
+The horizon functions (like `horizon_daily`) have optional parameters (like how many
 days ahead you want the target dates to begin) with reasonable defaults (in this case,
 "start with the next day").
 
@@ -443,7 +476,7 @@ Another example, that does a single target date, two days ahead, at 15 minute re
 
 ```julia
 sim_now = ZonedDateTime(DateTime(2016, 11, 4, 12, 0, 0), TimeZone("America/Winnipeg"))
-target_dates = horizon_next_day(sim_now; resolution=Dates.Minute(15), days_covered=Dates.Day(2))
+target_dates = horizon_daily(sim_now; resolution=Dates.Minute(15), days_covered=Dates.Day(2))
 collect(target_dates)
 ```
 
@@ -571,3 +604,81 @@ source_offsets = SourceOffsets(
 **TODO:** Examples with a different base!
 
 **TODO:** Test with different base!
+
+
+## Cookbook Example
+
+Putting it all together...
+
+```julia
+julia> using TimeZones
+
+julia> using Horizons
+
+julia> sim_now = now(TimeZone("America/Winnipeg"))
+2016-07-22T15:26:23.284-05:00
+
+julia> target_dates = horizon_daily(sim_now)
+2016-07-23T01:00:00-05:00:1 hour:2016-07-24T00:00:00-05:00
+
+julia> observations, sim_nows = observation_dates(target_dates, sim_now, Dates.Day(1), Dates.Day(10))
+(TimeZones.ZonedDateTime[2016-07-13T01:00:00-05:00,2016-07-13T02:00:00-05:00,2016-07-13T03:00:00-05:00,2016-07-13T04:00:00-05:00,2016-07-13T05:00:00-05:00,2016-07-13T06:00:00-05:00,2016-07-13T07:00:00-05:00,2016-07-13T08:00:00-05:00,2016-07-13T09:00:00-05:00,2016-07-13T10:00:00-05:00  …  2016-07-23T15:00:00-05:00,2016-07-23T16:00:00-05:00,2016-07-23T17:00:00-05:00,2016-07-23T18:00:00-05:00,2016-07-23T19:00:00-05:00,2016-07-23T20:00:00-05:00,2016-07-23T21:00:00-05:00,2016-07-23T22:00:00-05:00,2016-07-23T23:00:00-05:00,2016-07-24T00:00:00-05:00],^[[ATimeZones.ZonedDateTime[2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00,2016-07-12T15:26:23.284-05:00  …  2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00,2016-07-22T15:26:23.284-05:00])
+
+julia> pjm_http = Table(:pjm_http)
+Horizons.Table(:pjm_http,Dict{TimeZones.ZonedDateTime,TimeZones.ZonedDateTime}())
+
+julia> data_source_targets_1 = recent_offset(observations, sim_nows, pjm_http)
+264-element Array{TimeZones.ZonedDateTime,1}:
+ 2016-07-12T00:00:00-04:00
+ 2016-07-12T00:00:00-04:00
+ 2016-07-12T00:00:00-04:00
+ 2016-07-12T00:00:00-04:00
+ 2016-07-12T00:00:00-04:00
+ ⋮                        
+ 2016-07-22T00:00:00-04:00
+ 2016-07-22T00:00:00-04:00
+ 2016-07-22T00:00:00-04:00
+ 2016-07-22T00:00:00-04:00
+ 2016-07-22T00:00:00-04:00
+
+julia> data_source_targets_2 = static_offset(observations, Dates.Day(-1), Dates.Day(1))
+264×2 Array{TimeZones.ZonedDateTime,2}:
+ 2016-07-12T01:00:00-05:00  2016-07-14T01:00:00-05:00
+ 2016-07-12T02:00:00-05:00  2016-07-14T02:00:00-05:00
+ 2016-07-12T03:00:00-05:00  2016-07-14T03:00:00-05:00
+ 2016-07-12T04:00:00-05:00  2016-07-14T04:00:00-05:00
+ 2016-07-12T05:00:00-05:00  2016-07-14T05:00:00-05:00
+ ⋮                                                   
+ 2016-07-22T20:00:00-05:00  2016-07-24T20:00:00-05:00
+ 2016-07-22T21:00:00-05:00  2016-07-24T21:00:00-05:00
+ 2016-07-22T22:00:00-05:00  2016-07-24T22:00:00-05:00
+ 2016-07-22T23:00:00-05:00  2016-07-24T23:00:00-05:00
+ 2016-07-23T00:00:00-05:00  2016-07-25T00:00:00-05:00
+
+julia> data_source_targets_2 = dynamic_offset_hourofweek(data_source_targets_2, sim_nows, pjm_http)
+264×2 Array{TimeZones.ZonedDateTime,2}:
+ 2016-07-05T01:00:00-05:00  2016-07-07T01:00:00-05:00
+ 2016-07-05T02:00:00-05:00  2016-07-07T02:00:00-05:00
+ 2016-07-05T03:00:00-05:00  2016-07-07T03:00:00-05:00
+ 2016-07-05T04:00:00-05:00  2016-07-07T04:00:00-05:00
+ 2016-07-05T05:00:00-05:00  2016-07-07T05:00:00-05:00
+ ⋮                                                   
+ 2016-07-15T20:00:00-05:00  2016-07-17T20:00:00-05:00
+ 2016-07-15T21:00:00-05:00  2016-07-17T21:00:00-05:00
+ 2016-07-15T22:00:00-05:00  2016-07-17T22:00:00-05:00
+ 2016-07-15T23:00:00-05:00  2016-07-17T23:00:00-05:00
+ 2016-07-16T00:00:00-05:00  2016-07-18T00:00:00-05:00
+```
+
+Once the code above has been run, `data_source_targets_1` has the target dates
+representing the most recent data that should be available in the `pjm_http` table, while
+`data_source_targets_2` has target dates with (1) a static offset of one day in the future
+and one day in the past that (2) have been dynamically shifted into the past such that
+they have the same target hour of week (as the statically shifted dates) but should still
+be available as of the appropriate `sim_now`.
+
+Note that the time zone for `data_source_targets_1` is `UTC-4` instead of `UTC-5`. That's
+because its dates were generated using most recent data from PJM, which is `UTC-4` at this
+time. Note that in Julia it's perfectly acceptable to compare and reason about
+`ZonedDateTime`s that are in different time zones, so this isn't a problem.
+

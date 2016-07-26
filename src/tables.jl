@@ -2,9 +2,12 @@
 
 type Table
     name::Symbol
-    latest::Dict{ZonedDateTime, ZonedDateTime}
+    meta::Dict{Symbol, Any}                     # Cache to minimize external calls
+    latest::Dict{ZonedDateTime, ZonedDateTime}  # Cache to speed up repeated calls
 
-    Table(name::Symbol) = new(name, Dict{ZonedDateTime, ZonedDateTime}())
+    function Table(name::Symbol)
+        return new(name, Dict{Symbol, Period}(), Dict{ZonedDateTime, ZonedDateTime}())
+    end
 end
 
 Table(name::AbstractString) = Table(Symbol(name))
@@ -14,15 +17,19 @@ Given a sim_now and a table name, estimates the latest available target_date.
 """
 function latest_target(table::Table, sim_now::ZonedDateTime)
     if !haskey(table.latest, sim_now)
-        meta = table_metadata(table.name)
-        sim_now = astimezone(sim_now, meta[:feed_tz])
+        if isempty(table.meta)
+            table.meta = table_metadata(table.name)
+        end
+
+        sim_now = astimezone(sim_now, table.meta[:feed_tz])
 
         latest_release = estimate_latest_release(
-            sim_now, meta[:publish_interval], meta[:publish_offset], meta[:feed_runtime]
+            sim_now, table.meta[:publish_interval], table.meta[:publish_offset],
+            table.meta[:feed_runtime]
         )
 
         table.latest[sim_now] = estimate_content_end(
-            latest_release, meta[:content_interval], meta[:content_offset]
+            latest_release, table.meta[:content_interval], table.meta[:content_offset]
         )
     end
 

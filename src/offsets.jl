@@ -5,12 +5,10 @@
 """
 Hourly horizons. Takes sim_now and rounds it to the start of the next hour.
 """
-function horizon_hourly{P<:Period}(sim_now::TimeType, periods::AbstractArray{P})
-    return ceil(sim_now, Hour(1)) + periods
-end
-
-function horizon_hourly{P<:Period}(sim_now::Function, periods::AbstractArray{P})
-    horizon_hourly(sim_now(), periods)
+function horizon_hourly{P<:Period}(
+    sim_now::ZonedDateTime, periods::AbstractArray{P}; ceil_to=Hour(1)
+)
+    return ceil(sim_now, ceil_to) + periods
 end
 
 function horizon_hourly{P<:Period}(periods::AbstractArray{P})
@@ -20,20 +18,13 @@ end
 """
 Horizons for each hour (or whatever) of a day (or whatever). See the example in the README.
 """
-function horizon_next_day(
-    sim_now::TimeType=now(utc);
-    resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1)
+function horizon_daily(
+    sim_now::ZonedDateTime=now(TimeZone("UTC"));
+    resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1),
+    floor_to=Day(1)
 )
-    start = trunc(sim_now, Day) + days_ahead + resolution
-    finish = trunc(sim_now, Day) + days_ahead + days_covered
-    return start:resolution:finish
-end
-
-function horizon_next_day(
-    sim_now::Function;
-    resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1)
-)
-    horizon_next_day(sim_now(), resolution, days_ahead, days_covered)
+    base = floor(sim_now, floor_to) + days_ahead
+    return (base + days_ahead):resolution:(base + days_covered)
 end
 
 
