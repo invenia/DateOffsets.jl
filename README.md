@@ -2,19 +2,8 @@
 
 
 
-Explain Horizons
-List functions
 
-Explain Observation Dates
-List function
 
-Explain Offsets
-List functions
-
-Explain what a Table is
-List constructor and show how it's used
-
-Cookbook example
 
 
 
@@ -35,8 +24,8 @@ This package is concerned with three primary use cases:
 
 The functions used in each case are referred to as:
 
-1. Horizon functions
-2. Data feature offset functions
+1. [Horizon functions](#horizon-functions)
+2. [Data feature offset functions
 3. Observation date function
 
 ### Period Ending Standard
@@ -125,7 +114,7 @@ old Hydro Wind and Load systems.
 #### Signature
 
 ```julia
-function horizon_hourly{P<:Period}(sim_now::ZonedDateTime, periods::AbstractArray{P}; ceil_to=Hour(1))
+function horizon_hourly{P<:Period}(sim_now::ZonedDateTime, periods::AbstractArray{P}; ceil_to::Period=Hour(1))
 ```
 
 #### Example
@@ -154,8 +143,9 @@ julia> collect(target_dates)
 #### Advanced Usage
 
 Despite the name, the `horizon_hourly` function you can be used generate `target_date`s at
-any arbitrary resolution: simply specify the `step` in the range of offsets you pass into
-the function.
+any arbitrary resolution: the resolution of the output is determined by the resolution of
+the range of offsets passed in (if using a `StepRange`, simply specify a `step` of the
+desired resolution).
 
 **Note:** Even when a higher resolution for the output is specified, the `sim_now` will
 still be rounded up to the nearest hour before the offsets are applied. This behaviour may
@@ -179,7 +169,7 @@ may be of variable length. This is difficult to account for using a set of timed
 #### Signature
 
 ```julia
-function horizon_daily(sim_now::ZonedDateTime=now(TimeZone("UTC")); resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1), floor_to=Day(1))
+function horizon_daily(sim_now::ZonedDateTime=now(TimeZone("UTC")); resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1), floor_to::Period=Day(1))
 ```
 
 #### Example
@@ -243,43 +233,109 @@ The following keyword arguments are available for use:
 a number of days, if they aren't then you're probably sufficiently far off the beaten path
 that you should probably consider writing a new function.
 
-## Data Feature Offsets
+## Data Feature Offset Functions
 
 When the system is instructed to fetch input data to produce a forecast or train a model,
-data feature offset functions are used to determine which data to fetch. Given a forecast
-`target_date`, the data feature offsets give us the `target_date`s of the input data we
-need to fetch.
+data feature offset functions are used to determine which datapoints the model requires.
+
+It is important to distinguish between the `target_date` of the forecast we want to
+produce (the time we're "forecasting for") and the `target_date` of the input data (the
+time that a datapoint was measured; or, if we're using other forecast data as an input,
+the time that input was "forecast for"). The data feature offset functions apply
+transformations to the forecast `target_date`s, returning the `target_date`s of the input
+data that need to be fetched from the database.
 
 Generally, data feature offsets fall into two categories:
-* [static offsets](#static-offsets), which represent a simple arithmetic transformation
-  on a `target_date` (e.g., subtract two hours)
-* [dynamic offsets](#dynamic-offsets), which represent a more complex transformation that
-  also takes `sim_now` into account (e.g., the most recent datapoint available that has
-  the same hour of day as the `target_date`).
+* [static feature offsets](#static-feature-offsets), which represent a simple arithmetic
+  transformation on a `target_date` (e.g., subtract two hours)
+* [dynamic feature offsets](#dynamic-feature-offsets), which represent a more complex
+  transformation that also takes `sim_now` into account (e.g., the most recent datapoint
+  available that has the same hour of day as the `target_date`).
 
-**Legacy System:** In the legacy Matlab system, the offset between the time a forecast was
-due and the time it targeted was called the "horizon", and these offsets (timedeltas) were
-used for indexing the forecasts. Because the new system has no concept of a forecast "due
-date" we refer to the `target_date` and `sim_now` instead of `target_date` and `horizon`.
+**Legacy System:** In the legacy Matlab system, the offsets between the `target_date` of
+the forecast and the `target_date` of the input data used were called "data source
+offsets"; in some cases, these offsets were calculated based on the "due date" instead of
+the `target_date`. Additionally, static and dynamic offsets were specified together as
+part of a single structure, with the dynamic offset (if any) applied first, followed by
+any static offsets. Because data in the legacy system didn't have associated
+`available_date`s, static offsets often had to be appllied to compensate for data that
+wouldn't be available yet. (Instead of requesting the "most recent" data, the user might
+request data for the "due date - 3 hours" if it was known that it took up to three hours
+for the data to be processed and available to the system.) The new system should remove
+this necessity.
 
-### Static Offsets
+In the new system, all data feature offsets are calculated based on the `target_date`,
+though in many cases both `sim_now` and information about the DB table are also required
+to ensure that the requested data are available at the time of the forecast.
+
+### Static Feature Offsets
+
+To apply one or more static offsets to your `target_date`s, use the `static_offset`
+function. This function takes a collection of dates and any number of `Period` offsets.
+If multiple offsets are specified, the set of input dates is duplicated columnwise for
+each offset such that each offset can be applied to the original set of dates in its
+entirety. (So two columns of `target_dates` with three static offsets would result in a
+six-column output array.)
+
+Keep in mind that static offsets do not necessarily translate to a consistent known number
+of seconds: offsets such as "two months" (or even "one day", in the case of daylight saving
+time) would still be called a "static" offset even though it may resolve differently when
+applied to different `ZonedDateTime` values. Julia (in conjunction with TimeZones.jl)
+provides excellent date support, making this relatively transparent.
+
+**Legacy System:** In the legacy Matlab system, static offsets were always applied after
+any dynamic offsets. In the new system, users have the liberty too apply these offsets in
+whichever order suits their purposes.
+
+#### Signature
+
+```julia
+function static_offset(dates::AbstractArray{ZonedDateTime}, offsets::Period...)
+```
+
+The `offsets` can also be passed in as a single `AbstractArray{P}` where `P <: Period`.
+
+#### Example
+
+```julia
+julia> sim_now = now(TimeZone("America/Winnipeg"))
+2016-07-26T13:56:39.036-05:00
+
+julia> target_dates = horizon_hourly(sim_now, Dates.Hour(1):Dates.Hour(4))
+2016-07-26T15:00:00-05:00:1 hour:2016-07-26T18:00:00-05:00
+
+static_offset(target_dates, Dates.Day(-1), Dates.Hour(1))
+4×2 Array{TimeZones.ZonedDateTime,2}:
+ 2016-07-25T15:00:00-05:00  2016-07-26T16:00:00-05:00
+ 2016-07-25T16:00:00-05:00  2016-07-26T17:00:00-05:00
+ 2016-07-25T17:00:00-05:00  2016-07-26T18:00:00-05:00
+ 2016-07-25T18:00:00-05:00  2016-07-26T19:00:00-05:00
+```
+
+### Dynamic Feature Offsets
+
+Several dynamic offset functions are available. Each takes a collection of `target_date`s,
+a corresponding vector of `sim_now`s, and a `table`.
+
+The `sim_now` vector must have one element for each row in the `target_date` collection
+(see [Observation Date Function](#observation-date-function) for more information).
+Data availability will vary by table, and the `table` argument gives the dynamic offset
+function access to the necessary information (see [Table Type](#table-type) for more
+information).
 
 
 
 
+For dynamic offsets, remind that we need a 1-to-1 relationship between sim_now and target_date
+(use output from the observation date function)
 
 
-2. When selecting input data to produce a forecast for a given `target_date`, the system
-   needs to know which input datapoints need to be fetched from the database to produce
-   that forecast.
-    * In the Matlab system, the offsets between the `target_date` of the forecast and the
-      `target_date` of the input data used were called "data source offsets"; in some
-      cases, these offsets were calculated based on the "due date" instead of the
-      `target_date`.
-    * In the new system, these offsets are called "data feature offsets", and they are
-      calculated based on the `target_date`. In many cases both `sim_now` and information
-      about the DB table are also required to ensure that the requested data are available
-      at the time of the forecast.
+
+## Observation Date Function
+
+
+Takes a target date, the training window(s), and the sim_now, then returns all target dates/sim_nows
+
 3. When training a model, the system needs to fetch historical data (both inputs and
    targets) to use to train the models. The relationship between the `target_date` (and
    `sim_now`) for the forecast and the dates for the input data should be analoguous
@@ -291,19 +347,10 @@ date" we refer to the `target_date` and `sim_now` instead of `target_date` and `
 
 
 
+## Table Type
 
-
-**Data Feature Offset:** Data feature offsets define the target dates of the input data
-used to generate forecasts. Data feature offsets are typically determined by reference to
-the forecast target date (although some also require access to the "current time",
-represented by `sim_now`).  Data feature offsets are handled using the `SourceOffsets` and `Fallback` types described in the [Data Source
-Offsets](#data-source-offsets) section below.
-
-**Observation Dates:**
-
-
-Takes a target date, the training window(s), and the sim_now, then returns all target dates/sim_nows
-
+TODO: Explain what a Table is
+List constructor and show how it's used
 
 
 
@@ -314,10 +361,6 @@ Temporal offsets are typically described as either **static** or **dynamic**.
 **Static Offset:** Static offsets are offsets that are defined by simple numeric values.
 These offsets can be applied to one date to arrive at another using basic arithmetic.
 
-For our purposes, even offsets that do not on their own translate to a consistent known
-number of seconds, such as "two months" (or even "one day", in the case of daylight saving
-time) are still defined as "static". Julia (in conjunction with TimeZones.jl) provides
-excellent date support, making this relatively simple.
 
 **Dynamic Offset:** Dynamic offsets are offsets with more complex definitions. Typically
 these offsets are defined by nonnumeric properties of a date, or based on numeric

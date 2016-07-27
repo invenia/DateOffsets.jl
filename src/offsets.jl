@@ -1,12 +1,17 @@
 # ----- FORECAST HORIZONS -----
 
-# TODO: Proper docstrings.
-
 """
-Hourly horizons. Takes sim_now and rounds it to the start of the next hour.
+    function horizon_hourly(sim_now, periods; ceil_to=Hour(1)) -> `Array{ZonedDateTime}`
+
+Calculates the `target_date`s for a batch of forecasts defined by discrete set of
+offsets (`periods`) from the current time (`sim_now`).
+
+This is accomplished by rounding `sim_now` up to the nearest hour and adding the `periods`
+the offsets to the result. The `ceil_to` keyword may be provided to specify that `sim_now`
+should be rounded up to a value other than `Hour(1)` (e.g., `Minute(30)`).
 """
 function horizon_hourly{P<:Period}(
-    sim_now::ZonedDateTime, periods::AbstractArray{P}; ceil_to=Hour(1)
+    sim_now::ZonedDateTime, periods::AbstractArray{P}; ceil_to::Period=Hour(1)
 )
     return ceil(sim_now, ceil_to) + periods
 end
@@ -16,12 +21,26 @@ function horizon_hourly{P<:Period}(periods::AbstractArray{P})
 end
 
 """
-Horizons for each hour (or whatever) of a day (or whatever). See the example in the README.
+    function horizon_daily(sim_now; resolution=Hour(1), days_ahead=Day(1), days_covered=Day(1), floor_to=Day(1)) -> Array{ZonedDateTime}
+
+Calculates the `target_date`s for a batch of forecasts for a specific day.
+
+This is accomplished by rounding `sim_now` to the beginning of the next day, then producing
+`target_date`s for each hour of that day.
+
+Since `sim_now` must be a `ZonedDateTime`, Daylight Saving Time will be properly accounted
+for: no `target_date`s will be produced for hours that don't exist in the time zone and
+hours that are "duplicated" will appear twice (with each being zoned correctly).
+
+The `resolution` keyword argument sets the resolution of the values returned; `days_ahead`
+controls the span between `sim_now` and the output; `days_covered` defines the total length
+of time covered by the values returned; and `floor_to` specifies the period to which
+`sim_now` is rounded prior to beginning.
 """
 function horizon_daily(
     sim_now::ZonedDateTime=now(TimeZone("UTC"));
     resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1),
-    floor_to=Day(1)
+    floor_to::Period=Day(1)
 )
     base = floor(sim_now, floor_to) + days_ahead
     return (base + days_ahead):resolution:(base + days_covered)
@@ -50,9 +69,10 @@ end
 # could even pass back the "real" forecast target_dates in our tuple, meaning that the user
 # never needs to call the horizons function themselves.
 
-function observation_dates{T<:TimeType, P<:Period}(
-    target_dates::AbstractArray{T}, sim_now::TimeType, run_frequency::Period,
-    training_window::Interval{P}...
+# TODO: Proper docstrings.
+function observation_dates{P<:Period}(
+    target_dates::AbstractArray{ZonedDateTime}, sim_now::ZonedDateTime,
+    run_frequency::Period, training_window::Interval{P}...
 )
     # Convert the training windows from offsets to ranges of dates.
     training_window = map(w -> sim_now - w, training_window)
@@ -84,9 +104,9 @@ function observation_dates{T<:TimeType, P<:Period}(
     return (observations, sim_nows)
 end
 
-function observation_dates{T<:TimeType}(
-    target_dates::AbstractArray{T}, sim_now::TimeType, run_frequency::Period,
-    training_offset::Period
+function observation_dates(
+    target_dates::AbstractArray{ZonedDateTime}, sim_now::ZonedDateTime,
+    run_frequency::Period, training_offset::Period
 )
     return observation_dates(
         target_dates, sim_now, run_frequency,
@@ -95,7 +115,7 @@ function observation_dates{T<:TimeType}(
 end
 
 
-# ----- DATE OFFSETS -----
+# ----- DATA FEATURE OFFSETS -----
 
 """
 Provides static (arithmetic) offsets from the base input dates provided. If multiple offsets
@@ -104,8 +124,9 @@ each offset can be applied to the original set of dates in its entirety.
 
 Dates can be 1- or 2-dimensional, but offsets will be treated as a vector.
 """
-function static_offset{T<:TimeType, P<:Period}(
-    dates::AbstractArray{T}, offsets::AbstractArray{P}
+
+function static_offset{P<:Period}(
+    dates::AbstractArray{ZonedDateTime}, offsets::AbstractArray{P}
 )
     return reshape(
         broadcast(+, vec(dates), reshape(offsets, 1, length(offsets))),
@@ -113,7 +134,8 @@ function static_offset{T<:TimeType, P<:Period}(
     )
 end
 
-function static_offset{T<:TimeType}(dates::AbstractArray{T}, offsets::Period...)
+# TODO: Proper docstrings.
+function static_offset(dates::AbstractArray{ZonedDateTime}, offsets::Period...)
     return static_offset(dates, Period[o for o in offsets])
 end
 
@@ -124,8 +146,9 @@ We just want the most recent data point that is less than or equal to the target
 For dynamic and recent offsets, we need a vector of sim_nows with length equal to the number
 of rows in the dates array.
 """
-function recent_offset{T<:TimeType}(
-    dates::AbstractArray{T}, sim_now::AbstractArray{T}, table::Table
+# TODO: Proper docstrings.
+function recent_offset(
+    dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table
 )
     return broadcast(min, dates, latest_target(table, sim_now))
 end
@@ -153,9 +176,10 @@ a lambda function which is the `DateFunction` we'll use for inclusion.
 =#
 
 # Can take a 2-dimensional dates array like static offsets.
-function dynamic_offset{T<:TimeType}(
-    dates::AbstractArray{T}, sim_now::AbstractArray{T}, step::Period, table::Table;
-    match::Function=current -> true
+# TODO: Proper docstrings.
+function dynamic_offset(
+    dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime},
+    step::Period, table::Table; match::Function=current -> true
 )
     step > Millisecond(0) && throw(ArgumentError("step cannot be positive"))
 
@@ -169,14 +193,16 @@ end
 # Note: hourofday and hourofweek have no underscores because they follow the pattern laid
 # out by Dates.dayofweek
 
-function dynamic_offset_hourofday{T<:TimeType}(
-    dates::AbstractArray{T}, sim_now::AbstractArray{T}, table::Table
+# TODO: Proper docstrings.
+function dynamic_offset_hourofday(
+    dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table
 )
     return dynamic_offset(dates, sim_now, Day(-1), table)
 end
 
-function dynamic_offset_hourofweek{T<:TimeType}(
-    dates::AbstractArray{T}, sim_now::AbstractArray{T}, table::Table
+# TODO: Proper docstrings.
+function dynamic_offset_hourofweek(
+    dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table
 )
     return dynamic_offset(dates, sim_now, Week(-1), table)
 end
