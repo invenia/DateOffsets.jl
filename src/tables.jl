@@ -1,5 +1,3 @@
-# ----- TABLE METADATA -----
-
 type Table
     name::Symbol
     meta::Dict{Symbol, Any}                     # Cache to minimize external calls
@@ -13,7 +11,10 @@ end
 Table(name::AbstractString) = Table(Symbol(name))
 
 """
-Given a sim_now and a table name, estimates the latest available target_date.
+    latest_target(table, sim_now) -> ZonedDateTime
+
+Given a `table` and a `sim_now`, estimates the latest `target_date` that will be available
+in the table, based upon table metadata.
 """
 function latest_target(table::Table, sim_now::ZonedDateTime)
     if !haskey(table.latest, sim_now)

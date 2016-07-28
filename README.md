@@ -1,18 +1,16 @@
 # Horizons.jl
 
-
-
-
-
-
-
-
-
-
-
-
 `Horizons.jl` provides the tools necessary to generate dates with specific temporal
 offsets for use in training and forecasting.
+
+## Contents
+
+* [Overview](#overview)
+* [Horizon Functions](#horizon-functions)
+* [Data Feature Offset Functions](#data-feature-offset-functions)
+* [Observation Date Function](#observation-date-function)
+* [Table Type](#table-type)
+* [Cookbook](#cookbook)
 
 ## Overview
 
@@ -25,8 +23,8 @@ This package is concerned with three primary use cases:
 The functions used in each case are referred to as:
 
 1. [Horizon functions](#horizon-functions)
-2. [Data feature offset functions
-3. Observation date function
+2. [Data feature offset functions](#data-feature-offset-functions)
+3. [Observation date function](#observation-date-function)
 
 ### Period Ending Standard
 
@@ -114,7 +112,7 @@ old Hydro Wind and Load systems.
 #### Signature
 
 ```julia
-function horizon_hourly{P<:Period}(sim_now::ZonedDateTime, periods::AbstractArray{P}; ceil_to::Period=Hour(1))
+horizon_hourly{P<:Period}(sim_now::ZonedDateTime, periods::AbstractArray{P}; ceil_to::Period=Hour(1))
 ```
 
 #### Example
@@ -169,7 +167,7 @@ may be of variable length. This is difficult to account for using a set of timed
 #### Signature
 
 ```julia
-function horizon_daily(sim_now::ZonedDateTime=now(TimeZone("UTC")); resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1), floor_to::Period=Day(1))
+horizon_daily(sim_now::ZonedDateTime=now(TimeZone("UTC")); resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1), floor_to::Period=Day(1))
 ```
 
 #### Example
@@ -270,7 +268,7 @@ to ensure that the requested data are available at the time of the forecast.
 
 ### Static Feature Offsets
 
-To apply one or more static offsets to your `target_date`s, use the `static_offset`
+To apply one or more static offsets to your `target_dates`, use the `static_offset`
 function. This function takes a collection of dates and any number of `Period` offsets.
 If multiple offsets are specified, the set of input dates is duplicated columnwise for
 each offset such that each offset can be applied to the original set of dates in its
@@ -290,7 +288,7 @@ whichever order suits their purposes.
 #### Signature
 
 ```julia
-function static_offset(dates::AbstractArray{ZonedDateTime}, offsets::Period...)
+static_offset(dates::AbstractArray{ZonedDateTime}, offsets::Period...)
 ```
 
 The `offsets` can also be passed in as a single `AbstractArray{P}` where `P <: Period`.
@@ -314,24 +312,156 @@ static_offset(target_dates, Dates.Day(-1), Dates.Hour(1))
 
 ### Dynamic Feature Offsets
 
-Several dynamic offset functions are available. Each takes a collection of `target_date`s,
-a corresponding vector of `sim_now`s, and a `table`.
+Dynamic offsets are offsets with more complex definitions. Typically these offsets are
+defined by nonnumeric properties of a date, or based on numeric properties of a date
+matching specific values; "the first hour after X that doesn't fall on a holiday" and "the
+first hour before X that has the same hour of day as Y" are dynamic offsets.
+
+For example, let's say we have two dates, which we'll call `d1` and `d2`. If we want an
+offset that will give us "the last hour before `d2` that has the same hour of day as
+`d1`", this would be a dynamic offset. If, however, `d2` weren't involved and we simply
+wanted "the last hour before `d1` that has the same hour of day as `d1`", this could be
+defined as a static offset of one day (irrespective of DST, because TimeZones.jl handles
+that just fine). Looking at our specific use case, 
+
+Several dynamic offset functions are available. Each of these functions takes a collection
+of `target_dates`, a corresponding vector of `sim_nows`, and a `table`:
+* `recent_offset`, which returns the `target_dates` of the most recent available data in
+  the table
+* `dynamic_offset_hourofday`, which returns the `target_dates` of the most recent
+  available data in the table that have the same hour of day (0–23) as the corresponding
+  forecast `target_dates`
+* `dynamic_offset_hourofweek`, which returns the `target_dates` of the most recent
+  available data in the table that have the same hour of week (0–167) as the corresponding
+  forecast `target_dates`
+* `dynamic_offset`, a which returns the `target_dates` of the most recent available data
+  in the table that match explicit characteristics provided by the user
+
+**Note:** `hourofday` and `hourofweek` above are written without underscores, following
+the pattern laid out by `Dates.dayofweek`.
 
 The `sim_now` vector must have one element for each row in the `target_date` collection
-(see [Observation Date Function](#observation-date-function) for more information).
-Data availability will vary by table, and the `table` argument gives the dynamic offset
-function access to the necessary information (see [Table Type](#table-type) for more
-information).
+provided (see [Observation Date Function](#observation-date-function) for more
+information). Data availability will vary by table, and the `table` argument gives the
+dynamic offset function access to the necessary information (see [Table Type](#table-type)
+for more information).
 
+Here, "most recent available" is defined as the latest input data `target_date` less than
+or equal to the forecast `target_date` that is expected to have an `availability_date`
+(based on table metadata) less than or equal to the appropriate `sim_now`. This means
+that:
+* the `target_date` returned will not be later than the corresponding input `target_date`
+  (even in cases, as with forecast input data, where later target dates are available)
+* the `target_date` returned is expected to be available (barring data outages) as of the
+  corresponding `sim_now` provided
 
+If the `target_dates` generated by dynamic feature offset functions are later modified by
+static offsets, these guarantees may no longer hold.
 
+#### Signature
 
-For dynamic offsets, remind that we need a 1-to-1 relationship between sim_now and target_date
-(use output from the observation date function)
+The `recent_offset`, `dynamic_offset_hourofday`, and `dynamic_offset_hourofweek` functions
+have identical signatures:
 
+```julia
+recent_offset(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table)
+```
 
+```julia
+dynamic_offset_hourofday(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table)
+```
+
+```julia
+dynamic_offset_hourofweek(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table)
+```
+
+The more general `dynamic_offset` function takes an additional `step` argument and an
+optional `match` keyword argument:
+
+```julia
+dynamic_offset(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, step::Period, table::Table; match::Function=current -> true)
+```
+
+In addition to being available at the appropriate `sim_now`, the candidate `target_date`
+must also meet the criteria specified by `match`, a `DateFunction` (which defaults to
+`return true`). A `DateFunction` is an "inclusion" funtion used by adjusters that takes a
+single `TimeType` and returns true when it matches certain criteria (see Julia's
+[adjuster function](http://docs.julialang.org/en/latest/manual/dates/#adjuster-functions)
+documentation for more information).
+
+When a candidate `target_date` does not fit our requirements, the `step` value indicates
+how far back we should look before testing another candidate. The value of `step` must be
+negative (indicating we first test the original `target_date` passed in, then step
+**backward** before testing another).
+
+The `step` should also be divisible by the resolution of the data in question. So if the
+table has data at fifteen minute resolution, acceptable values for `step` would include
+`Minute(-15)`, `Minute(-30)`, and `Hour(-1)`, but you wouldn't want to use `Minute(-10)`.
+(If you did, the algorithm might end up choosing a target date for which you don't have
+any data.)
+
+#### Example
+
+Suppose that have already defined our `target_dates` and corresponding `sim_nows`, and
+we have tables called `pjm_http` (which contains actual market data) and `pjm_load` (which
+contains load forecasts).
+
+```julia
+julia> display(target_dates)
+4-element Array{TimeZones.ZonedDateTime,1}:
+ 2016-07-26T15:00:00-05:00
+ 2016-07-26T16:00:00-05:00
+ 2016-07-26T17:00:00-05:00
+ 2016-07-26T18:00:00-05:00
+
+julia> display(sim_nows)
+4-element Array{TimeZones.ZonedDateTime,1}:
+ 2016-07-26T13:56:39.036-05:00
+ 2016-07-26T13:56:39.036-05:00
+ 2016-07-26T13:56:39.036-05:00
+ 2016-07-26T13:56:39.036-05:00
+
+julia> input_target_http = dynamic_offset_hourofweek(target_dates, sim_nows, pjm_http)
+4-element Array{TimeZones.ZonedDateTime,1}:
+ 2016-07-19T15:00:00-05:00
+ 2016-07-19T16:00:00-05:00
+ 2016-07-19T17:00:00-05:00
+ 2016-07-19T18:00:00-05:00
+
+julia> input_target_load = dynamic_offset_hourofweek(target_dates, sim_nows, pjm_load)
+4-element Array{TimeZones.ZonedDateTime,1}:
+ 2016-07-26T15:00:00-05:00
+ 2016-07-26T16:00:00-05:00
+ 2016-07-26T17:00:00-05:00
+ 2016-07-26T18:00:00-05:00
+```
+
+Take note that the input targets returned by the first call to `dynamic_offset_hourofweek`
+are exactly one week earlier than those returned by the second. That's because the system
+determined that data for the requested `target_dates` wouldn't be available in the first
+table (it contains actual measurements, and the `target_dates` are in the future); the
+dates returned are the most recent dates available that match the appropriate hour of
+week. The second table contains forecast data that would be available.
+
+#### Advanced Usage
+
+If we wanted to do something a little more complicated, like return the most recent
+available data that match the same hour of week but also don't fall on a holiday, we can
+accomplish this with a call to the general `dynamic_offset` function.
+
+Suppose that we have a function `holiday` that takes a `ZonedDateTime` and returns `true`
+if the date in question in a holiday. You might write the call like this:
+
+```julia
+dynamic_offset(target_dates, sim_nows, Dates.Day(-7), table; match=x -> !holiday(x))
+```
+
+This will effectively match any day that is not a holiday and that shares an hour of week
+with the appropriate `target_date` (because it will start at the `target_date` provided
+and step backward one week at a time, keeping the hour of week constant).
 
 ## Observation Date Function
+
 
 
 Takes a target date, the training window(s), and the sim_now, then returns all target dates/sim_nows
@@ -340,318 +470,42 @@ Takes a target date, the training window(s), and the sim_now, then returns all t
    targets) to use to train the models. The relationship between the `target_date` (and
    `sim_now`) for the forecast and the dates for the input data should be analoguous
    between the training dataset and the data used for prediction.
-    * In the Matlab system, the `target_dates` of the historical data used for training
+    * In the Matlab system, the `target_date` of the historical data used for training
       were called "observations".
     * In the new system, the additional set of dates required for the training set are
       called "observation dates".
 
 
+### Signature
+
+
+
+### Example
+
+
 
 ## Table Type
 
-TODO: Explain what a Table is
-List constructor and show how it's used
+The `Table` composite type allows us to cache and reason about metadata specific to a
+database table that stores information about data features. This information is used to
+determine which input data `target_date` would be available at a given `sim_now`, which
+is vital for calculating [dynamic feature offsets](#dynamic-feature-offsets).
 
+`Table` contains a field for the table `name`. It also contains two dictionaries: `meta`
+is a cache of the table's metadata (to minimize external calls to the DB) and `latest` is
+a cache of the latest `target_date` that we expect to be available at a given `sim_now`
+(since we expect to deal with multiple `target_date`s that all share the same `sim_now`,
+caching these values should speed up repeated calls).
 
-
-### Static and Dynamic Offsets
-
-Temporal offsets are typically described as either **static** or **dynamic**.
-
-**Static Offset:** Static offsets are offsets that are defined by simple numeric values.
-These offsets can be applied to one date to arrive at another using basic arithmetic.
-
-
-**Dynamic Offset:** Dynamic offsets are offsets with more complex definitions. Typically
-these offsets are defined by nonnumeric properties of a date, or based on numeric
-properties of a date matching specific values; "the first hour after X that doesn't fall
-on a holiday" and "the first hour before X that has the same hour of day as Y" are
-dynamic offsets.
-
-For example, let's say we have two dates, which we'll call `d1` and `d2`. If we want an
-offset that will give us "the first hour after `d1` that has the same hour of day as
-`d2`", this would be a dynamic offset. If, however, `d2` weren't involved and we simply
-wanted "the next hour after `d1` that has the same hour of day as `d1`", this could be
-defined as a static offset of one day (irrespective of DST, because TimeZones.jl handles
-that just fine).
-
-
-### Our Use Case
-
-The most common use cases for data source offsets are:
-
-1. For forecast input data (like NWP) the forecast `target_date` is simply used as the
-   input data's `target_date` (with no offset).
-    * In this case it isn't strictly necessary to use the `SourceOffsets` type to create
-      `Fallback` dates; for each forecast `target_date`, either that data point is
-      available or not, so the data fetching code can simple use the target date
-      appropriately (in conjunction with whatever `sim_now` happens to be).
-    * This can also be supported by creating `SourceOffsets` without specifying a value
-      for `limit`; when no `limit` keyword argument is specified, the `Fallback` will only
-      contain a single source date (and won't actually "fall back" to any alternatives).
-2. For actuals data (like recent load or price) with some dynamic offset, the forecast
-   `target_date` is used as the base date, and using information about the data
-   resolution and the dynamic offset criteria a `SourceOffsets` iterator is created:
-    * The `SourceOffsets` will have a `Fallback` for each forecast `target_date`. The
-      `Fallback` is an iterator that initially returns the `target_date`, then
-      subsequently returns the next earlier date that meets the `match` criteria (using
-      `toprev`), up to a maximum of `limit` iterations.
-    * The forecast `target_dates` are **rounded down** (`floor`ed) to the appropriate
-      `resolution` (that of the data source in question) before being used as the basis
-      for anything. This is necessary in case the resolution of the `target_date` doesn't
-      line up properly with the resolution of the data requested.
-    * The purpose of the `Fallback` iterator is to first provide a "best match" for data
-      fetching; if that best match isn't "available" in the DB yet (based on checking its
-      `available_date` against `sim_now`), the data fetching code can request the next
-      fallback date to see if that's available instead.
-    * The `match` argument for `SourceOffsets` is a `DateFunction` factory (a function
-      that returns a `DateFunction`; for examples refer to `match_hourofday` and
-      `match_hourofweek`). Each `Fallback` will have a `match` property that is generated
-      by calling the `DateFactory` function on the appropriate `target_date`.
-3. For actuals data (like recent load or price) **without** a dynamic offset, the forecast
-   `target_date` is still used as the base date.
-    * If the difference between the `target_date` and `sim_now` is great and/or the
-      forecast resolution is small, it is likely that many dates will have to be attempted
-      before we find one that is "available".
-        * To address this inefficiency, you can pass in the optional `base` keyword
-          to indicate where fallback iteration should begin (if it is not supplied, the
-          `target_date` is used).
-
-For all of these use cases, any desired static offsets can be performed outside of
-`Horizons.jl` as desired, either before or after the dynamic offsets are calculated.  
-
-**TODO:** We could remove rounding if we agree that `sim_now` isn't going to be passed in!
-(Actually, can't necessarily; the resolution of the target dates might not line up with
-the resolution of the data.)
-
-
-
-**TODO:** Check the match against the first one, too, to make sure it's a match.
-
-
-
-
-
-# -----------------
-
-
-
-
-## Horizons
-
-Inputs
-Returns
-
-### Examples
-
-#### Hourly Horizons
-
-**TODO:** Make all examples into doctests.
+The constructor takes only the name of the table, as a `Symbol` or an `AbstractString`:
 
 ```julia
-using TimeZones
-
-sim_now = ZonedDateTime(DateTime(2016, 3, 12, 23, 15, 1), TimeZone("America/Winnipeg"))
-target_dates = horizon_hourly(sim_now, Dates.Hour(1):Dates.Hour(8))
-
-for t in target_dates
-    println(t)
-end
+pjm_shadow = Table(:pjm_shadow)
 ```
 
-Output:
+## Cookbook
 
-```
-2016-03-13T01:00:00-06:00
-2016-03-13T03:00:00-05:00
-2016-03-13T04:00:00-05:00
-2016-03-13T05:00:00-05:00
-2016-03-13T06:00:00-05:00
-2016-03-13T07:00:00-05:00
-2016-03-13T08:00:00-05:00
-2016-03-13T09:00:00-05:00
-```
-
-#### Next Day Horizons
-
-```julia
-sim_now = ZonedDateTime(2016, 3, 12, 3, TimeZone("America/Winnipeg"))
-target_dates = horizon_daily(sim_now)
-
-for t in target_dates
-    println(t)
-end
-```
-
-Output:
-
-```
-2016-03-13T01:00:00-06:00
-2016-03-13T03:00:00-05:00
-2016-03-13T04:00:00-05:00
-2016-03-13T05:00:00-05:00
-2016-03-13T06:00:00-05:00
-2016-03-13T07:00:00-05:00
-2016-03-13T08:00:00-05:00
-2016-03-13T09:00:00-05:00
-2016-03-13T10:00:00-05:00
-2016-03-13T11:00:00-05:00
-2016-03-13T12:00:00-05:00
-2016-03-13T13:00:00-05:00
-2016-03-13T14:00:00-05:00
-2016-03-13T15:00:00-05:00
-2016-03-13T16:00:00-05:00
-2016-03-13T17:00:00-05:00
-2016-03-13T18:00:00-05:00
-2016-03-13T19:00:00-05:00
-2016-03-13T20:00:00-05:00
-2016-03-13T21:00:00-05:00
-2016-03-13T22:00:00-05:00
-2016-03-13T23:00:00-05:00
-2016-03-14T00:00:00-05:00
-```
-
-The horizon functions (like `horizon_daily`) have optional parameters (like how many
-days ahead you want the target dates to begin) with reasonable defaults (in this case,
-"start with the next day").
-
-Another example, that does a single target date, two days ahead, at 15 minute resolution:
-
-```julia
-sim_now = ZonedDateTime(DateTime(2016, 11, 4, 12, 0, 0), TimeZone("America/Winnipeg"))
-target_dates = horizon_daily(sim_now; resolution=Dates.Minute(15), days_covered=Dates.Day(2))
-collect(target_dates)
-```
-
-Output:
-
-```
-196-element Array{TimeZones.ZonedDateTime,1}:
- 2016-11-05T00:15:00-05:00
- 2016-11-05T00:30:00-05:00
- 2016-11-05T00:45:00-05:00
- 2016-11-05T01:00:00-05:00
- 2016-11-05T01:15:00-05:00
- ...
- 2016-11-06T23:00:00-06:00
- 2016-11-06T23:15:00-06:00
- 2016-11-06T23:30:00-06:00
- 2016-11-06T23:45:00-06:00
- 2016-11-07T00:00:00-06:00
-```
-
-Note that in both examples, daylight saving time is handled properly.
-
-## Data Source Offsets
-
-
-The `SourceOffsets` type can't simply be replaced by a list of `Fallback`s, because in
-addition to returning the `Fallback` for each forecast `target_date` it also returns the
-forecast `target_date` itself as part of the tupel.
-the SourceOffsets type contains the `target_date` (or whatever) and an associated Fallback object
-(it's not just a list of Fallbacks)
-
-
-### `SourceOffsets` Type
-
-
-
-
-### `Fallback` Type
-
-
-We're not doing static offsets here: just do math
-
-
-
-In order for offsets to be meaningful (and to prevent cheating) systems that fetch input
-data from the database must, in addition to using the `target_date` supplied by the
-`SourceOffsets`'s `Fallback`, take the current value of `sim_now` into account, comparing
-it to the `available_date` in the database. This check is very imoprtant, but falls
-outside the scope of `Horizons.jl`.
-
-***TODO***: example of the above
-
-If the query fails because no data were available for the specified `target_date` that met
-the `available_date` criteria, simply proceed to the next fallback `target_date` and
-re-query.
-
-***TODO***: example
-
-
-
-### Examples
-
-For the purposes of these examples, let's assume we have a simple data fetching function
-that looks something like this:
-
-```julia
-function fetch_data(sim_now, source_offsets)
-    for (target_date, fallback) in source_offsets
-        for data_date in fallback
-            # Fetch the data for data_date from the database.
-            # Check its available_date against sim_now.
-            # If it isn't available yet, proceed to the next data_date.
-            # Otherwise, break.
-        end
-    end
-end
-```
-
-Assume also that we have initialized `sim_now` and `target_dates` to appropriate values:
-
-```julia
-sim_now = ZonedDateTime(DateTime(2016, 11, 4, 12, 0, 0), TimeZone("America/Winnipeg"))
-target_dates = horizon_hourly(sim_now, Dates.Hour(1):Dates.Hour(8))
-```
-
-If we want to fetch forecast data with no fallback when the data isn't available yet,
-we might do something like this:
-
-```
-fetch_data(sim_now, SourceOffsets(target_dates))
-```
-
-If we want recent actuals data with a dynamic offset that matches the same hour of day as
-the forecast target date, we might do something like this:
-
-```julia
-source_offsets = SourceOffsets(
-    target_dates;
-    resolution=Dates.Hour(1),
-    match=match_hourofday,
-    limit=sim_now - Dates.Day(2)
-)
-
-fetch_data(sim_now, source_offsets)
-```
-
-Note that in the example above, we specify that the data is hourly, and we're ignoring any
-data that is more than two days old. Instead of matching on same hour of day, we could
-elect to match on same hour of week with `match_hourofweek`, although in that case we
-would probably also want to extend the limit on how old the data is allowed to be. (It
-would similarly be trivial to construct a function that would match or fail to match on a
-holiday.)
-
-If we simply want the most recent actuals data that's available, without any dynamic
-offsets at all, we can do this:
-
-```julia
-source_offsets = SourceOffsets(
-    target_dates;
-    resolution=Dates.Hour(1),
-    limit=sim_now - Dates.Hour(2)
-)
-```
-
-**TODO:** Examples with a different base!
-
-**TODO:** Test with different base!
-
-
-## Cookbook Example
-
-Putting it all together...
+Here's an example that puts all of these offsets together in one place:
 
 ```julia
 julia> using TimeZones
@@ -724,4 +578,3 @@ Note that the time zone for `data_source_targets_1` is `UTC-4` instead of `UTC-5
 because its dates were generated using most recent data from PJM, which is `UTC-4` at this
 time. Note that in Julia it's perfectly acceptable to compare and reason about
 `ZonedDateTime`s that are in different time zones, so this isn't a problem.
-

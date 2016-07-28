@@ -1,7 +1,7 @@
 # ----- FORECAST HORIZONS -----
 
 """
-    function horizon_hourly(sim_now, periods; ceil_to=Hour(1)) -> `Array{ZonedDateTime}`
+    horizon_hourly{P<:Period}(sim_now::ZonedDateTime, periods::AbstractArray{P}; ceil_to::Period=Hour(1)) -> `StepRange{ZonedDateTime}`
 
 Calculates the `target_date`s for a batch of forecasts defined by discrete set of
 offsets (`periods`) from the current time (`sim_now`).
@@ -21,7 +21,7 @@ function horizon_hourly{P<:Period}(periods::AbstractArray{P})
 end
 
 """
-    function horizon_daily(sim_now; resolution=Hour(1), days_ahead=Day(1), days_covered=Day(1), floor_to=Day(1)) -> Array{ZonedDateTime}
+    horizon_daily(sim_now::ZonedDateTime=now(TimeZone("UTC")); resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1), floor_to::Period=Day(1)) -> StepRange{ZonedDateTime}
 
 Calculates the `target_date`s for a batch of forecasts for a specific day.
 
@@ -70,6 +70,8 @@ end
 # never needs to call the horizons function themselves.
 
 # TODO: Proper docstrings.
+# TODO: Test to ensure that you can provide no training_window, and that it just does the
+# sim_now duplication (And add that to the docs!)
 function observation_dates{P<:Period}(
     target_dates::AbstractArray{ZonedDateTime}, sim_now::ZonedDateTime,
     run_frequency::Period, training_window::Interval{P}...
@@ -117,14 +119,6 @@ end
 
 # ----- DATA FEATURE OFFSETS -----
 
-"""
-Provides static (arithmetic) offsets from the base input dates provided. If multiple offsets
-are specified, the set of input dates is duplicated columnwise for each offset such that
-each offset can be applied to the original set of dates in its entirety.
-
-Dates can be 1- or 2-dimensional, but offsets will be treated as a vector.
-"""
-
 function static_offset{P<:Period}(
     dates::AbstractArray{ZonedDateTime}, offsets::AbstractArray{P}
 )
@@ -134,49 +128,58 @@ function static_offset{P<:Period}(
     )
 end
 
-# TODO: Proper docstrings.
+"""
+    static_offset(dates::AbstractArray{ZonedDateTime}, offsets::Period...) -> Array{ZonedDateTime}
+
+Provides static (arithmetic) offsets from the base input `dates` provided. If multiple
+`offsets` are specified, the set of input dates is duplicated columnwise for each offset
+such that each offset can be applied to the original set of dates in its entirety.
+
+The `offsets` can also be passed in as a single `AbstractArray{P}` where `P <: Period`;
+`dates` may be a vector or a 2-dimensional array, but `offsets` will be treated as a vector.
+"""
 function static_offset(dates::AbstractArray{ZonedDateTime}, offsets::Period...)
     return static_offset(dates, Period[o for o in offsets])
 end
 
 """
-Provides dates for the "most recent" data from at or before the target dates.
-We just want the most recent data point that is less than or equal to the target.
+    recent_offset(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table) -> Array{ZonedDateTime}
 
-For dynamic and recent offsets, we need a vector of sim_nows with length equal to the number
-of rows in the dates array.
+Provides the target dates of the most recent available data in the table.
+
+Here, "most recent available" is defined as the latest input data target date less than or
+equal to the `date` provided that is expected to have an `availability_date` (based on table
+metadata) less than or equal to the appropriate `sim_now`.
+
+Operates row-wise on the `AbstractArray`s of `dates` and `sim_now`, expecting one `sim_now`
+element for each row in `dates`; `table` should be an instance of type `Table`.
 """
-# TODO: Proper docstrings.
 function recent_offset(
     dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table
 )
     return broadcast(min, dates, latest_target(table, sim_now))
 end
 
-# NOTE: step should be divisible by the data resolution (if you're doing a dynamic match function)
-# The step provided here needs to be:
-#    1. divisible by the resolution of the data you want to fetch
-#    2. NEGATIVE
-# So if this table has data at fifteen minute resolution, acceptable values for step would
-# include Minute(-15), Minute(-30), and Hour(-1), but you wouldn't want to use Minute(-10)
-# because then the algorithm might end up choosing a target date for which you don't have
-# any data (if you chose Minute(-5) things would be okay, but it's a little less efficient).
+"""
+    dynamic_offset(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, step::Period, table::Table; match::Function=current -> true) -> Array{ZonedDateTime}
 
-#=
-match is an (optional) `DateFunction`
-for example, if you wanted to exclude data from holidays, and you had a `holiday` function that
-takes a date and returns `true` if it's a holiday, you might pass `match=x -> !holiday(x)
+Provides the target dates of the most recent available data in the table that match the
+criteria specified by the `match` function.
 
-A `DateFunction` is an "inclusion" funtion used by adjusters that takes a single `TimeType`
-and returns true when it matches certain criteria. When we're trying to match hour of day or
-hour of week the criterion we're trying to match (the HOD or HOW of another date) is itself
-variable, which complicates things. For this reason these functions are `DateFunction`
-factories: they take a single target `TimeType` (the date we're trying to match) and return
-a lambda function which is the `DateFunction` we'll use for inclusion.
-=#
+Here, "most recent available" is defined as the latest input data target date less than or
+equal to the `date` provided that is expected to have an `availability_date` (based on table
+metadata) less than or equal to the appropriate `sim_now`.
 
-# Can take a 2-dimensional dates array like static offsets.
-# TODO: Proper docstrings.
+Operates row-wise on the `AbstractArray`s of `dates` and `sim_now`, expecting one `sim_now`
+element for each row in `dates`; `step` is a `Period` that should be divisble by the
+resolution of the data in the table; `table` should be an instance of type `Table`; `match`
+should be a `DateFunction` that takes a single `ZonedDateTime` and returns `true` when that
+value matches the desired criteria.
+
+For example, if you wanted to exclude data from holidays, and you had a `holiday` function
+that takes a `ZonedDateTime` and returns `true` if it's a holiday, you might pass
+`match=x -> !holiday(x)`.
+"""
 function dynamic_offset(
     dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime},
     step::Period, table::Table; match::Function=current -> true
@@ -190,25 +193,40 @@ function dynamic_offset(
     return broadcast(fall_back, dates, latest_target(table, sim_now))
 end
 
-# Note: hourofday and hourofweek have no underscores because they follow the pattern laid
-# out by Dates.dayofweek
+"""
+    dynamic_offset_hourofday(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table) -> Array{ZonedDateTime}
 
-# TODO: Proper docstrings.
+Provides the target dates of the most recent available data in the table that have the same
+hour of day (0–23) as the corresponding `dates` provided.
+
+Here, "most recent available" is defined as the latest input data target date less than or
+equal to the `date` provided that is expected to have an `availability_date` (based on table
+metadata) less than or equal to the appropriate `sim_now`.
+
+Operates row-wise on the `AbstractArray`s of `dates` and `sim_now`, expecting one `sim_now`
+element for each row in `dates`; `table` should be an instance of type `Table`.
+"""
 function dynamic_offset_hourofday(
     dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table
 )
     return dynamic_offset(dates, sim_now, Day(-1), table)
 end
 
-# TODO: Proper docstrings.
+"""
+    dynamic_offset_hourofweek(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table) -> Array{ZonedDateTime}
+
+Provides the target dates of the most recent available data in the table that have the same
+hour of week (0–167) as the corresponding `dates` provided.
+
+Here, "most recent available" is defined as the latest input data target date less than or
+equal to the `date` provided that is expected to have an `availability_date` (based on table
+metadata) less than or equal to the appropriate `sim_now`.
+
+Operates row-wise on the `AbstractArray`s of `dates` and `sim_now`, expecting one `sim_now`
+element for each row in `dates`; `table` should be an instance of type `Table`.
+"""
 function dynamic_offset_hourofweek(
     dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table
 )
     return dynamic_offset(dates, sim_now, Week(-1), table)
 end
-
-# NOTE to Curtis: I think this meets our requirements, and provides sufficient
-# building-blocks to meet future requirements (as it's pretty low-level).
-# The "Support offsets from different reference points" requirement is met by virtue of the
-# fact that you're passing in whatever dates you want to use yourself (so you can pass in
-# the target dates if you want to use those or you could pass in some other dates).
