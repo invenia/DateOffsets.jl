@@ -8,7 +8,7 @@ offsets for use in training and forecasting.
 * [Overview](#overview)
 * [Horizon Functions](#horizon-functions)
 * [Data Feature Offset Functions](#data-feature-offset-functions)
-* [Observation Date Function](#observation-date-function)
+* [Observation Date Function](#observation-dates-function)
 * [Table Type](#table-type)
 * [Cookbook](#cookbook)
 
@@ -24,7 +24,7 @@ The functions used in each case are referred to as:
 
 1. [Horizon functions](#horizon-functions)
 2. [Data feature offset functions](#data-feature-offset-functions)
-3. [Observation date function](#observation-date-function)
+3. [Observation date function](#observation-dates-function)
 
 ### Period Ending Standard
 
@@ -341,7 +341,7 @@ of `target_dates`, a corresponding vector of `sim_nows`, and a `table`:
 the pattern laid out by `Dates.dayofweek`.
 
 The `sim_now` vector must have one element for each row in the `target_date` collection
-provided (see [Observation Date Function](#observation-date-function) for more
+provided (see [Observation Dates Function](#observation-dates-function) for more
 information). Data availability will vary by table, and the `table` argument gives the
 dynamic offset function access to the necessary information (see [Table Type](#table-type)
 for more information).
@@ -460,29 +460,75 @@ This will effectively match any day that is not a holiday and that shares an hou
 with the appropriate `target_date` (because it will start at the `target_date` provided
 and step backward one week at a time, keeping the hour of week constant).
 
-## Observation Date Function
+## Observation Dates Function
 
+When the system requires input data to train a model, it needs to know about more than
+just the current date and our target. If the model to be trained will expect (say) four
+pieces of recent data to produce a single forecast, training that model will require a
+series of historical values for those four points and for the forecast target. These sets
+of historical values are called "observations".
 
+An "observation" constitutes the forecast target and the set of inputs required to produce
+it. This means that a set of "observation dates" denotes the dates required to fetch these
+data, namely the forecast `target_date` and associated `sim_now` (which, in combination
+with the [data feature offset functions](#data-feature-offset-functions), also gives us
+the input data `target_dates`).
 
-Takes a target date, the training window(s), and the sim_now, then returns all target dates/sim_nows
+The `observation_dates` function takes the collection of forecast `target_dates` and
+single `sim_now` value, along with information about how much training data is desired,
+and returns a tuple of observation `target_dates` and associated `sim_now`s. The vector of
+`sim_now`s will be expanded such that it is the same length as the observation dates.
 
-3. When training a model, the system needs to fetch historical data (both inputs and
-   targets) to use to train the models. The relationship between the `target_date` (and
-   `sim_now`) for the forecast and the dates for the input data should be analoguous
-   between the training dataset and the data used for prediction.
-    * In the Matlab system, the `target_date` of the historical data used for training
-      were called "observations".
-    * In the new system, the additional set of dates required for the training set are
-      called "observation dates".
+Each observation will have an associated forecast `target_date` and `sim_now`. Input data
+feature `target_date`s can be calculated for these historical observations using the
+static and dynamic offset functions in the same way they are for "real" forecast
+`target_date`s.
 
+Here is the expected execution path for the data offset functions:
+* begin with a scalar `sim_now`
+* pass `sim_now` into a [horizon function](#horizon-functions) to generate a collection of
+  forecast `target_dates`
+* pass `sim_now` and `target_dates` into the [observation dates function](#observation-dates-function)
+  to generate a tuple of observation dates and associated `sim_nows`
+* pass the observation dates and associated `sim_nows` into the appropriate [static and dynamic offset functions](#data-feature-offset-functions)
+  to generate data feature `target_dates`
 
 ### Signature
 
+```julia
+observation_dates{P<:Period}(target_dates::AbstractArray{ZonedDateTime}, sim_now::ZonedDateTime, frequency::Period, training_window::Interval{P}...)
+```
 
+The `frequency` indicates the spacing between sets of observations (the difference
+the `sim_now` associated with each set of `target_date`s). It should be equal to the
+frequency at which batches of forecasts are generated.
+
+Any number of `training_window`s may be provided. Each `training_window` is an `Interval`
+(stolen, with attribution, from [AxisArrays.jl](#http://mbauman.github.io/AxisArrays.jl/latest/))
+of `Period`s, indicating an offset from `sim_now`. See the example below.
+
+Instead of passing `training_window` as an `Interval`, you may provide a single
+`training_offset` value, which is equivalent to `Day(0) .. training_offset`.
+
+If only a single period value is provided for the `training_window` (or if the interval
+provided begins at `0`) the original `sim_now` and `target_dates` values passed in will
+be included in the tuple returned. Otherwise, they will not.
 
 ### Example
 
+The following example will give us `observation` dates and associated `sim_nows` with
+training data for the last three months and the same three months of the previous year:
 
+```julia
+julia> sim_now = now(TimeZone("America/Winnipeg"))
+2016-07-26T13:56:39.036-05:00
+
+julia> target_dates = horizon_daily(sim_now)
+2016-07-27T01:00:00-05:00:1 hour:2016-07-28T00:00:00-05:00
+
+julia> observations, sim_nows = observation_dates(target_dates, sim_now, Dates.Day(1), Dates.Month(0) .. Dates.Month(3), Dates.Month(12) .. Dates.Month(15))
+(TimeZones.ZonedDateTime[2015-04-27T01:00:00-05:00,2015-04-27T02:00:00-05:00,2015-04-27T03:00:00-05:00,2015-04-27T04:00:00-05:00,2015-04-27T05:00:00-05:00,2015-04-27T06:00:00-05:00,2015-04-27T07:00:00-05:00,2015-04-27T08:00:00-05:00,2015-04-27T09:00:00-05:00,2015-04-27T10:00:00-05:00  …  2016-07-27T15:00:00-05:00,2016-07-27T16:00:00-05:00,2016-07-27T17:00:00-05:00,2016-07-27T18:00:00-05:00,2016-07-27T19:00:00-05:00,2016-07-27T20:00:00-05:00,2016-07-27T21:00:00-05:00,2016-07-27T22:00:00-05:00,2016-07-27T23:00:00-05:00,2016-07-28T00:00:00-05:00],TimeZones.ZonedDateTime[2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00  …  2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00])
+```
 
 ## Table Type
 

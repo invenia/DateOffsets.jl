@@ -10,6 +10,7 @@ include("tables.jl")
 include("offsets.jl")
 
 export Interval,
+       ..,
        Table,
        horizon_hourly,
        horizon_next_day,

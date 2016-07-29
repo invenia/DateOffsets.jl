@@ -70,11 +70,9 @@ end
 # never needs to call the horizons function themselves.
 
 # TODO: Proper docstrings.
-# TODO: Test to ensure that you can provide no training_window, and that it just does the
-# sim_now duplication (And add that to the docs!)
 function observation_dates{P<:Period}(
-    target_dates::AbstractArray{ZonedDateTime}, sim_now::ZonedDateTime,
-    run_frequency::Period, training_window::Interval{P}...
+    target_dates::AbstractArray{ZonedDateTime}, sim_now::ZonedDateTime, frequency::Period,
+    training_window::Interval{P}...
 )
     # Convert the training windows from offsets to ranges of dates.
     training_window = map(w -> sim_now - w, training_window)
@@ -89,7 +87,7 @@ function observation_dates{P<:Period}(
     # Can be reverted once https://github.com/JuliaLang/julia/issues/17513 is fixed.
 
     # Generate all sim_nows that are within the training windows.
-    sim_nows = flipdim(recur(within_windows, sim_now:-run_frequency:earliest), 1)
+    sim_nows = flipdim(recur(within_windows, sim_now:-frequency:earliest), 1)
 
     # Determine the horizon offsets between target_dates and sim_now.
     offsets = target_dates - sim_now
@@ -107,12 +105,11 @@ function observation_dates{P<:Period}(
 end
 
 function observation_dates(
-    target_dates::AbstractArray{ZonedDateTime}, sim_now::ZonedDateTime,
-    run_frequency::Period, training_offset::Period
+    target_dates::AbstractArray{ZonedDateTime}, sim_now::ZonedDateTime, frequency::Period,
+    training_offset::Period
 )
     return observation_dates(
-        target_dates, sim_now, run_frequency,
-        zero(typeof(training_offset)) .. training_offset
+        target_dates, sim_now, frequency, zero(typeof(training_offset)) .. training_offset
     )
 end
 
