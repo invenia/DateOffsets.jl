@@ -530,6 +530,36 @@ julia> observations, sim_nows = observation_dates(target_dates, sim_now, Dates.D
 (TimeZones.ZonedDateTime[2015-04-27T01:00:00-05:00,2015-04-27T02:00:00-05:00,2015-04-27T03:00:00-05:00,2015-04-27T04:00:00-05:00,2015-04-27T05:00:00-05:00,2015-04-27T06:00:00-05:00,2015-04-27T07:00:00-05:00,2015-04-27T08:00:00-05:00,2015-04-27T09:00:00-05:00,2015-04-27T10:00:00-05:00  …  2016-07-27T15:00:00-05:00,2016-07-27T16:00:00-05:00,2016-07-27T17:00:00-05:00,2016-07-27T18:00:00-05:00,2016-07-27T19:00:00-05:00,2016-07-27T20:00:00-05:00,2016-07-27T21:00:00-05:00,2016-07-27T22:00:00-05:00,2016-07-27T23:00:00-05:00,2016-07-28T00:00:00-05:00],TimeZones.ZonedDateTime[2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00,2015-04-26T13:56:39.036-05:00  …  2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00,2016-07-26T13:56:39.036-05:00])
 ```
 
+### Unexpected Behaviour with DST Transitions
+
+Please note that if a time zone transition (DST, for example) occurs between the `sim_now`
+and the `target_dates`, `observation_dates` will assume that this relationship between the
+`sim_now` and the `target_dates` is representative, and will use this offset for all of
+the historical observation dates it returns.
+
+Similarly, if a time zone transition occurs **during** the time period covered by the
+`target_dates` (meaning that the number of `target_dates` is itself unusual), this will be
+assumed to be typical, and you will see (for example) 23 or 25 `target_dates` for each
+unique `sim_now` in the observation dates returned.
+
+Since we are training our models "on demand", it is actually possible that this is the
+behaviour that we want (it means that the current model is trained up as though it were
+typical, even though it isn't). If we **don't** want this, the function could be
+redesigned to take a [horizon function](#horizon-functions) instead of an array of
+`target_dates`. This would allow it to call the function for each of the unique
+`sim_now`s, giving perfect results. We could even pass back the "real" forecast
+`target_dates` in the tuple returned, meaning that the user never needs to call the
+horizons function themselves.
+
+**Note:** this function also assumes that all markets are siloed and run idependently
+(which is currently true of our design). If we had a situation in which **another**
+market's DST transition could affect the time that **this** market runs (say, if all
+markets had to run at the same time), then the `observation_dates` code would have to be
+much more complex.
+
+We can discuss these issues and determine how we would like to proceed.
+
+
 ## Table Type
 
 The `Table` composite type allows us to cache and reason about metadata specific to a

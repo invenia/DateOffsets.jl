@@ -49,27 +49,23 @@ end
 
 # ------- OBSERVATION DATES -------
 
-# Takes a target date, the training window(s), and the sim_now, then returns all target
-# dates/sim_nows
+"""
+    observation_dates{P<:Period}(target_dates::AbstractArray{ZonedDateTime}, sim_now::ZonedDateTime, frequency::Period, training_window::Interval{P}...) -> (Array{ZonedDateTime}, Array{ZonedDateTime})
 
-# Note: assumes that all markets are siloed and run idependently. If we had a situation in
-# which another market's DST transition affects the time that this market runs (say, if all
-# markets had to run at the same time), then this code might have to be more complex.
+Takes the collection of forecast `target_dates`, a single `sim_now`, the desired `frequency`
+of observations, and one or more `training_window` intervals and returns as tuple of
+observation `target_dates` and associated `sim_now`s. The vector of `sim_now`s will be
+expanded such that it is the same length as the observation dates.
 
-# After several attempts, this is the best design I was able to come up with. Let's talk
-# about it!
+The `frequency` should be the frequency at which batches of forecasts are generated (e.g.,
+`Dates.Day(1)`).
 
-# Note this potential problem: if it is run on a day where the target_dates include a DST
-# transition, it will assume an incorrect relationship between sim_now and target_dates
-# (and/or we will have an unusual number of targets for each observation). It is POSSIBLE
-# that this is actually the behaviour that we want (so that the current model is trained up
-# as though it were typical, even though it isn't). If we don't want this, the function
-# could be redesigned to take a horizon function instead of an array of target_dates. This
-# would allow it to call the function for each of our sim_nows, giving perfect results. We
-# could even pass back the "real" forecast target_dates in our tuple, meaning that the user
-# never needs to call the horizons function themselves.
-
-# TODO: Proper docstrings.
+The `training_window` should be an `Interval` of `Period`s, indicating an offset from
+`sim_now`. For example, `Dates.Month(0) .. Dates.Month(3)` would indicate that the training
+set should include observations from three months ago up until the current time (`sim_now`).
+Any number of `training_window`s may be provided. Instead of an `Interval`, you may indicate
+the size of your `training_window` with a single `Period` (e.g., `Dates.Month(3)`).
+"""
 function observation_dates{P<:Period}(
     target_dates::AbstractArray{ZonedDateTime}, sim_now::ZonedDateTime, frequency::Period,
     training_window::Interval{P}...
