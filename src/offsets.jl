@@ -38,12 +38,11 @@ of time covered by the values returned; and `floor_to` specifies the period to w
 `sim_now` is rounded prior to beginning.
 """
 function horizon_daily(
-    sim_now::ZonedDateTime=now(TimeZone("UTC"));
-    resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1),
-    floor_to::Period=Day(1)
+    sim_now::ZonedDateTime=now(TimeZone("UTC")); resolution::Period=Hour(1),
+    days_ahead::Period=Day(1), days_covered::Period=Day(1), floor_to::Period=Day(1)
 )
     base = floor(sim_now, floor_to) + days_ahead
-    return (base + days_ahead):resolution:(base + days_covered)
+    return (base + resolution):resolution:(base + days_covered)
 end
 
 

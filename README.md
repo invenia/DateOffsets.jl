@@ -1,7 +1,7 @@
 # Horizons.jl
 
-`Horizons.jl` provides the tools necessary to generate dates with specific temporal
-offsets for use in training and forecasting.
+Horizons.jl provides the tools necessary to generate dates with specific temporal offsets
+for use in training and forecasting.
 
 ## Contents
 

@@ -10,12 +10,11 @@ two consecutive hours may return the same result (or an integer may be skipped, 
 case may be).
 """
 hourofweek(d::TimeType) = (dayofweek(d) - 1) * 24 + hour(d)
-# TODO: Not actually used, but seems like it could be useful. Keep?
-# Should probably go in Curt's DateUtils.jl repo.
+# TODO: Not actually used here, but useful. Should probably go in Curt's DateUtils.jl repo.
 
 # Math between a single `Period` and a range of `DateTime`/`ZonedDateTime`s already works.
 # Allows arithmetic between a `DateTime`/`ZonedDateTime`/`Period` and a range of `Period`s.
-# Should go in julia/base/dates/ranges.jl:
+# TODO: Should go in julia/base/dates/ranges.jl:
 .+{T<:Period}(x::Union{TimeType,Period}, r::Range{T}) = (x + first(r)):step(r):(x + last(r))
 .+{T<:Period}(r::Range{T}, x::Union{TimeType, Period}) = x .+ r
 +{T<:Period}(r::Range{T}, x::Union{TimeType, Period}) = x .+ r
