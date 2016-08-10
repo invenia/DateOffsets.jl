@@ -2,16 +2,15 @@ module Horizons
 
 using Base.Dates
 using TimeZones
+using NullableArrays
+using Intervals
 import Base: .+, +, .-, -
 
-include("intervals.jl")     # Originally from AxisArrays.jl
 include("utils.jl")         # Should eventually go in base julia and/or DateUtils.jl
 include("tables.jl")
 include("offsets.jl")
 
-export Interval,
-       ..,
-       Table,
+export Table,
        horizon_hourly,
        horizon_daily,
        observation_dates,

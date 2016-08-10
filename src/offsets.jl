@@ -1,3 +1,8 @@
+# NullableArray is a subtype of AbstractArray, but NullableArray{ZonedDateTime} is not a
+# subtype of AbstractArray{ZonedDateTime}. For functions that want either type of array with
+# ZonedDateTime elements, we can use AbstractArray{N} where N<:NZDT.
+typealias NZDT Union{ZonedDateTime, Nullable{ZonedDateTime}}
+
 # ----- FORECAST HORIZONS -----
 
 """
@@ -49,7 +54,7 @@ end
 # ------- OBSERVATION DATES -------
 
 """
-    observation_dates{P<:Period}(target_dates::AbstractArray{ZonedDateTime}, sim_now::ZonedDateTime, frequency::Period, training_window::Interval{P}...) -> (Array{ZonedDateTime}, Array{ZonedDateTime})
+    observation_dates{P<:Period}(target_dates::AbstractArray{ZonedDateTime}, sim_now::ZonedDateTime, frequency::Period, training_window::Interval{P}...) -> (NullableArray{ZonedDateTime}, Array{ZonedDateTime})
 
 Takes the collection of forecast `target_dates`, a single `sim_now`, the desired `frequency`
 of observations, and one or more `training_window` intervals and returns as tuple of
@@ -64,13 +69,24 @@ The `training_window` should be an `Interval` of `Period`s, indicating an offset
 set should include observations from three months ago up until the current time (`sim_now`).
 Any number of `training_window`s may be provided. Instead of an `Interval`, you may indicate
 the size of your `training_window` with a single `Period` (e.g., `Dates.Month(3)`).
+
+The observation `target_dates` returned in the tuple is a `NullableArray`. This is the
+result of an internal call to `static_offset`, and allow for the possibility that some of
+the dates may be (or become) invalid due to time zone transitions; by contrast, `sim_now`
+should never contain invalid values, so is not `Nullable`.
 """
-function observation_dates{P<:Period}(
-    target_dates::AbstractArray{ZonedDateTime}, sim_now::ZonedDateTime, frequency::Period,
+function observation_dates{N<:NZDT, P<:Period}(
+    target_dates::AbstractArray{N}, sim_now::ZonedDateTime, frequency::Period,
     training_window::Interval{P}...
 )
     # Convert the training windows from offsets to ranges of dates.
     training_window = map(w -> sim_now - w, training_window)
+    # TODO: We could arrive at an invalid date here, if the start/end of one of the windows
+    # hits a DST transition. Do we need a Nullable Interval/Interval of Nullable Perids?
+    # Not really. BASICALLY, if the start is invalid, we move it up until we get a valid one
+    # (if it's the end, we move it down; always contracting the interval). Curt will provide
+    # a function that will go up or down until there's a valid version, and you'll have to
+    # update the Interval constructor.
 
     # Find all sim_nows that are within the training windows.
     earliest = minimum(map(minimum, training_window))
@@ -99,8 +115,8 @@ function observation_dates{P<:Period}(
     return (observations, sim_nows)
 end
 
-function observation_dates(
-    target_dates::AbstractArray{ZonedDateTime}, sim_now::ZonedDateTime, frequency::Period,
+function observation_dates{N<:NZDT}(
+    target_dates::AbstractArray{N}, sim_now::ZonedDateTime, frequency::Period,
     training_offset::Period
 )
     return observation_dates(
@@ -110,18 +126,18 @@ end
 
 
 # ----- DATA FEATURE OFFSETS -----
-
-function static_offset{P<:Period}(
-    dates::AbstractArray{ZonedDateTime}, offsets::AbstractArray{P}
+function static_offset{N<:NZDT, P<:Period}(
+    dates::AbstractArray{N}, offsets::AbstractArray{P}
 )
     return reshape(
-        broadcast(+, vec(dates), reshape(offsets, 1, length(offsets))),
-        (size(dates, 1), size(dates, 2) * length(offsets))
+        broadcast(
+            +, NullableArray(dates[:]), NullableArray(reshape(offsets, 1, length(offsets)))
+        ), (size(dates, 1), size(dates, 2) * length(offsets))
     )
 end
 
 """
-    static_offset(dates::AbstractArray{ZonedDateTime}, offsets::Period...) -> Array{ZonedDateTime}
+    static_offset(dates::AbstractArray{ZonedDateTime}, offsets::Period...) -> NullableArray{ZonedDateTime}
 
 Provides static (arithmetic) offsets from the base input `dates` provided. If multiple
 `offsets` are specified, the set of input dates is duplicated columnwise for each offset
@@ -129,8 +145,11 @@ such that each offset can be applied to the original set of dates in its entiret
 
 The `offsets` can also be passed in as a single `AbstractArray{P}` where `P <: Period`;
 `dates` may be a vector or a 2-dimensional array, but `offsets` will be treated as a vector.
+
+The `dates` are returned in a `NullableArray` to allow for the possibility that some may be
+(or become) invalid due to time zone transitions.
 """
-function static_offset(dates::AbstractArray{ZonedDateTime}, offsets::Period...)
+function static_offset{N<:NZDT}(dates::AbstractArray{N}, offsets::Period...)
     return static_offset(dates, Period[o for o in offsets])
 end
 
@@ -145,15 +164,17 @@ metadata) less than or equal to the appropriate `sim_now`.
 
 Operates row-wise on the `AbstractArray`s of `dates` and `sim_now`, expecting one `sim_now`
 element for each row in `dates`; `table` should be an instance of type `Table`.
+
+If a `NullableArray` of `dates` are passed in, the return type will also be `NullableArray`.
 """
-function recent_offset(
-    dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table
+function recent_offset{N<:NZDT}(
+    dates::AbstractArray{N}, sim_now::AbstractArray{ZonedDateTime}, table::Table
 )
-    return broadcast(min, dates, latest_target(table, sim_now))
+    return recent_offset(NullableArray(dates), sim_now, table)
 end
 
 """
-    dynamic_offset(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, step::Period, table::Table; match::Function=current -> true) -> Array{ZonedDateTime}
+    dynamic_offset(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, step::Period, table::Table; match::Function=current -> true) -> NullableArray{ZonedDateTime}
 
 Provides the target dates of the most recent available data in the table that match the
 criteria specified by the `match` function.
@@ -171,9 +192,11 @@ value matches the desired criteria.
 For example, if you wanted to exclude data from holidays, and you had a `holiday` function
 that takes a `ZonedDateTime` and returns `true` if it's a holiday, you might pass
 `match=x -> !holiday(x)`.
+
+If a `NullableArray` of `dates` are passed in, the return type will also be `NullableArray`.
 """
-function dynamic_offset(
-    dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime},
+function dynamic_offset{N<:NZDT}(
+    dates::AbstractArray{N}, sim_now::AbstractArray{ZonedDateTime},
     step::Period, table::Table; match::Function=current -> true
 )
     step > Millisecond(0) && throw(ArgumentError("step cannot be positive"))
@@ -186,7 +209,7 @@ function dynamic_offset(
 end
 
 """
-    dynamic_offset_hourofday(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table) -> Array{ZonedDateTime}
+    dynamic_offset_hourofday(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table) -> NullableArray{ZonedDateTime}
 
 Provides the target dates of the most recent available data in the table that have the same
 hour of day (0–23) as the corresponding `dates` provided.
@@ -197,15 +220,17 @@ metadata) less than or equal to the appropriate `sim_now`.
 
 Operates row-wise on the `AbstractArray`s of `dates` and `sim_now`, expecting one `sim_now`
 element for each row in `dates`; `table` should be an instance of type `Table`.
+
+If a `NullableArray` of `dates` are passed in, the return type will also be `NullableArray`.
 """
-function dynamic_offset_hourofday(
-    dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table
+function dynamic_offset_hourofday{N<:NZDT}(
+    dates::AbstractArray{N}, sim_now::AbstractArray{ZonedDateTime}, table::Table
 )
     return dynamic_offset(dates, sim_now, Day(-1), table)
 end
 
 """
-    dynamic_offset_hourofweek(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table) -> Array{ZonedDateTime}
+    dynamic_offset_hourofweek(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table) -> NullableArray{ZonedDateTime}
 
 Provides the target dates of the most recent available data in the table that have the same
 hour of week (0–167) as the corresponding `dates` provided.
@@ -216,9 +241,11 @@ metadata) less than or equal to the appropriate `sim_now`.
 
 Operates row-wise on the `AbstractArray`s of `dates` and `sim_now`, expecting one `sim_now`
 element for each row in `dates`; `table` should be an instance of type `Table`.
+
+If a `NullableArray` of `dates` are passed in, the return type will also be `NullableArray`.
 """
-function dynamic_offset_hourofweek(
-    dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table
+function dynamic_offset_hourofweek{N<:NZDT}(
+    dates::AbstractArray{N}, sim_now::AbstractArray{ZonedDateTime}, table::Table
 )
     return dynamic_offset(dates, sim_now, Week(-1), table)
 end
