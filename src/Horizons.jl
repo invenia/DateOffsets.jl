@@ -5,6 +5,7 @@ using TimeZones
 using NullableArrays
 using Intervals
 import Base: .+, +, .-, -
+import TimeZones: Local, timezone, localtime, interpret
 
 include("utils.jl")         # Should eventually go in base julia and/or DateUtils.jl
 include("tables.jl")

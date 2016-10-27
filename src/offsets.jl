@@ -129,9 +129,14 @@ end
 function static_offset{N<:NZDT, P<:Period}(
     dates::AbstractArray{N}, offsets::AbstractArray{P}
 )
+    # When landing on ambiguous dates, negative offsets will use :first and positive
+    # offsets will use :last (both will use the value nearest to the base date).
     return reshape(
         broadcast(
-            +, NullableArray(dates[:]), NullableArray(reshape(offsets, 1, length(offsets)))
+            (a, b) -> +(a, b, b < Millisecond(0) ? :last : :first),
+            NullableArray(dates[:]),
+#            NullableArray(reshape(offsets, 1, length(offsets))),
+            reshape(offsets, 1, length(offsets))
         ), (size(dates, 1), size(dates, 2) * length(offsets))
     )
 end

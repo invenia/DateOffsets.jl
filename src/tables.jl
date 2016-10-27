@@ -19,6 +19,8 @@ in the table, based upon table metadata.
 function latest_target(table::Table, sim_now::ZonedDateTime)
     if !haskey(table.latest, sim_now)
         if isempty(table.meta)
+            # TODO: Replace call to table_metadata with whatever DB call we're using to get
+            # metadata for the table.
             table.meta = table_metadata(table.name)
         end
 
@@ -44,7 +46,6 @@ end
 
 # ----- FAKE DB INTERFACE MOCK-UP -----
 
-# This should go in the test cases to mock up the tables we're testing against.
 function table_metadata(tablename)
     #=
     # PJM Day-Ahead Shadow Prices

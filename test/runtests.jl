@@ -21,6 +21,9 @@ end
 
 # TODO: hourofweek should probably go in Curt's DateUtils repo
 
+# TODO: Interface with Aron about how DST is handled for data fetching. (He will have
+# opinions!)
+
 
 # ----- horizon_hourly -----
 hours = Hour(1):Hour(3)
@@ -362,40 +365,88 @@ o, s = observation_dates(target_dates, sim_now, Day(1), Day(2))
 # TODO: Add test cases where the sim_nows will hit an invalid/missing and/or ambiguous zdt
 
 # ----- static_offset -----
-td1 = NullableArray(ZonedDateTime(2016, 11, 1, 1, winnipeg):Hour(1):ZonedDateTime(2016, 12, 1, winnipeg))
+# cat(2, X) is used below in several cases to convert a vector into a 2D array with 1 column
+td0 = NullableArray(ZonedDateTime(2016, 10, 1, 1, winnipeg):Hour(1):ZonedDateTime(2016, 10, 2, winnipeg))
+td1 = static_offset(td0, Day(0))    # Should be the same.
+@test isequal(cat(2, td0), td1)
+
 td2 = static_offset(td1, Day(1))
-@test td2 == NullableArray(ZonedDateTime(2016, 11, 2, 1, winnipeg):Hour(1):ZonedDateTime(2016, 12, 2, winnipeg))
-td3 = static_offset(td2, -Day(1), -Hour(12), Week(1))
-@test td3 == cat(
-    2,
-    td1,
-    NullableArray(ZonedDateTime(2016, 11, 1, 13, winnipeg):Hour(1):ZonedDateTime(2016, 12, 1, 12, winnipeg)),
-    NullableArray(ZonedDateTime(2016, 11, 9, 1, winnipeg):Hour(1):ZonedDateTime(2016, 12, 9, winnipeg))
+expected = NullableArray(ZonedDateTime(2016, 10, 2, 1, winnipeg):Hour(1):ZonedDateTime(2016, 10, 3, winnipeg))
+@test isequal(td2, cat(2, expected))
+
+td3 = static_offset(td1, -Day(1), -Hour(12))
+expected = NullableArray(
+    cat(
+        2,
+        ZonedDateTime(2016, 9, 30, 1, winnipeg):Hour(1):ZonedDateTime(2016, 10, 1, winnipeg),
+        ZonedDateTime(2016, 9, 30, 13, winnipeg):Hour(1):ZonedDateTime(2016, 10, 1, 12, winnipeg)
+    )
 )
-td4 = static_offset(td3, Day(0), Day(1))
-@test td4 == cat(
+@test isequal(td3, expected)
+
+td4 = static_offset(td3, Day(0), Day(1), Week(1))
+expected = cat(
     2,
-    td1,
-    td2,
-    td3[:, 2],
-    NullableArray(ZonedDateTime(2016, 11, 2, 13, winnipeg):Hour(1):ZonedDateTime(2016, 12, 2, 12, winnipeg)),
-    td3[:, 3],
-    NullableArray(ZonedDateTime(2016, 11, 10, 1, winnipeg):Hour(1):ZonedDateTime(2016, 12, 10, winnipeg))
+    td3,    # 2 columns
+    td1,    # 1 column
+    NullableArray(ZonedDateTime(2016, 10, 1, 13, winnipeg):Hour(1):ZonedDateTime(2016, 10, 2, 12, winnipeg)),
+    NullableArray(ZonedDateTime(2016, 10, 7, 1, winnipeg):Hour(1):ZonedDateTime(2016, 10, 8, winnipeg)),
+    NullableArray(ZonedDateTime(2016, 10, 7, 13, winnipeg):Hour(1):ZonedDateTime(2016, 10, 8, 12, winnipeg))
 )
+@test isequal(td4, expected)
 
-# TODO: Verify correct return types (NullableArray vs. Array).
+# "Spring Forward"
+td5 = NullableArray(ZonedDateTime(2016, 3, 12, 1, winnipeg):Hour(1):ZonedDateTime(2016, 3, 13, winnipeg))
+td6 = static_offset(td5, Hour(2), Hour(24), Day(1))
+# Note that 2016-03-12 02:00 + 24 hours yields 2016-03-13 03:00 (because of DST), but
+# 2016-03-12 02:00 + 1 day yields NULL.
+expected = cat(
+    2,
+    NullableArray(ZonedDateTime(2016, 3, 12, 3, winnipeg):Hour(1):ZonedDateTime(2016, 3, 13, 3, winnipeg)),
+    NullableArray(ZonedDateTime(2016, 3, 13, 1, winnipeg):Hour(1):ZonedDateTime(2016, 3, 14, 1, winnipeg)),
+    cat(
+        1,
+        Nullable(ZonedDateTime(2016, 3, 13, 1, winnipeg)),
+        Nullable{ZonedDateTime}(),
+        NullableArray(ZonedDateTime(2016, 3, 13, 3, winnipeg):Hour(1):ZonedDateTime(2016, 3, 14, winnipeg))
+    )
+)
+@test isequal(td6, expected)
 
-# TODO: Since there's a transition here, it will probably screw up some of the math!
-# What should static offset do when there's a missing/ambiguoous date (because of +1/-1 Day)?
-# Ignore/skip (and warn)?
-# But how can we "skip"? We need holes in the matrix. NullableArrays?
-# Alternatively, we could have a type that associates a single sim_now with an array of target_dates
+# "Fall Back"
+td7 = NullableArray(ZonedDateTime(2016, 11, 5, winnipeg):Hour(1):ZonedDateTime(2016, 11, 6, winnipeg))
+td8 = static_offset(td7, Day(1))
+# We might expect to see every hour on 2016-11-06, but there are two occurrences of 01:00
+# due to DST and we'll only see the first one (because we're shifting forward in time, and
+# we get the nearest hour among the possible hours).
+expected = NullableArray(
+    cat(
+        1,
+        ZonedDateTime(2016, 11, 6, winnipeg),
+        ZonedDateTime(2016, 11, 6, 1, winnipeg, 1),
+        ZonedDateTime(2016, 11, 6, 2, winnipeg):Hour(1):ZonedDateTime(2016, 11, 7, winnipeg)
+    )
+)
+@test isequal(td8, cat(2, expected))
 
-
-# Test static_offset (incl. multiple offsets, then additionoal multiple offsets)
+td9 = NullableArray(ZonedDateTime(2016, 11, 6, winnipeg):Hour(1):ZonedDateTime(2016, 11, 7, winnipeg))
+td10 = static_offset(td9, Day(-1))
+# Since DST means that 2016-11-06 01:00 occurs twice, when shifted back 1 day we expect
+# 2016-11-05 01:00 to occur twice.
+expected = NullableArray(
+    cat(
+        1,
+        ZonedDateTime(2016, 11, 5, winnipeg),
+        ZonedDateTime(2016, 11, 5, 1, winnipeg),
+        ZonedDateTime(2016, 11, 5, 1, winnipeg),
+        ZonedDateTime(2016, 11, 5, 2, winnipeg):Hour(1):ZonedDateTime(2016, 11, 6, winnipeg)
+    )
+)
+@test isequal(td10, cat(2, expected))
 
 
 # Test latest_target
+# WILL HAVE TO USE MEND to edit/replace call to table_metadata in latest_target
 
 
 # Test recent_offset (incl. multi-column inputs)
