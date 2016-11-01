@@ -120,6 +120,7 @@ function observation_dates{N<:NZDT}(
     training_offset::Period
 )
     return observation_dates(
+        # ...and if this date doesn't exist...?
         target_dates, sim_now, frequency, zero(typeof(training_offset)) .. training_offset
     )
 end
@@ -135,7 +136,6 @@ function static_offset{N<:NZDT, P<:Period}(
         broadcast(
             (a, b) -> +(a, b, b < Millisecond(0) ? :last : :first),
             NullableArray(dates[:]),
-#            NullableArray(reshape(offsets, 1, length(offsets))),
             reshape(offsets, 1, length(offsets))
         ), (size(dates, 1), size(dates, 2) * length(offsets))
     )
