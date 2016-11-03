@@ -21,7 +21,7 @@ function latest_target(table::Table, sim_now::ZonedDateTime)
         if isempty(table.meta)
             # TODO: Replace call to table_metadata with whatever DB call we're using to get
             # metadata for the table.
-            table.meta = table_metadata(table.name)
+            table.meta = @mock table_metadata(table.name)
         end
 
         sim_now = astimezone(sim_now, table.meta[:feed_tz])
