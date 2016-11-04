@@ -81,12 +81,6 @@ function observation_dates{N<:NZDT, P<:Period}(
 )
     # Convert the training windows from offsets to ranges of dates.
     training_window = map(w -> sim_now - w, training_window)
-    # TODO: We could arrive at an invalid date here, if the start/end of one of the windows
-    # hits a DST transition. Do we need a Nullable Interval/Interval of Nullable Perids?
-    # Not really. BASICALLY, if the start is invalid, we move it up until we get a valid one
-    # (if it's the end, we move it down; always contracting the interval). Curt will provide
-    # a function that will go up or down until there's a valid version, and you'll have to
-    # update the Interval constructor.
 
     # Find all sim_nows that are within the training windows.
     earliest = minimum(map(minimum, training_window))
@@ -99,6 +93,9 @@ function observation_dates{N<:NZDT, P<:Period}(
 
     # Generate all sim_nows that are within the training windows.
     sim_nows = flipdim(recur(within_windows, sim_now:-frequency:earliest), 1)
+    # TODO: THIS IS THE PROBLEM.
+    # It hits nonexistent dates.
+    # Try a match function that checks whether it's valid? Would that work? What about ambiguous?
 
     # Determine the horizon offsets between target_dates and sim_now.
     offsets = target_dates - sim_now
@@ -120,7 +117,6 @@ function observation_dates{N<:NZDT}(
     training_offset::Period
 )
     return observation_dates(
-        # ...and if this date doesn't exist...?
         target_dates, sim_now, frequency, zero(typeof(training_offset)) .. training_offset
     )
 end

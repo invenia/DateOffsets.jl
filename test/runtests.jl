@@ -375,7 +375,7 @@ end
                 ZonedDateTime(2016, 3, 13, 5, winnipeg):Hour(1):ZonedDateTime(2016, 3, 13, 7, winnipeg)
             )
         ))
-#=
+
         # Test sim_nows that would hit invalid/missing times. If we go back by a number of days and
         # hit a missing time, the corresponding set of observations will be omitted as well.
         sim_now = ZonedDateTime(2016, 3, 14, 2, 10, winnipeg)
@@ -394,8 +394,7 @@ end
             ]
         )
         # TODO complete this test case
-        @test isequal(o,
-=#
+#        @test isequal(o,
 
     end
 
@@ -601,26 +600,43 @@ end
 patch = @patch function latest_target(table, sim_now)
     return floor(sim_now + (table.name == :future) ? Day(8) : -Minute(5), Minute(30))
 end
-#TODO: Does recent_offset call this?
 
 apply(patch) do
     @testset "recent_offset" begin
-        # TODO
-        # Test recent_offset (incl. multi-column inputs)
+        sim_now = ZonedDateTime(2016, 10, 2, 7, 27, winnipeg)
+        t = horizon_hourly(sim_now, Hour(0):Hour(1):Hour(2))
+        o, s = observation_dates(t, sim_now, Hour(1), Hour(0))
+        o = static_offset(o, -Hour(2), Hour(2))
+        r = recent_offset(o, s)
+
+        expected = NullableArray(
+            [
+                ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 7, 25, winnipeg);
+                ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 10, 2, 7, 25, winnipeg);
+                ZonedDateTime(2016, 10, 2, 7, 25, winnipeg) ZonedDateTime(2016, 10, 2, 7, 25, winnipeg)
+            ]
+        )
+
+        @test isequal(r, expected)
+
+        # TODO: basic, spring forward, fall back
     end
 
     @testset "dynamic_offset" begin
         # TODO
         # Test dynamic_offset (incl. multi-column inputs)
+        # TODO: basic, spring forward, fall back
     end
 
     @testset "dynamic_offset" begin
         # TODO
         # Test dynamic_hourofday (incl. multi-column inputs)
+        # TODO: basic, spring forward, fall back
     end
 
     @testset "dynamic_hourofweek" begin
         # TODO
         # Test dynamic_hourofweek (incl. multi-column inputs)
+        # TODO: basic, spring forward, fall back
     end
 end
