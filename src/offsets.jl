@@ -98,7 +98,8 @@ function observation_dates{N<:NZDT, P<:Period}(
     # Can be reverted once https://github.com/JuliaLang/julia/issues/17513 is fixed.
 
     # Generate all sim_nows that are within the training windows.
-    sim_nows = flipdim(recur(within_windows, sim_now:-frequency:earliest), 1)
+    sim_nows = collect(sim_now:-frequency:earliest; non_existent=:skip, ambiguous=:last)
+    sim_nows = flipdim(filter(within_windows, sim_nows), 1)
 
     # Determine the horizon offsets between target_dates and sim_now.
     offsets = target_dates - sim_now
