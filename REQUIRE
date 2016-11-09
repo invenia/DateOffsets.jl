@@ -1,1 +1,6 @@
 julia 0.4
+TimeZones
+# LaxZonedDateTimes git@gitlab.invenia.ca:invenia/LaxZonedDateTimes.jl.git
+NullableArrays
+# Intervals: git@gitlab.invenia.ca:invenia/Intervals.jl.git
+Mocking
