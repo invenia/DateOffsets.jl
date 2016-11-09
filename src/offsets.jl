@@ -203,11 +203,11 @@ that takes a `ZonedDateTime` and returns `true` if it's a holiday, you might pas
 
 If a `NullableArray` of `dates` are passed in, the return type will also be `NullableArray`.
 """
-function dynamic_offset{N<:NZDT}(
+function dynamic_offset{N<:NZDT,P<:Period}(
     dates::AbstractArray{N}, sim_now::AbstractArray{ZonedDateTime},
-    step::Period, table::Table; match::Function=current -> true
+    step::P, table::Table; match::Function=current -> true
 )
-    step > Millisecond(0) && throw(ArgumentError("step cannot be positive"))
+    step > P(0) && throw(ArgumentError("step cannot be positive"))
 
     # TODO: Fix toprev to make sure that it handles falling on ambiguous (and non-existent)
     # dates correctly.
