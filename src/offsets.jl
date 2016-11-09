@@ -1,7 +1,7 @@
 # NullableArray is a subtype of AbstractArray, but NullableArray{ZonedDateTime} is not a
 # subtype of AbstractArray{ZonedDateTime}. For functions that want either type of array with
 # ZonedDateTime elements, we can use AbstractArray{N} where N<:NZDT.
-typealias NZDT Union{ZonedDateTime, Nullable{ZonedDateTime}}
+typealias NZDT Union{ZonedDateTime, Nullable{ZonedDateTime}, LaxZonedDateTime}
 
 # ----- FORECAST HORIZONS -----
 
@@ -102,10 +102,10 @@ function observation_dates{N<:NZDT, P<:Period}(
     sim_nows = flipdim(filter(within_windows, sim_nows), 1)
 
     # Determine the horizon offsets between target_dates and sim_now.
-    offsets = target_dates - sim_now
+    offsets = target_dates .- sim_now
 
     # Determine the observation target_dates for each sim_now.
-    observations = static_offset(sim_nows, offsets)
+    observations = static_offset(map(LaxZonedDateTime, sim_nows), offsets)
 
     # Vectorize it (row-wise).
     observations = vec(Base.PermutedDimsArrays.PermutedDimsArray(observations, [2, 1]))
@@ -127,6 +127,8 @@ function observation_dates{N<:NZDT}(
 end
 
 
+
+
 # ----- DATA FEATURE OFFSETS -----
 function static_offset{N<:NZDT, P<:Period}(
     dates::AbstractArray{N}, offsets::AbstractArray{P}
@@ -135,8 +137,8 @@ function static_offset{N<:NZDT, P<:Period}(
     # offsets will use :last (both will use the value nearest to the base date).
     return reshape(
         broadcast(
-            (a, b) -> +(a, b, b < Millisecond(0) ? :last : :first),
-            NullableArray(dates[:]),
+            +,
+            dates,
             reshape(offsets, 1, length(offsets))
         ), (size(dates, 1), size(dates, 2) * length(offsets))
     )

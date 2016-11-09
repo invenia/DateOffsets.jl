@@ -2,6 +2,7 @@ module Horizons
 
 using Base.Dates
 using TimeZones
+using LaxZonedDateTimes
 using NullableArrays
 using Intervals
 using Mocking
