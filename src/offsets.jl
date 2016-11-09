@@ -182,6 +182,34 @@ function recent_offset{N<:NZDT}(
 end
 
 """
+    dynamic_offset(target_date::ZonedDateTime, available_date::ZonedDateTime, interval::Period; match::Function=t -> true, ambiguous::Symbol=:last) -> ZonedDateTime
+
+Calculate the latest target date such that the result conforms to the following rules:
+
+* The result is equal or precedes the `available_date`
+* The result is equal or precedes the given `target_date` by zero or more `interval`s
+* The provided `match` function is true given the result
+
+Using the `interval` you can easily perform complex offsets like same hour of day (`Day(1)`)
+or hour of week (`Week(1)`).
+"""
+function dynamic_offset{P<:Period}(
+    target_date::ZonedDateTime, available_date::ZonedDateTime, interval::P;
+    match::Function=t -> true, ambiguous=:last,
+)
+    interval < P(0) || throw(ArgumentError("interval must be negative"))
+
+    # Use a LaxZonedDateTime to avoid issues with landing on non-existent or ambiguous
+    # results.
+    lzdt = LaxZonedDateTime(target_date)
+
+    criteria = t -> t <= available_date && match(t) && !isnonexistent(t)
+    lzdt = toprev(criteria, lzdt; step=interval, same=true)
+
+    return ZonedDateTime(lzdt, ambiguous)
+end
+
+"""
     dynamic_offset(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, step::Period, table::Table; match::Function=current -> true) -> NullableArray{ZonedDateTime}
 
 Provides the target dates of the most recent available data in the table that match the
