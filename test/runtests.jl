@@ -376,13 +376,22 @@ end
             )
         ))
 
-        # Test sim_nows that would hit invalid/missing times. If we go back by a number of days and
-        # hit a missing time, the corresponding set of observations will be omitted as well.
+        # Test sim_nows that would hit invalid/missing times. If we go back by a number of
+        # days and hit a missing time, the corresponding set of observations will be omitted
+        # as well.
         sim_now = ZonedDateTime(2016, 3, 14, 2, 10, winnipeg)
         target_dates = horizon_hourly(sim_now, Hour(1):Hour(1):Hour(3))
         o, s = observation_dates(target_dates, sim_now, Day(1), Day(2))
-        println(s)
-        println(o)
+        @test isequal(o, NullableArray(
+            [
+                ZonedDateTime(2016, 3, 12, 4, winnipeg),
+                ZonedDateTime(2016, 3, 12, 5, winnipeg),
+                ZonedDateTime(2016, 3, 12, 6, winnipeg),
+                ZonedDateTime(2016, 3, 14, 4, winnipeg),
+                ZonedDateTime(2016, 3, 14, 5, winnipeg),
+                ZonedDateTime(2016, 3, 14, 6, winnipeg)
+            ]
+        ))
         @test isequal(s,
             [
                 ZonedDateTime(2016, 3, 12, 2, 10, winnipeg),
@@ -393,9 +402,6 @@ end
                 ZonedDateTime(2016, 3, 14, 2, 10, winnipeg)
             ]
         )
-        # TODO complete this test case
-#        @test isequal(o,
-
     end
 
     @testset "fall back" begin
@@ -436,9 +442,37 @@ end
             repmat([sim_now], 25)
         )
 
-        # TODO: Add test cases where the sim_nows will hit an ambiguous zdt.
-
-
+        # Test sim_nows that would hit ambiguous times. If we go back by a number of days
+        # and hit a missing time, we expect to see the later of the possible times selected.
+        sim_now = ZonedDateTime(2016, 11, 7, 1, 10, winnipeg)
+        target_dates = horizon_hourly(sim_now, Hour(1):Hour(1):Hour(3))
+        o, s = observation_dates(target_dates, sim_now, Day(1), Day(2))
+        @test isequal(o, NullableArray(
+            [
+                ZonedDateTime(2016, 11, 5, 3, winnipeg),
+                ZonedDateTime(2016, 11, 5, 4, winnipeg),
+                ZonedDateTime(2016, 11, 5, 5, winnipeg),
+                ZonedDateTime(2016, 11, 6, 3, winnipeg),
+                ZonedDateTime(2016, 11, 6, 4, winnipeg),
+                ZonedDateTime(2016, 11, 6, 5, winnipeg),
+                ZonedDateTime(2016, 11, 7, 3, winnipeg),
+                ZonedDateTime(2016, 11, 7, 4, winnipeg),
+                ZonedDateTime(2016, 11, 7, 5, winnipeg)
+            ]
+        ))
+        @test isequal(s,
+            [
+                ZonedDateTime(2016, 11, 5, 1, 10, winnipeg),
+                ZonedDateTime(2016, 11, 5, 1, 10, winnipeg),
+                ZonedDateTime(2016, 11, 5, 1, 10, winnipeg),
+                ZonedDateTime(2016, 11, 6, 1, 10, winnipeg, 2),
+                ZonedDateTime(2016, 11, 6, 1, 10, winnipeg, 2),
+                ZonedDateTime(2016, 11, 6, 1, 10, winnipeg, 2),
+                ZonedDateTime(2016, 11, 7, 1, 10, winnipeg),
+                ZonedDateTime(2016, 11, 7, 1, 10, winnipeg),
+                ZonedDateTime(2016, 11, 7, 1, 10, winnipeg)
+            ]
+        )
     end
 end
 
@@ -598,26 +632,27 @@ end
 # Since latest_target is already tested above, mock up the latest target information used by
 # dynamic_offset to make tests easier to follow.
 patch = @patch function latest_target(table, sim_now)
-    return floor(sim_now + (table.name == :future) ? Day(8) : -Minute(5), Minute(30))
+    return floor.(sim_now + ((table.name == :future) ? Day(8) : -Minute(5)), [Minute(30)])
 end
 
 apply(patch) do
     @testset "recent_offset" begin
-        sim_now = ZonedDateTime(2016, 10, 2, 7, 27, winnipeg)
+        sim_now = ZonedDateTime(2016, 10, 2, 7, 37, winnipeg)
         t = horizon_hourly(sim_now, Hour(0):Hour(1):Hour(2))
         o, s = observation_dates(t, sim_now, Hour(1), Hour(0))
         o = static_offset(o, -Hour(2), Hour(2))
-        r = recent_offset(o, s)
 
+        r = recent_offset(o, s, Table(:past))
         expected = NullableArray(
             [
-                ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 7, 25, winnipeg);
-                ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 10, 2, 7, 25, winnipeg);
-                ZonedDateTime(2016, 10, 2, 7, 25, winnipeg) ZonedDateTime(2016, 10, 2, 7, 25, winnipeg)
+                ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 7, 30, winnipeg);
+                ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 10, 2, 7, 30, winnipeg);
+                ZonedDateTime(2016, 10, 2, 7, 30, winnipeg) ZonedDateTime(2016, 10, 2, 7, 30, winnipeg)
             ]
         )
-
         @test isequal(r, expected)
+
+        # TODO: test future, too
 
         # TODO: basic, spring forward, fall back
     end

@@ -169,7 +169,10 @@ If a `NullableArray` of `dates` are passed in, the return type will also be `Nul
 function recent_offset{N<:NZDT}(
     dates::AbstractArray{N}, sim_now::AbstractArray{ZonedDateTime}, table::Table
 )
-    return min.(dates, @mock latest_target(table, sim_now))
+    #return min(dates, @mock latest_target(table, sim_now))
+    return broadcast(
+        min, NullableArray(dates), NullableArray(@mock latest_target(table, sim_now)); lift=true
+    )
 end
 
 """
