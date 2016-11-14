@@ -77,10 +77,11 @@ should never contain invalid values, so is not `Nullable`.
 """
 function observation_dates{N<:NZDT, P<:Period}(
     target_dates::AbstractArray{N}, sim_now::ZonedDateTime, frequency::Period,
-    training_window::Interval{P}...
+    training_offsets::Interval{P}...
 )
     # Convert the training windows from offsets to ranges of dates.
-    training_window = map(w -> sim_now - w, training_window)
+    training_windows = map(w -> sim_now - w, training_offsets)
+
     # TODO: We could arrive at an invalid date here, if the start/end of one of the windows
     # hits a DST transition. Do we need a Nullable Interval/Interval of Nullable Perids?
     # Not really. BASICALLY, if the start is invalid, we move it up until we get a valid one
@@ -89,10 +90,10 @@ function observation_dates{N<:NZDT, P<:Period}(
     # update the Interval constructor.
 
     # Find all sim_nows that are within the training windows.
-    earliest = minimum(map(minimum, training_window))
+    earliest = minimum(map(minimum, training_windows))
 
     # A DateFunction that returns true if the date is within any of the training windows.
-    within_windows(dt) = any(window -> in(dt, window), training_window) || dt < earliest
+    within_windows(dt) = any(window -> in(dt, window), training_windows) || dt < earliest
     # Should simply be this:
     # within_windows(dt) = any(window -> in(dt, window), training_window)
     # Can be reverted once https://github.com/JuliaLang/julia/issues/17513 is fixed.
