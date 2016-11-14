@@ -183,21 +183,21 @@ function recent_offset{N<:NZDT}(
 end
 
 function dynamic_offset{P<:Period}(
-    target_date::LaxZonedDateTime, available_date::ZonedDateTime, interval::P;
+    target_date::LaxZonedDateTime, latest_target_date::ZonedDateTime, interval::P;
     match::Function=t -> true,
 )
     interval < P(0) || throw(ArgumentError("interval must be negative"))
 
-    criteria = t -> t <= available_date && match(t)
+    criteria = t -> t <= latest_target_date && match(t)
     return toprev(criteria, target_date; step=interval, same=true)
 end
 
 """
-    dynamic_offset(target_date::ZonedDateTime, available_date::ZonedDateTime, interval::Period; match::Function=t -> true, ambiguous::Symbol=:last) -> ZonedDateTime
+    dynamic_offset(target_date::ZonedDateTime, latest_target_date::ZonedDateTime, interval::Period; match::Function=t -> true, ambiguous::Symbol=:last) -> ZonedDateTime
 
 Calculate the latest target date such that the result conforms to the following rules:
 
-* The result is equal or precedes the `available_date`
+* The result is equal or precedes the `latest_target_date`
 * The result is equal or precedes the given `target_date` by zero or more `interval`s
 * The provided `match` function is true given the result
 
@@ -205,7 +205,7 @@ Using the `interval` you can easily perform complex offsets like same hour of da
 or hour of week (`Week(1)`).
 """
 function dynamic_offset{P<:Period}(
-    target_date::ZonedDateTime, available_date::ZonedDateTime, interval::P;
+    target_date::ZonedDateTime, latest_target_date::ZonedDateTime, interval::P;
     match::Function=t -> true, ambiguous=:last,
 )
     interval < P(0) || throw(ArgumentError("interval must be negative"))
@@ -214,7 +214,7 @@ function dynamic_offset{P<:Period}(
     # results.
     lzdt = LaxZonedDateTime(target_date)
 
-    criteria = t -> t <= available_date && match(t) && !isnonexistent(t)
+    criteria = t -> t <= latest_target_date && match(t) && !isnonexistent(t)
     lzdt = toprev(criteria, lzdt; step=interval, same=true)
 
     return ZonedDateTime(lzdt, ambiguous)
@@ -224,8 +224,8 @@ function dynamic_offset{N<:NZDT}(
     target_date::N, sim_now::ZonedDateTime, step::Period, table::Table;
     match::Function=current -> true,
 )
-    available_date = @mock latest_target(table, sim_now)
-    return dynamic_offset(target_date, available_date, step; match=match)
+    latest_target_date = @mock latest_target(table, sim_now)
+    return dynamic_offset(target_date, latest_target_date, step; match=match)
 end
 
 function dynamic_offset{N<:NZDT,P<:Period}(
