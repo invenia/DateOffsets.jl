@@ -232,18 +232,14 @@ that takes a `ZonedDateTime` and returns `true` if it's a holiday, you might pas
 If a `NullableArray` of `dates` are passed in, the return type will also be `NullableArray`.
 """
 function dynamic_offset{N<:NZDT,P<:Period}(
-    dates::AbstractArray{N}, sim_now::AbstractArray{ZonedDateTime},
+    dates::AbstractArray{N}, sim_nows::AbstractArray{ZonedDateTime},
     step::P, table::Table; match::Function=current -> true
 )
-    step > P(0) && throw(ArgumentError("step cannot be positive"))
+    # available_dates = @mock latest_target.(table, sim_nows)
 
-    # TODO: Fix toprev to make sure that it handles falling on ambiguous (and non-existent)
-    # dates correctly.
-    fall_back(date, latest) = toprev(
-        current -> current <= latest && match(current), date; step=step, same=true
-    )
-
-    return fall_back.(dates, @mock latest_target(table, sim_now))
+    # TODO: Square brackets only necessary in 0.5 to support dot syntax.
+    available_dates = latest_target.([table], sim_nows)
+    return dynamic_offset.(dates, available_dates, [step]; match=match)
 end
 
 """
@@ -262,7 +258,7 @@ element for each row in `dates`; `table` should be an instance of type `Table`.
 If a `NullableArray` of `dates` are passed in, the return type will also be `NullableArray`.
 """
 function dynamic_offset_hourofday{N<:NZDT}(
-    dates::AbstractArray{N}, sim_now::AbstractArray{ZonedDateTime}, table::Table
+    dates::AbstractArray{N}, sim_nows::AbstractArray{ZonedDateTime}, table::Table
 )
     return dynamic_offset(dates, sim_now, Day(-1), table)
 end
@@ -283,7 +279,7 @@ element for each row in `dates`; `table` should be an instance of type `Table`.
 If a `NullableArray` of `dates` are passed in, the return type will also be `NullableArray`.
 """
 function dynamic_offset_hourofweek{N<:NZDT}(
-    dates::AbstractArray{N}, sim_now::AbstractArray{ZonedDateTime}, table::Table
+    dates::AbstractArray{N}, sim_nows::AbstractArray{ZonedDateTime}, table::Table
 )
-    return dynamic_offset(dates, sim_now, Week(-1), table)
+    return dynamic_offset(dates, sim_nows, Week(-1), table)
 end

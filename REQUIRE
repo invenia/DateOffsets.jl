@@ -1,4 +1,4 @@
-julia 0.4
+julia 0.5
 TimeZones
 # LaxZonedDateTimes git@gitlab.invenia.ca:invenia/LaxZonedDateTimes.jl.git
 NullableArrays
