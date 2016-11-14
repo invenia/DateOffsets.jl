@@ -639,12 +639,22 @@ apply(patch) do
     @testset "recent_offset" begin
         sim_now = ZonedDateTime(2016, 10, 2, 7, 37, winnipeg)
         t = horizon_hourly(sim_now, Hour(0):Hour(1):Hour(2))
-        o, s = observation_dates(t, sim_now, Hour(1), Hour(0))
+        o, s = observation_dates(t, sim_now, Hour(1), Hour(0) .. Hour(1))
         o = static_offset(o, -Hour(2), Hour(2))
 
         r = recent_offset(o, s, Table(:past))
         expected = NullableArray(
             [
+                # First three rows are "training" observations. (We specified a one-hour
+                # interval for the observations.)
+                ZonedDateTime(2016, 10, 2, 5, winnipeg) ZonedDateTime(2016, 10, 2, 6, 30, winnipeg);
+                ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 6, 30, winnipeg);
+                ZonedDateTime(2016, 10, 2, 6, 30, winnipeg) ZonedDateTime(2016, 10, 2, 6, 30, winnipeg)
+                # Remaining three rows are "forecast" observations. The offsets for each
+                # set of observations should be the same, and the dynamic offsets should
+                # use the corresponding sim_now. Things are mocked up such that data is
+                # available as of "five minutes ago", meaning that most of the "recent"
+                # data will be stale, and all will be from prior to our forecast target.
                 ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 7, 30, winnipeg);
                 ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 10, 2, 7, 30, winnipeg);
                 ZonedDateTime(2016, 10, 2, 7, 30, winnipeg) ZonedDateTime(2016, 10, 2, 7, 30, winnipeg)
@@ -652,26 +662,188 @@ apply(patch) do
         )
         @test isequal(r, expected)
 
-        # TODO: test future, too
-
-        # TODO: basic, spring forward, fall back
+        r = recent_offset(o, s, Table(:future))
+        expected = NullableArray(
+            [
+                # All data are available, as data is available for the (fake) future
+                # table far in advance (presumably it's a table of forecasts).
+                ZonedDateTime(2016, 10, 2, 5, winnipeg) ZonedDateTime(2016, 10, 2, 9, winnipeg);
+                ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 10, winnipeg);
+                ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 10, 2, 11, winnipeg);
+                ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 10, winnipeg);
+                ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 10, 2, 11, winnipeg);
+                ZonedDateTime(2016, 10, 2, 8, winnipeg) ZonedDateTime(2016, 10, 2, 12, winnipeg)
+            ]
+        )
+        @test isequal(r, expected)
     end
 
     @testset "dynamic_offset" begin
-        # TODO
-        # Test dynamic_offset (incl. multi-column inputs)
-        # TODO: basic, spring forward, fall back
+        @testset "no match function" begin
+            sim_now = ZonedDateTime(2016, 10, 2, 7, 37, winnipeg)
+            t = horizon_hourly(sim_now, Hour(0):Hour(1):Hour(2))
+            o, s = observation_dates(t, sim_now, Hour(1), Hour(0) .. Hour(1))
+            o = static_offset(o, -Hour(2), Hour(2))
+
+            # Step must be negative (otherwise it would go on forever).
+            @test_throws ArgumentError dynamic_offset(o, s, Hour(1), Table(:past))
+
+            r = dynamic_offset(o, s, Hour(-1), Table(:past))
+            expected = NullableArray(
+                [
+                    # When we don't supply a match function, dynamic_offset is basically
+                    # equivalent to recent_offset (the only difference is that when a date
+                    # isn't "available" it steps back by the specified step, in this case 1
+                    # hour, until data for the resulting date is "available", while
+                    # recent_offset will just use the latest available date itself).
+                    ZonedDateTime(2016, 10, 2, 5, winnipeg) ZonedDateTime(2016, 10, 2, 6, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 6, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 6, winnipeg)
+                    # Remaining three rows are "forecast" observations. The offsets for each
+                    # set of observations should be the same, and the dynamic offsets should
+                    # use the corresponding sim_now. Things are mocked up such that data is
+                    # available as of "five minutes ago", meaning that most of the "recent"
+                    # data will be stale, and all will be from prior to our forecast target.
+                    ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 7, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 10, 2, 7, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 10, 2, 7, winnipeg)
+                ]
+            )
+            @test isequal(r, expected)
+
+            r = dynamic_offset(o, s, Hour(-1), Table(:future))
+            expected = NullableArray(
+                [
+                    # All data are available, as data is available for the (fake) future
+                    # table far in advance (presumably it's a table of forecasts).
+                    ZonedDateTime(2016, 10, 2, 5, winnipeg) ZonedDateTime(2016, 10, 2, 9, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 10, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 10, 2, 11, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 10, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 10, 2, 11, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 8, winnipeg) ZonedDateTime(2016, 10, 2, 12, winnipeg)
+                ]
+            )
+            @test isequal(r, expected)
+        end
+
+        @testset "with match function" begin
+            sim_now = ZonedDateTime(2016, 10, 4, 0, 37, winnipeg)
+            t = horizon_hourly(sim_now, Hour(0):Hour(1):Hour(2))
+            o, s = observation_dates(t, sim_now, Hour(1), Hour(0) .. Hour(1))
+
+            # This match function only accepts DateTimes that have an even hour of day and
+            # even day of week. (2016-10-04 was a Tuesday, which is day of week 2.)
+            match_even(d) = (hour(d) % 2 == 0) && (dayofweek(d) % 2 == 0)
+
+            r = dynamic_offset(o, s, Hour(-1), Table(:past); match=match_even)
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 10, 1, 22, winnipeg),   # No match: 2016-10-03 23:00
+                    ZonedDateTime(2016, 10, 1, 22, winnipeg),   # No match: 2016-10-03 23:00
+                    ZonedDateTime(2016, 10, 1, 22, winnipeg),   # No match: 2016-10-03 23:00
+                    ZonedDateTime(2016, 10, 4, 0, winnipeg),
+                    ZonedDateTime(2016, 10, 4, 0, winnipeg),    # No match: 2016-10-04 00:00
+                    ZonedDateTime(2016, 10, 4, 0, winnipeg)     # No match: 2016-10-04 00:00
+                ]
+            )
+            @test isequal(r, expected)
+
+            r = dynamic_offset(o, s, Hour(-1), Table(:future); match=match_even)
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 10, 4, 0, winnipeg),
+                    ZonedDateTime(2016, 10, 4, 0, winnipeg),    # No match: 2016-10-04 01:00
+                    ZonedDateTime(2016, 10, 4, 2, winnipeg),
+                    ZonedDateTime(2016, 10, 4, 0, winnipeg),    # No match: 2016-10-04 01:00
+                    ZonedDateTime(2016, 10, 4, 2, winnipeg),
+                    ZonedDateTime(2016, 10, 4, 2, winnipeg)     # No match: 2016-10-04 03:00
+                ]
+            )
+            @test isequal(r, expected)
+        end
+
+        @testset "spring forward" begin
+            sim_now = ZonedDateTime(2016, 3, 14, 2, 37, winnipeg)
+            t = horizon_hourly(sim_now, Hour(0):Hour(1):Hour(2))
+            o, s = observation_dates(t, sim_now, Hour(1), Hour(0) .. Hour(1))
+
+            # This match function only accepts DateTimes that have hour of day equal to 2.
+            match_two(d) = hour(d) == 2
+
+            r = dynamic_offset(o, s, Hour(-1), Table(:past); match=match_two)
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 3, 12, 2, winnipeg),
+                    ZonedDateTime(2016, 3, 12, 2, winnipeg),
+                    ZonedDateTime(2016, 3, 12, 2, winnipeg),
+                    ZonedDateTime(2016, 3, 14, 2, winnipeg),
+                    ZonedDateTime(2016, 3, 14, 2, winnipeg),
+                    ZonedDateTime(2016, 3, 14, 2, winnipeg)
+                ]
+            )
+            @test isequal(r, expected)
+
+            r = dynamic_offset(o, s, Hour(-1), Table(:future); match=match_two)
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 3, 13, 2, winnipeg),
+                    ZonedDateTime(2016, 3, 13, 2, winnipeg),
+                    ZonedDateTime(2016, 3, 13, 2, winnipeg),
+                    ZonedDateTime(2016, 3, 14, 2, winnipeg),
+                    ZonedDateTime(2016, 3, 14, 2, winnipeg),
+                    ZonedDateTime(2016, 3, 14, 2, winnipeg)
+                ]
+            )
+            @test isequal(r, expected)
+        end
+#=
+        @testset "fall back" begin
+            sim_now = ZonedDateTime(2016, 11, 6, 3, 37, winnipeg)
+            t = horizon_hourly(sim_now, Hour(0):Hour(1):Hour(2))
+            o, s = observation_dates(t, sim_now, Hour(1), Hour(0) .. Hour(1))
+
+            # This match function only accepts DateTimes that have hour of day equal to 2.
+            match_two(d) = hour(d) == 2
+
+            r = dynamic_offset(o, s, Hour(-1), Table(:past); match=match_two)
+            expected = NullableArray(
+                [
+=#
+        end
     end
 
-    @testset "dynamic_offset" begin
-        # TODO
-        # Test dynamic_hourofday (incl. multi-column inputs)
-        # TODO: basic, spring forward, fall back
+    @testset "dynamic_hourofday" begin
+        @testset "basic" begin
+            # TODO: Test dynamic_hourofday (incl. multi-column inputs)
+        end
+
+        @testset "spring forward" begin
+            # TODO
+        end
+
+        @testset "fall back" begin
+            # TODO
+
+            # TODO: Compare dynamic_hourofday == 1 with dynamic_offset == 1 with a match function
+            # that checks hour. (The first will only get one 1:00, the other will get both.)
+        end
     end
 
     @testset "dynamic_hourofweek" begin
-        # TODO
-        # Test dynamic_hourofweek (incl. multi-column inputs)
-        # TODO: basic, spring forward, fall back
+        @testset "basic" begin
+            # TODO: Test dynamic_hourofweek (incl. multi-column inputs)
+        end
+
+        @testset "spring forward" begin
+            # TODO
+        end
+
+        @testset "fall back" begin
+            # TODO
+
+            # TODO: Compare dynamic_hourofweek == 1 with dynamic_offset == 1 with a match function
+            # that checks hourofweek. (The first will only get one 1:00, the other will get both.)
+        end
     end
 end

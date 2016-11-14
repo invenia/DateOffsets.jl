@@ -169,9 +169,9 @@ If a `NullableArray` of `dates` are passed in, the return type will also be `Nul
 function recent_offset{N<:NZDT}(
     dates::AbstractArray{N}, sim_now::AbstractArray{ZonedDateTime}, table::Table
 )
-    #return min(dates, @mock latest_target(table, sim_now))
     return broadcast(
-        min, NullableArray(dates), NullableArray(@mock latest_target(table, sim_now)); lift=true
+        min, NullableArray(dates), NullableArray(@mock latest_target(table, sim_now));
+        lift=true
     )
 end
 
@@ -203,13 +203,18 @@ function dynamic_offset{N<:NZDT}(
 )
     step > Millisecond(0) && throw(ArgumentError("step cannot be positive"))
 
-    # TODO: Fix toprev to make sure that it handles falling on ambiguous (and non-existent)
-    # dates correctly.
-    fall_back(date, latest) = toprev(
-        current -> current <= latest && match(current), date; step=step, same=true
+    fall_back(date, latest) = ZonedDateTime(
+        toprev(
+            current -> current <= latest && match(current), LaxZonedDateTime(date);
+            step=step, same=true
+        );
+        ambiguous=:last
     )
 
-    return fall_back.(dates, @mock latest_target(table, sim_now))
+    return broadcast(
+        fall_back, NullableArray(dates), NullableArray(@mock latest_target(table, sim_now));
+        lift=true
+    )
 end
 
 """
