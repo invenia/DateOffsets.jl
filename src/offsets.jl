@@ -181,6 +181,16 @@ function recent_offset{N<:NZDT}(
     return min.(dates, @mock latest_target(table, sim_now))
 end
 
+function dynamic_offset{P<:Period}(
+    target_date::LaxZonedDateTime, available_date::ZonedDateTime, interval::P;
+    match::Function=t -> true,
+)
+    interval < P(0) || throw(ArgumentError("interval must be negative"))
+
+    criteria = t -> t <= available_date && match(t)
+    return toprev(criteria, target_date; step=interval, same=true)
+end
+
 """
     dynamic_offset(target_date::ZonedDateTime, available_date::ZonedDateTime, interval::Period; match::Function=t -> true, ambiguous::Symbol=:last) -> ZonedDateTime
 
@@ -209,37 +219,20 @@ function dynamic_offset{P<:Period}(
     return ZonedDateTime(lzdt, ambiguous)
 end
 
-"""
-    dynamic_offset(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, step::Period, table::Table; match::Function=current -> true) -> NullableArray{ZonedDateTime}
+function dynamic_offset{N<:NZDT}(
+    target_date::N, sim_now::ZonedDateTime, step::Period, table::Table;
+    match::Function=current -> true,
+)
+    available_date = @mock latest_target(table, sim_now)
+    return dynamic_offset(target_date, available_date, step; match=match)
+end
 
-Provides the target dates of the most recent available data in the table that match the
-criteria specified by the `match` function.
-
-Here, "most recent available" is defined as the latest input data target date less than or
-equal to the `date` provided that is expected to have an `availability_date` (based on table
-metadata) less than or equal to the appropriate `sim_now`.
-
-Operates row-wise on the `AbstractArray`s of `dates` and `sim_now`, expecting one `sim_now`
-element for each row in `dates`; `step` is a `Period` that should be divisble by the
-resolution of the data in the table; `table` should be an instance of type `Table`; `match`
-should be a `DateFunction` that takes a single `ZonedDateTime` and returns `true` when that
-value matches the desired criteria.
-
-For example, if you wanted to exclude data from holidays, and you had a `holiday` function
-that takes a `ZonedDateTime` and returns `true` if it's a holiday, you might pass
-`match=x -> !holiday(x)`.
-
-If a `NullableArray` of `dates` are passed in, the return type will also be `NullableArray`.
-"""
 function dynamic_offset{N<:NZDT,P<:Period}(
     dates::AbstractArray{N}, sim_nows::AbstractArray{ZonedDateTime},
     step::P, table::Table; match::Function=current -> true
 )
-    # available_dates = @mock latest_target.(table, sim_nows)
-
     # TODO: Square brackets only necessary in 0.5 to support dot syntax.
-    available_dates = latest_target.([table], sim_nows)
-    return dynamic_offset.(dates, available_dates, [step]; match=match)
+    return dynamic_offset.(dates, sim_nows, [step], [table]; match=match)
 end
 
 """
