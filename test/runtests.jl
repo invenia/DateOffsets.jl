@@ -768,7 +768,7 @@ apply(patch) do
             t = horizon_hourly(sim_now, Hour(0):Hour(1):Hour(2))
             o, s = observation_dates(t, sim_now, Hour(1), Hour(0) .. Hour(1))
 
-            # This match function only accepts DateTimes that have hour of day equal to 2.
+            # This match function only accepts DateTimes that have hour of day 2.
             match_two(d) = hour(d) == 2
 
             r = dynamic_offset(o, s, Hour(-1), Table(:past); match=match_two)
@@ -787,63 +787,252 @@ apply(patch) do
             r = dynamic_offset(o, s, Hour(-1), Table(:future); match=match_two)
             expected = NullableArray(
                 [
-                    ZonedDateTime(2016, 3, 13, 2, winnipeg),
-                    ZonedDateTime(2016, 3, 13, 2, winnipeg),
-                    ZonedDateTime(2016, 3, 13, 2, winnipeg),
                     ZonedDateTime(2016, 3, 14, 2, winnipeg),
-                    ZonedDateTime(2016, 3, 14, 2, winnipeg),
-                    ZonedDateTime(2016, 3, 14, 2, winnipeg)
+                    ZonedDateTime(2016, 3, 14, 2, winnipeg),    # No match: 2016-03-14 03:00
+                    ZonedDateTime(2016, 3, 14, 2, winnipeg),    # No match: 2016-03-14 04:00
+                    ZonedDateTime(2016, 3, 14, 2, winnipeg),    # No match: 2016-03-14 03:00
+                    ZonedDateTime(2016, 3, 14, 2, winnipeg),    # No match: 2016-03-14 04:00
+                    ZonedDateTime(2016, 3, 14, 2, winnipeg)     # No match: 2016-03-14 05:00
                 ]
             )
             @test isequal(r, expected)
         end
-#=
+
         @testset "fall back" begin
-            sim_now = ZonedDateTime(2016, 11, 6, 3, 37, winnipeg)
+            sim_now = ZonedDateTime(2016, 11, 6, 2, 4, winnipeg)
             t = horizon_hourly(sim_now, Hour(0):Hour(1):Hour(2))
             o, s = observation_dates(t, sim_now, Hour(1), Hour(0) .. Hour(1))
 
-            # This match function only accepts DateTimes that have hour of day equal to 2.
-            match_two(d) = hour(d) == 2
+            # This match function only accepts DateTimes that have hour of day equal to 1.
+            match_one(d) = hour(d) == 1
 
-            r = dynamic_offset(o, s, Hour(-1), Table(:past); match=match_two)
+            r = dynamic_offset(o, s, Hour(-1), Table(:past); match=match_one)
             expected = NullableArray(
                 [
-=#
+                    ZonedDateTime(2016, 11, 6, 1, winnipeg, 1),
+                    ZonedDateTime(2016, 11, 6, 1, winnipeg, 1),
+                    ZonedDateTime(2016, 11, 6, 1, winnipeg, 1),
+                    ZonedDateTime(2016, 11, 6, 1, winnipeg, 2),
+                    ZonedDateTime(2016, 11, 6, 1, winnipeg, 2),
+                    ZonedDateTime(2016, 11, 6, 1, winnipeg, 2)
+                ]
+            )
+            @test isequal(r, expected)
+
+            r = dynamic_offset(o, s, Hour(-1), Table(:future); match=match_one)
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 11, 6, 1, winnipeg, 2), # No match: 2016-11-06 02:00
+                    ZonedDateTime(2016, 11, 6, 1, winnipeg, 2), # No match: 2016-11-06 03:00
+                    ZonedDateTime(2016, 11, 6, 1, winnipeg, 2), # No match: 2016-11-06 04:00
+                    ZonedDateTime(2016, 11, 6, 1, winnipeg, 2), # No match: 2016-11-06 03:00
+                    ZonedDateTime(2016, 11, 6, 1, winnipeg, 2), # No match: 2016-11-06 04:00
+                    ZonedDateTime(2016, 11, 6, 1, winnipeg, 2)  # No match: 2016-11-06 05:00
+                ]
+            )
+            @test isequal(r, expected)
         end
     end
 
-    @testset "dynamic_hourofday" begin
+    @testset "dynamic_offset_hourofday" begin
         @testset "basic" begin
-            # TODO: Test dynamic_hourofday (incl. multi-column inputs)
+            sim_now = ZonedDateTime(2016, 10, 2, 7, 37, winnipeg)
+            t = horizon_hourly(sim_now, Hour(0):Hour(1):Hour(2))
+            o, s = observation_dates(t, sim_now, Hour(1), Hour(0) .. Hour(1))
+            o = static_offset(o, -Hour(2), Hour(2))
+
+            r = dynamic_offset_hourofday(o, s, Table(:past))
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 10, 2, 5, winnipeg) ZonedDateTime(2016, 10, 1, 9, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 1, 10, winnipeg);
+                    ZonedDateTime(2016, 10, 1, 7, winnipeg) ZonedDateTime(2016, 10, 1, 11, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 1, 10, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 10, 1, 11, winnipeg);
+                    ZonedDateTime(2016, 10, 1, 8, winnipeg) ZonedDateTime(2016, 10, 1, 12, winnipeg)
+                ]
+            )
+            @test isequal(r, expected)
+
+            r = dynamic_offset_hourofday(o, s, Table(:future))
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 10, 2, 5, winnipeg) ZonedDateTime(2016, 10, 2, 9, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 10, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 10, 2, 11, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 10, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 10, 2, 11, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 8, winnipeg) ZonedDateTime(2016, 10, 2, 12, winnipeg)
+                ]
+            )
+            @test isequal(r, expected)
         end
 
         @testset "spring forward" begin
-            # TODO
+            sim_now = ZonedDateTime(2016, 3, 13, 22, 37, winnipeg)
+            t = horizon_hourly(sim_now, Hour(0):Hour(1):Hour(2))
+            o, s = observation_dates(t, sim_now, Hour(1), Hour(0) .. Hour(1))
+            o = static_offset(o, -Hour(2), Hour(2))
+
+            r = dynamic_offset_hourofday(o, s, Table(:past))
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 3, 13, 20, winnipeg) ZonedDateTime(2016, 3, 13, 0, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 21, winnipeg) ZonedDateTime(2016, 3, 13, 1, winnipeg);
+                    ZonedDateTime(2016, 3, 12, 22, winnipeg) ZonedDateTime(2016, 3, 12, 2, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 21, winnipeg) ZonedDateTime(2016, 3, 13, 1, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 22, winnipeg) ZonedDateTime(2016, 3, 12, 2, winnipeg);
+                    ZonedDateTime(2016, 3, 12, 23, winnipeg) ZonedDateTime(2016, 3, 13, 3, winnipeg)
+                ]
+            )
+            @test isequal(r, expected)
+
+            r = dynamic_offset_hourofday(o, s, Table(:future))
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 3, 13, 20, winnipeg) ZonedDateTime(2016, 3, 14, 0, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 21, winnipeg) ZonedDateTime(2016, 3, 14, 1, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 22, winnipeg) ZonedDateTime(2016, 3, 14, 2, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 21, winnipeg) ZonedDateTime(2016, 3, 14, 1, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 22, winnipeg) ZonedDateTime(2016, 3, 14, 2, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 23, winnipeg) ZonedDateTime(2016, 3, 14, 3, winnipeg)
+                ]
+            )
+            @test isequal(r, expected)
         end
 
         @testset "fall back" begin
-            # TODO
+            sim_now = ZonedDateTime(2016, 11, 6, 22, 37, winnipeg)
+            t = horizon_hourly(sim_now, Hour(0):Hour(1):Hour(2))
+            o, s = observation_dates(t, sim_now, Hour(1), Hour(0) .. Hour(1))
+            o = static_offset(o, -Hour(2), Hour(2))
 
-            # TODO: Compare dynamic_hourofday == 1 with dynamic_offset == 1 with a match function
-            # that checks hour. (The first will only get one 1:00, the other will get both.)
+            r = dynamic_offset_hourofday(o, s, Table(:past))
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 11, 6, 20, winnipeg) ZonedDateTime(2016, 11, 6, 0, winnipeg);
+                    ZonedDateTime(2016, 11, 6, 21, winnipeg) ZonedDateTime(2016, 11, 6, 1, winnipeg, 2);
+                    ZonedDateTime(2016, 11, 5, 22, winnipeg) ZonedDateTime(2016, 11, 6, 2, winnipeg);
+                    ZonedDateTime(2016, 11, 6, 21, winnipeg) ZonedDateTime(2016, 11, 6, 1, winnipeg, 2);
+                    ZonedDateTime(2016, 11, 6, 22, winnipeg) ZonedDateTime(2016, 11, 6, 2, winnipeg);
+                    ZonedDateTime(2016, 11, 5, 23, winnipeg) ZonedDateTime(2016, 11, 6, 3, winnipeg);
+                ]
+            )
+            @test isequal(r, expected)
+
+            r = dynamic_offset_hourofday(o, s, Table(:future))
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 11, 6, 20, winnipeg) ZonedDateTime(2016, 11, 7, 0, winnipeg);
+                    ZonedDateTime(2016, 11, 6, 21, winnipeg) ZonedDateTime(2016, 11, 7, 1, winnipeg);
+                    ZonedDateTime(2016, 11, 6, 22, winnipeg) ZonedDateTime(2016, 11, 7, 2, winnipeg);
+                    ZonedDateTime(2016, 11, 6, 21, winnipeg) ZonedDateTime(2016, 11, 7, 1, winnipeg);
+                    ZonedDateTime(2016, 11, 6, 22, winnipeg) ZonedDateTime(2016, 11, 7, 2, winnipeg);
+                    ZonedDateTime(2016, 11, 6, 23, winnipeg) ZonedDateTime(2016, 11, 7, 3, winnipeg);
+                ]
+            )
+            @test isequal(r, expected)
         end
     end
 
-    @testset "dynamic_hourofweek" begin
+    @testset "dynamic_offset_hourofweek" begin
         @testset "basic" begin
-            # TODO: Test dynamic_hourofweek (incl. multi-column inputs)
+            sim_now = ZonedDateTime(2016, 10, 2, 7, 37, winnipeg)
+            t = horizon_hourly(sim_now, Hour(0):Hour(1):Hour(2))
+            o, s = observation_dates(t, sim_now, Hour(1), Hour(0) .. Hour(1))
+            o = static_offset(o, -Hour(2), Hour(2))
+
+            r = dynamic_offset_hourofweek(o, s, Table(:past))
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 10, 2, 5, winnipeg) ZonedDateTime(2016, 9, 25, 9, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 9, 25, 10, winnipeg);
+                    ZonedDateTime(2016, 9, 25, 7, winnipeg) ZonedDateTime(2016, 9, 25, 11, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 9, 25, 10, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 9, 25, 11, winnipeg);
+                    ZonedDateTime(2016, 9, 25, 8, winnipeg) ZonedDateTime(2016, 9, 25, 12, winnipeg)
+                ]
+            )
+            @test isequal(r, expected)
+
+            r = dynamic_offset_hourofweek(o, s, Table(:future))
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 10, 2, 5, winnipeg) ZonedDateTime(2016, 10, 2, 9, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 10, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 10, 2, 11, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 6, winnipeg) ZonedDateTime(2016, 10, 2, 10, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 7, winnipeg) ZonedDateTime(2016, 10, 2, 11, winnipeg);
+                    ZonedDateTime(2016, 10, 2, 8, winnipeg) ZonedDateTime(2016, 10, 2, 12, winnipeg)
+                ]
+            )
+            @test isequal(r, expected)
         end
 
         @testset "spring forward" begin
-            # TODO
+            sim_now = ZonedDateTime(2016, 3, 13, 22, 37, winnipeg)
+            t = horizon_hourly(sim_now, Hour(0):Hour(1):Hour(2))
+            o, s = observation_dates(t, sim_now, Hour(1), Hour(0) .. Hour(1))
+            o = static_offset(o, -Hour(2), Hour(2))
+
+            r = dynamic_offset_hourofweek(o, s, Table(:past))
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 3, 13, 20, winnipeg) ZonedDateTime(2016, 3, 7, 0, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 21, winnipeg) ZonedDateTime(2016, 3, 7, 1, winnipeg);
+                    ZonedDateTime(2016, 3, 6, 22, winnipeg) ZonedDateTime(2016, 3, 7, 2, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 21, winnipeg) ZonedDateTime(2016, 3, 7, 1, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 22, winnipeg) ZonedDateTime(2016, 3, 7, 2, winnipeg);
+                    ZonedDateTime(2016, 3, 6, 23, winnipeg) ZonedDateTime(2016, 3, 7, 3, winnipeg)
+                ]
+            )
+            @test isequal(r, expected)
+
+            r = dynamic_offset_hourofweek(o, s, Table(:future))
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 3, 13, 20, winnipeg) ZonedDateTime(2016, 3, 14, 0, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 21, winnipeg) ZonedDateTime(2016, 3, 14, 1, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 22, winnipeg) ZonedDateTime(2016, 3, 14, 2, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 21, winnipeg) ZonedDateTime(2016, 3, 14, 1, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 22, winnipeg) ZonedDateTime(2016, 3, 14, 2, winnipeg);
+                    ZonedDateTime(2016, 3, 13, 23, winnipeg) ZonedDateTime(2016, 3, 14, 3, winnipeg)
+                ]
+            )
+            @test isequal(r, expected)
         end
 
         @testset "fall back" begin
-            # TODO
+            sim_now = ZonedDateTime(2016, 11, 12, 22, 37, winnipeg)
+            t = horizon_hourly(sim_now, Hour(0):Hour(1):Hour(2))
+            o, s = observation_dates(t, sim_now, Hour(1), Hour(0) .. Hour(1))
+            o = static_offset(o, -Hour(2), Hour(2))
 
-            # TODO: Compare dynamic_hourofweek == 1 with dynamic_offset == 1 with a match function
-            # that checks hourofweek. (The first will only get one 1:00, the other will get both.)
+            r = dynamic_offset_hourofweek(o, s, Table(:past))
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 11, 12, 20, winnipeg) ZonedDateTime(2016, 11, 6, 0, winnipeg);
+                    ZonedDateTime(2016, 11, 12, 21, winnipeg) ZonedDateTime(2016, 11, 6, 1, winnipeg, 2);
+                    ZonedDateTime(2016, 11, 5, 22, winnipeg) ZonedDateTime(2016, 11, 6, 2, winnipeg);
+                    ZonedDateTime(2016, 11, 12, 21, winnipeg) ZonedDateTime(2016, 11, 6, 1, winnipeg, 2);
+                    ZonedDateTime(2016, 11, 12, 22, winnipeg) ZonedDateTime(2016, 11, 6, 2, winnipeg);
+                    ZonedDateTime(2016, 11, 5, 23, winnipeg) ZonedDateTime(2016, 11, 6, 3, winnipeg);
+                ]
+            )
+            @test isequal(r, expected)
+
+            r = dynamic_offset_hourofweek(o, s, Table(:future))
+            expected = NullableArray(
+                [
+                    ZonedDateTime(2016, 11, 12, 20, winnipeg) ZonedDateTime(2016, 11, 13, 0, winnipeg);
+                    ZonedDateTime(2016, 11, 12, 21, winnipeg) ZonedDateTime(2016, 11, 13, 1, winnipeg);
+                    ZonedDateTime(2016, 11, 12, 22, winnipeg) ZonedDateTime(2016, 11, 13, 2, winnipeg);
+                    ZonedDateTime(2016, 11, 12, 21, winnipeg) ZonedDateTime(2016, 11, 13, 1, winnipeg);
+                    ZonedDateTime(2016, 11, 12, 22, winnipeg) ZonedDateTime(2016, 11, 13, 2, winnipeg);
+                    ZonedDateTime(2016, 11, 12, 23, winnipeg) ZonedDateTime(2016, 11, 13, 3, winnipeg);
+                ]
+            )
+            @test isequal(r, expected)
         end
     end
 end

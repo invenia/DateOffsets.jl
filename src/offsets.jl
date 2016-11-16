@@ -205,10 +205,9 @@ function dynamic_offset{N<:NZDT}(
 
     fall_back(date, latest) = ZonedDateTime(
         toprev(
-            current -> current <= latest && match(current), LaxZonedDateTime(date);
-            step=step, same=true
-        );
-        ambiguous=:last
+            current -> current <= latest && match(current) && !isnonexistent(current),
+            LaxZonedDateTime(date); step=step, same=true
+        ), :last
     )
 
     return broadcast(
