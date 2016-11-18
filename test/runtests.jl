@@ -1,8 +1,10 @@
+using Mocking
+Mocking.enable()
+
 using Horizons
 using TimeZones
 using Intervals
 using NullableArrays
-using Mocking
 using Base.Test
 using Base.Dates
 
@@ -631,8 +633,8 @@ end
 
 # Since latest_target is already tested above, mock up the latest target information used by
 # dynamic_offset to make tests easier to follow.
-patch = @patch function latest_target(table, sim_now)
-    return floor.(sim_now + ((table.name == :future) ? Day(8) : -Minute(5)), [Minute(30)])
+patch = @patch function latest_target(table::Table, sim_now::ZonedDateTime)
+    return floor(sim_now + ((table.name == :future) ? Day(8) : Minute(-5)), Minute(30))
 end
 
 apply(patch) do
