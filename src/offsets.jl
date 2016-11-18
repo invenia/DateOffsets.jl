@@ -1,7 +1,7 @@
 # NullableArray is a subtype of AbstractArray, but NullableArray{ZonedDateTime} is not a
 # subtype of AbstractArray{ZonedDateTime}. For functions that want either type of array with
 # ZonedDateTime elements, we can use AbstractArray{N} where N<:NZDT.
-typealias NZDT Union{ZonedDateTime, Nullable{ZonedDateTime}, LaxZonedDateTime}
+typealias NZDT Union{ZonedDateTime, Nullable{ZonedDateTime}}
 
 # ----- FORECAST HORIZONS -----
 
@@ -220,9 +220,17 @@ function dynamic_offset{P<:Period}(
     return ZonedDateTime(lzdt, ambiguous)
 end
 
+function dynamic_offset(
+    date::Nullable{ZonedDateTime}, latest_target_date::ZonedDateTime, step::Period;
+    match::Function=t -> true
+)
+    isnull(date) && return date
+    return Nullable(dynamic_offset(get(date), latest_target_date, step; match=match))
+end
+
 function dynamic_offset{N<:NZDT}(
     date::N, sim_now::ZonedDateTime, step::Period, table::Table;
-    match::Function=current -> true,
+    match::Function=current -> true
 )
     latest_target_date = @mock latest_target(table, sim_now)
     return dynamic_offset(date, latest_target_date, step; match=match)
@@ -232,11 +240,8 @@ function dynamic_offset{N<:NZDT,P<:Period}(
     dates::AbstractArray{N}, sim_nows::AbstractArray{ZonedDateTime},
     step::P, table::Table; match::Function=current -> true
 )
-    return broadcast(
-        (dt, sn, step, table) -> dynamic_offset(dt, sn, step, table; match=match),
-        dates, sim_nows, [step], [table];
-        lift=true
-    )
+    # TODO: Square brackets only necessary in 0.5 to support dot syntax.
+    return dynamic_offset.(dates, sim_nows, [step], [table]; match=match)
 end
 
 """
@@ -257,7 +262,7 @@ If a `NullableArray` of `dates` are passed in, the return type will also be `Nul
 function dynamic_offset_hourofday{N<:NZDT}(
     dates::AbstractArray{N}, sim_nows::AbstractArray{ZonedDateTime}, table::Table
 )
-    return dynamic_offset(dates, sim_now, Day(-1), table)
+    return dynamic_offset(dates, sim_nows, Day(-1), table)
 end
 
 """

@@ -39,6 +39,10 @@ function latest_target(table::Table, sim_now::ZonedDateTime)
     return table.latest[sim_now]
 end
 
+function latest_target(table::Table, sim_nows::AbstractArray{ZonedDateTime})
+    return map(s -> (@mock latest_target(table, s)), sim_nows)
+end
+
 
 # ----- FAKE DB INTERFACE MOCK-UP -----
 
