@@ -94,12 +94,15 @@ function observation_dates{N<:NZDT, P<:Period}(
 
     # Determine the horizon offsets between target_dates and sim_now.
     offsets = target_dates .- sim_now
+    # TODO: We may want to handle this by passing in the horizon function instead of
+    # inferring the offset.
 
     # Determine the observation target_dates for each sim_now.
-    observations = static_offset(sim_nows, offsets)
+    observations = static_offset(LaxZonedDateTime.(sim_nows), offsets)
 
     # Vectorize it (row-wise).
     observations = vec(Base.PermutedDimsArrays.PermutedDimsArray(observations, [2, 1]))
+    observations = lax2nullable(observations, :last)
 
     # Expand sim_nows so that we have a sim_now for each observation row.
     sim_nows = repeat(sim_nows; inner=length(offsets))
@@ -122,13 +125,27 @@ function static_offset{N<:NZDT, P<:Period}(
     dates::AbstractArray{N}, offsets::AbstractArray{P}
 )
     # When landing on ambiguous dates, negative offsets will use :first and positive
-    # offsets will use :last (both will use the value nearest to the base date).
+    # offsets will use :last (both will use the value nearest to the base date). Must cast
+    # dates as NullableArray to allow it to return null on "spring forward".
+
+    return NullableArray{ZonedDateTime}(
+        reshape(
+            broadcast(
+                (a, b) -> +(a, b, b < Millisecond(0) ? :last : :first),
+                NullableArray(dates[:]),
+                reshape(offsets, 1, length(offsets))
+            ),
+            (size(dates, 1), size(dates, 2) * length(offsets))
+        )
+    )
+end
+
+function static_offset{P<:Period}(
+    dates::AbstractArray{LaxZonedDateTime}, offsets::AbstractArray{P}
+)
     return reshape(
-        broadcast(
-            (a, b) -> +(a, b, b < Millisecond(0) ? :last : :first),
-            NullableArray(dates[:]),
-            reshape(offsets, 1, length(offsets))
-        ), (size(dates, 1), size(dates, 2) * length(offsets))
+        dates[:] .+ reshape(offsets, 1, length(offsets)), 
+        (size(dates, 1), size(dates, 2) * length(offsets))
     )
 end
 
@@ -146,6 +163,10 @@ The `dates` are returned in a `NullableArray` to allow for the possibility that 
 (or become) invalid due to time zone transitions.
 """
 function static_offset{N<:NZDT}(dates::AbstractArray{N}, offsets::Period...)
+    return static_offset(dates, Period[o for o in offsets])
+end
+
+function static_offset(dates::AbstractArray{LaxZonedDateTime}, offsets::Period...)
     return static_offset(dates, Period[o for o in offsets])
 end
 
@@ -173,13 +194,13 @@ function recent_offset{N<:NZDT}(
 end
 
 function dynamic_offset{P<:Period}(
-    target_date::LaxZonedDateTime, latest_target_date::ZonedDateTime, step::P;
+    date::LaxZonedDateTime, latest_target_date::ZonedDateTime, step::P;
     match::Function=t -> true,
 )
     step < P(0) || throw(ArgumentError("step must be negative"))
 
     criteria = t -> t <= latest_target_date && match(t)
-    return toprev(criteria, target_date; step=step, same=true)
+    return toprev(criteria, date; step=step, same=true)
 end
 
 """
@@ -242,6 +263,14 @@ function dynamic_offset{N<:NZDT,P<:Period}(
 )
     # TODO: Square brackets only necessary in 0.5 to support dot syntax.
     return dynamic_offset.(dates, sim_nows, [step], [table]; match=match)
+end
+
+function dynamic_offset{P<:Period}(
+    dates::NullableArray{ZonedDateTime}, sim_nows::AbstractArray{ZonedDateTime},
+    step::P, table::Table; match::Function=current -> true
+)
+    # NullableArray in, NullableArray out.
+    return NullableArray(dynamic_offset.(dates, sim_nows, [step], [table]; match=match))
 end
 
 """

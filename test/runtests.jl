@@ -31,8 +31,6 @@ end
 # TODO: Interface with Aron about how DST is handled for data fetching. (He will have
 # opinions!)
 
-# TODO: Check for Arrays of Nullables (rather than NullableArrays) and fix them
-
 
 @testset "horizon_hourly" begin
     hours = Hour(1):Hour(3)
@@ -238,6 +236,9 @@ end
         sim_now = ZonedDateTime(2016, 8, 3, 0, 10, winnipeg)
         target_dates = horizon_hourly(sim_now, Hour(2):Hour(4))
         o, s = observation_dates(target_dates, sim_now, Day(1), Day(2))
+
+        @test isa(o, NullableArray)
+
         @test isequal(o, NullableArray([
             ZonedDateTime(2016, 8, 1, 3, winnipeg),
             ZonedDateTime(2016, 8, 1, 4, winnipeg),
@@ -483,6 +484,9 @@ end
     @testset "basic" begin
         td0 = NullableArray(ZonedDateTime(2016, 10, 1, 1, winnipeg):Hour(1):ZonedDateTime(2016, 10, 2, winnipeg))
         td1 = static_offset(td0, Day(0))    # Should be the same.
+
+        @test isa(td1, NullableArray)
+
         @test isequal(cat(2, td0), td1)
 
         td2 = static_offset(td1, Day(1))
@@ -645,6 +649,9 @@ apply(patch) do
         o = static_offset(o, -Hour(2), Hour(2))
 
         r = recent_offset(o, s, Table(:past))
+
+        @test isa(r, NullableArray)
+
         expected = NullableArray(
             [
                 # First three rows are "training" observations. (We specified a one-hour
@@ -691,6 +698,9 @@ apply(patch) do
             @test_throws ArgumentError dynamic_offset(o, s, Hour(1), Table(:past))
 
             r = dynamic_offset(o, s, Hour(-1), Table(:past))
+
+            @test isa(r, NullableArray)
+
             expected = NullableArray(
                 [
                     # When we don't supply a match function, dynamic_offset is basically
@@ -739,6 +749,9 @@ apply(patch) do
             match_even(d) = (hour(d) % 2 == 0) && (dayofweek(d) % 2 == 0)
 
             r = dynamic_offset(o, s, Hour(-1), Table(:past); match=match_even)
+
+            @test isa(r, NullableArray)
+
             expected = NullableArray(
                 [
                     ZonedDateTime(2016, 10, 1, 22, winnipeg),   # No match: 2016-10-03 23:00
@@ -844,6 +857,9 @@ apply(patch) do
             o = static_offset(o, -Hour(2), Hour(2))
 
             r = dynamic_offset_hourofday(o, s, Table(:past))
+
+            @test isa(r, NullableArray)
+
             expected = NullableArray(
                 [
                     ZonedDateTime(2016, 10, 2, 5, winnipeg) ZonedDateTime(2016, 10, 1, 9, winnipeg);
@@ -945,6 +961,9 @@ apply(patch) do
             o = static_offset(o, -Hour(2), Hour(2))
 
             r = dynamic_offset_hourofweek(o, s, Table(:past))
+
+            @test isa(r, NullableArray)
+
             expected = NullableArray(
                 [
                     ZonedDateTime(2016, 10, 2, 5, winnipeg) ZonedDateTime(2016, 9, 25, 9, winnipeg);
