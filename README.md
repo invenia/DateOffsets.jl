@@ -9,7 +9,6 @@ for use in training and forecasting.
 * [Horizon Functions](#horizon-functions)
 * [Data Feature Offset Functions](#data-feature-offset-functions)
 * [Observation Date Function](#observation-dates-function)
-* [Table Type](#table-type)
 * [Cookbook](#cookbook)
 
 ## Overview
@@ -343,8 +342,8 @@ the pattern laid out by `Dates.dayofweek`.
 The `sim_now` vector must have one element for each row in the `target_date` collection
 provided (see [Observation Dates Function](#observation-dates-function) for more
 information). Data availability will vary by table, and the `table` argument gives the
-dynamic offset function access to the necessary information (see [Table Type](#table-type)
-for more information).
+dynamic offset function access to the necessary information (`table` must be of type
+`Table`, which is found in DataSources.jl).
 
 Here, "most recent available" is defined as the latest input data `target_date` less than
 or equal to the forecast `target_date` that is expected to have an `availability_date`
@@ -559,25 +558,7 @@ much more complex.
 
 We can discuss these issues and determine how we would like to proceed.
 
-
-## Table Type
-
-The `Table` composite type allows us to cache and reason about metadata specific to a
-database table that stores information about data features. This information is used to
-determine which input data `target_date` would be available at a given `sim_now`, which
-is vital for calculating [dynamic feature offsets](#dynamic-feature-offsets).
-
-`Table` contains a field for the table `name`. It also contains two dictionaries: `meta`
-is a cache of the table's metadata (to minimize external calls to the DB) and `latest` is
-a cache of the latest `target_date` that we expect to be available at a given `sim_now`
-(since we expect to deal with multiple `target_date`s that all share the same `sim_now`,
-caching these values should speed up repeated calls).
-
-The constructor takes only the name of the table, as a `Symbol` or an `AbstractString`:
-
-```julia
-pjm_shadow = Table(:pjm_shadow)
-```
+**TODO:** Update this section, discussing NullableArrays and LaxZonedDateTimes.
 
 ## Cookbook
 
@@ -587,6 +568,8 @@ Here's an example that puts all of these offsets together in one place:
 julia> using TimeZones
 
 julia> using Horizons
+
+julia> using DataSources
 
 julia> sim_now = now(TimeZone("America/Winnipeg"))
 2016-07-22T15:26:23.284-05:00

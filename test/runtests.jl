@@ -3,33 +3,15 @@ Mocking.enable()
 
 using Horizons
 using TimeZones
+using DateUtils
+using DataSources
 using Intervals
 using NullableArrays
 using Base.Test
 using Base.Dates
 
-import Horizons: latest_target
 
-
-utc = TimeZone("UTC")
 winnipeg = TimeZone("America/Winnipeg")
-ny = TimeZone("America/New_York")
-
-
-@testset "hourofweek" begin
-    dt = DateTime(2016, 8, 1)   # Monday
-    for h in 0:167
-        @test hourofweek(dt + Hour(h)) == h
-        @test hourofweek(ZonedDateTime(dt + Hour(h), utc)) == h
-        @test hourofweek(ZonedDateTime(dt + Hour(h), winnipeg)) == h
-    end
-    @test hourofweek(DateTime(2016, 8, 2)) == hourofweek(DateTime(2016, 8, 2, 0, 59, 59, 999))
-end
-
-# TODO: hourofweek should probably go in Curt's DateUtils repo
-
-# TODO: Interface with Aron about how DST is handled for data fetching. (He will have
-# opinions!)
 
 
 @testset "horizon_hourly" begin
@@ -567,76 +549,8 @@ end
     end
 end
 
-# Mock up table metadata to ensure consistent, system-agnostic behaviour.
-patch = @patch function table_metadata(tablename)
-    if tablename == :f1
-        return Dict(
-            :publish_interval => Day(1),
-            :publish_offset => Hour(13),
-            :content_interval => Day(1),
-            :content_offset => Day(2),
-            :feed_runtime => Minute(20),
-            :feed_tz => utc
-        )
-    elseif tablename == :f2
-        return Dict(
-            :publish_interval => Minute(30),
-            :publish_offset => Minute(20),
-            :content_interval => Minute(30),
-            :content_offset => Second(0),
-            :feed_runtime => Minute(20),
-            :feed_tz => ny
-        )
-    elseif tablename == :f3
-        return Dict(
-            :publish_interval => Day(1),
-            :publish_offset => Hour(11),
-            :content_interval => Day(1),
-            :content_offset => Second(0),
-            :feed_runtime => Minute(40),
-            :feed_tz => utc
-        )
-    elseif tablename == :f4
-        return Dict(
-            :publish_interval => Hour(1),
-            :publish_offset => Minute(30),
-            :content_interval => Hour(3),
-            :content_offset => Day(7),
-            :feed_runtime => Minute(40),
-            :feed_tz => ny
-        )
-    end
-end
-
-@testset "latest_target" begin
-    apply(patch) do
-        f1 = Table(:f1)
-        f2 = Table(:f2)
-        f3 = Table(:f3)
-        f4 = Table(:f4)
-
-        sim_now = ZonedDateTime(2016, 10, 2, 7, 27, winnipeg)
-
-        lt = latest_target(f1, sim_now)
-        expected = ZonedDateTime(2016, 10, 3, utc)
-        @test lt == expected
-
-        lt = latest_target(f2, sim_now)
-        expected = ZonedDateTime(2016, 10, 2, 7, 30, ny)
-        @test lt == expected
-
-        lt = latest_target(f3, sim_now)
-        expected = ZonedDateTime(2016, 10, 2, utc)
-        @test lt == expected
-
-        lt = latest_target(f4, sim_now)
-        expected = ZonedDateTime(2016, 10, 9, 6, ny)
-        @test lt == expected
-    end
-end
-
-# Since latest_target is already tested above, mock up the latest target information used by
-# dynamic_offset to make tests easier to follow.
+# Since latest_target is tested in DataSources.jl, mock up the latest target information
+# used by dynamic_offset to make tests easier to follow.
 patch = @patch function latest_target(table::Table, sim_now::ZonedDateTime)
     return floor(sim_now + ((table.name == :future) ? Day(8) : Minute(-5)), Minute(30))
 end

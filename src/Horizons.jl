@@ -3,19 +3,15 @@ module Horizons
 using Base.Dates
 using TimeZones
 using LaxZonedDateTimes
+using DataSources
 using NullableArrays
 using Intervals
 using Mocking
-using LaxZonedDateTimes
-import Base: .+, +, .-, -
-import TimeZones: Local, timezone, localtime, interpret
 
-include("utils.jl")         # Should eventually go in base julia and/or DateUtils.jl
-include("tables.jl")
+include("utils.jl")
 include("offsets.jl")
 
-export Table,
-       horizon_hourly,
+export horizon_hourly,
        horizon_daily,
        observation_dates,
        static_offset,
