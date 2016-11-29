@@ -1,10 +1,47 @@
-# NullableArray is a subtype of AbstractArray, but NullableArray{ZonedDateTime} is not a
-# subtype of AbstractArray{ZonedDateTime}. For functions that want either type of array with
-# ZonedDateTime elements, we can use AbstractArray{N} where N<:NZDT.
-typealias NZDT Union{ZonedDateTime, Nullable{ZonedDateTime}}
-
 # ----- FORECAST HORIZONS -----
 
+#TODO docstring
+function targets(horizon::Horizon, sim_now::ZonedDateTime)
+    base = ceil(sim_now, horizon.ceil_to) + horizon.start_offset
+    return (base + horizon.step):horizon.step:(base + horizon.coverage)
+end
+
+#TODO docstring
+# varargs used to allow it to have the same signature as every other adjust function
+function adjust(offset::StaticOffset, observation::ZonedDateTime, ...)
+    return observation + offset.offset
+end
+
+#TODO docstring
+# varargs used to allow it to have the same signature as every other adjust function
+function adjust(::RecentOffset, observation::ZonedDateTime, latest::ZonedDateTime, ...)
+    return min(observation, latest_available)
+end
+
+#TODO docstring
+function adjust(
+    offset::DynamicOffset, observation::ZonedDateTime, latest::ZonedDateTime,
+    sim_now::ZonedDateTime
+)
+    criteria = t -> t <= latest && offset.match(t)
+    return toprev(criteria, date; step=offset.step, same=true)
+end
+
+#TODO docstring
+#TODO tests!
+function adjust(
+    offsets::Vector{SourceOffset}, observation::ZoneDateTime, latest::ZonedDateTime,
+    sim_now::ZonedDateTime
+)
+    adjust_binary_op(dt, offset) = adjust(offset, dt, latest, sim_now)
+    return foldl(adjust_binary_op, observation, offsets)
+end
+
+
+# TODO some of the tests for the version that calculates the latest target will go in the
+# DataFeatures module.
+
+# TODO put this information elsewhere
 """
     horizon_hourly{P<:Period}(sim_now::ZonedDateTime, periods::AbstractArray{P}; ceil_to::Period=Hour(1)) -> `StepRange{ZonedDateTime}`
 
@@ -15,16 +52,8 @@ This is accomplished by rounding `sim_now` up to the nearest hour and adding the
 the offsets to the result. The `ceil_to` keyword may be provided to specify that `sim_now`
 should be rounded up to a value other than `Hour(1)` (e.g., `Minute(30)`).
 """
-function horizon_hourly{P<:Period}(
-    sim_now::ZonedDateTime, periods::AbstractArray{P}; ceil_to::Period=Hour(1)
-)
-    return ceil(sim_now, ceil_to) + periods
-end
 
-function horizon_hourly{P<:Period}(periods::AbstractArray{P})
-    horizon_hourly(now(TimeZone("UTC")), periods)
-end
-
+# TODO put this information elsewhere
 """
     horizon_daily(sim_now::ZonedDateTime=now(TimeZone("UTC")); resolution::Period=Hour(1), days_ahead::Period=Day(1), days_covered::Period=Day(1), floor_to::Period=Day(1)) -> StepRange{ZonedDateTime}
 
@@ -42,13 +71,6 @@ controls the span between `sim_now` and the output; `days_covered` defines the t
 of time covered by the values returned; and `floor_to` specifies the period to which
 `sim_now` is rounded prior to beginning.
 """
-function horizon_daily(
-    sim_now::ZonedDateTime=now(TimeZone("UTC")); resolution::Period=Hour(1),
-    days_ahead::Period=Day(1), days_covered::Period=Day(1), floor_to::Period=Day(1)
-)
-    base = floor(sim_now, floor_to) + days_ahead
-    return (base + resolution):resolution:(base + days_covered)
-end
 
 
 # ------- OBSERVATION DATES -------
@@ -193,11 +215,13 @@ function recent_offset{N<:NZDT}(
     )
 end
 
-function dynamic_offset{P<:Period}(
-    date::LaxZonedDateTime, latest_target_date::ZonedDateTime, step::P;
+# TODO: shouldn't import table information at all anymore; just take the latest target date as a ZDT
+
+function dynamic_offset(
+    date::LaxZonedDateTime, latest_target_date::ZonedDateTime, step::Period;
     match::Function=t -> true,
 )
-    step < P(0) || throw(ArgumentError("step must be negative"))
+    step < zero(step) || throw(ArgumentError("step must be negative"))
 
     criteria = t -> t <= latest_target_date && match(t)
     return toprev(criteria, date; step=step, same=true)
