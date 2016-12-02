@@ -1,43 +1,85 @@
-# ----- FORECAST HORIZONS -----
-
 #TODO docstring
+# TODO hypothetically possible to land on nonexistent/ambiguous, here?
 function targets(horizon::Horizon, sim_now::ZonedDateTime)
     base = ceil(sim_now, horizon.ceil_to) + horizon.start_offset
     return (base + horizon.step):horizon.step:(base + horizon.coverage)
 end
 
 #TODO docstring
-# varargs used to allow it to have the same signature as every other adjust function
-function adjust(offset::StaticOffset, observation::ZonedDateTime, ...)
+# varargs used to allow it to have the same signature as every other apply function
+function apply(offset::StaticOffset, observation::ZonedDateTime, args...)
     return observation + offset.offset
 end
 
 #TODO docstring
-# varargs used to allow it to have the same signature as every other adjust function
-function adjust(::RecentOffset, observation::ZonedDateTime, latest::ZonedDateTime, ...)
-    return min(observation, latest_available)
+# varargs used to allow it to have the same signature as every other apply function
+function apply(::RecentOffset, observation::ZonedDateTime, latest::ZonedDateTime, args...)
+    return min(observation, latest)
 end
 
 #TODO docstring
-function adjust(
+function apply(
     offset::DynamicOffset, observation::ZonedDateTime, latest::ZonedDateTime,
     sim_now::ZonedDateTime
 )
     criteria = t -> t <= latest && offset.match(t)
-    return toprev(criteria, date; step=offset.step, same=true)
+    return toprev(criteria, observation; step=offset.step, same=true)
+end
+
+#TODO docstring
+function apply(
+    offset::CustomOffset, observation::ZonedDateTime, latest, sim_now::ZonedDateTime
+)
+    return offset.apply(sim_now, observation)
 end
 
 #TODO docstring
 #TODO tests!
-function adjust(
-    offsets::Vector{SourceOffset}, observation::ZoneDateTime, latest::ZonedDateTime,
+function apply{T<:SourceOffset}(
+    offsets::Vector{T}, observation::ZonedDateTime, latest::ZonedDateTime,
     sim_now::ZonedDateTime
 )
-    adjust_binary_op(dt, offset) = adjust(offset, dt, latest, sim_now)
-    return foldl(adjust_binary_op, observation, offsets)
+    apply_binary_op(dt, offset) = apply(offset, dt, latest, sim_now)
+    return foldl(apply_binary_op, observation, offsets)
+end
+
+# TODO: Docstring
+# Handle Nullables
+function apply{T<:SourceOffset}(
+    offset::Union{T, Vector{T}}, observation::Nullable{ZonedDateTime}, args...
+)
+    return isnull(observation) ? observation : apply(offset, get(observation), args...)
+end
+
+# TODO docstring
+function observations{T<:SourceOffset}(
+    offsets::Vector{T}, horizon::Horizon, sim_now::ZonedDateTime, latest::ZonedDateTime
+)
+    dates = targets(horizon, sim_now)
+    sim_nows = repeat([sim_now]; inner=length(dates))
+    dates = map(dt -> apply(offsets, dt, latest, sim_now), dates)
+
+    return (sim_nows, dates)
+end
+
+# TODO docstring
+function observations{T<:SourceOffset}(
+    offset::Vector{T}, horizon::Horizon, sim_now::Vector{ZonedDateTime},
+    latest::Vector{ZonedDateTime}
+)
+    # TODO omigod make this better
+    # Use chain from Iterators.jl and/or Base.flatten?
+    dates, sim_nows = ZonedDateTime[], ZonedDateTime[]
+    for (s, l) in zip(sim_now, latest)
+        s, d = observations(offset, horizon, s, l)
+        append!(dates, d)
+        append!(sim_nows, s)
+    end
+    return (sim_nows, dates)
 end
 
 
+#=
 # TODO some of the tests for the version that calculates the latest target will go in the
 # DataFeatures module.
 
@@ -71,9 +113,7 @@ controls the span between `sim_now` and the output; `days_covered` defines the t
 of time covered by the values returned; and `floor_to` specifies the period to which
 `sim_now` is rounded prior to beginning.
 """
-
-
-# ------- OBSERVATION DATES -------
+#
 
 """
     observation_dates{P<:Period}(target_dates::AbstractArray{ZonedDateTime}, sim_now::ZonedDateTime, frequency::Period, training_window::Interval{P}...) -> (NullableArray{ZonedDateTime}, Array{ZonedDateTime})
@@ -97,6 +137,7 @@ result of an internal call to `static_offset`, and allow for the possibility tha
 the dates may be (or become) invalid due to time zone transitions; by contrast, `sim_now`
 should never contain invalid values, so is not `Nullable`.
 """
+#=
 function observation_dates{N<:NZDT, P<:Period}(
     target_dates::AbstractArray{N}, sim_now::ZonedDateTime, frequency::Period,
     training_offsets::Interval{P}...
@@ -338,3 +379,5 @@ function dynamic_offset_hourofweek{N<:NZDT}(
 )
     return dynamic_offset(dates, sim_nows, Week(-1), table)
 end
+=#
+=#

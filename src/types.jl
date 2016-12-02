@@ -35,11 +35,16 @@ immutable DynamicOffset <: SourceOffset
 
     function DynamicOffset(step, match)
         step < zero(step) || throw(ArgumentError("step must be negative"))
-        return new(step, match, check_availability)
+        return new(step, match)
     end
 end
 
 DynamicOffset(step) = DynamicOffset(step, t -> true)
+
+# TODO docstring
+immutable CustomOffset <: SourceOffset
+    apply::Function     # Should take (sim_now, observation) and return observation
+end
 
 # TODO add docstring info for hourofday and hourofweek
 #
