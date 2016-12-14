@@ -1,9 +1,12 @@
+# TODO rename this file
+
 #TODO docstring
 # TODO hypothetically possible to land on nonexistent/ambiguous, here?
 function targets(horizon::Horizon, sim_now::ZonedDateTime)
-    base = ceil(sim_now, horizon.ceil_to) + horizon.start_offset
+    base = ceil(sim_now, horizon.ceil_start) + horizon.start_offset
     return (base + horizon.step):horizon.step:(base + horizon.coverage)
 end
+# TODO test
 
 #TODO docstring
 # varargs used to allow it to have the same signature as every other apply function
@@ -13,7 +16,7 @@ end
 
 #TODO docstring
 # varargs used to allow it to have the same signature as every other apply function
-function apply(::RecentOffset, observation::ZonedDateTime, latest::ZonedDateTime, args...)
+function apply(::LatestOffset, observation::ZonedDateTime, latest::ZonedDateTime, args...)
     return min(observation, latest)
 end
 
@@ -23,7 +26,7 @@ function apply(
     sim_now::ZonedDateTime
 )
     criteria = t -> t <= latest && offset.match(t)
-    return toprev(criteria, observation; step=offset.step, same=true)
+    return toprev(criteria, observation; step=offset.fallback, same=true)
 end
 
 #TODO docstring
@@ -35,6 +38,7 @@ end
 
 #TODO docstring
 #TODO tests!
+# Multiple offsets in sequence
 function apply{T<:SourceOffset}(
     offsets::Vector{T}, observation::ZonedDateTime, latest::ZonedDateTime,
     sim_now::ZonedDateTime
@@ -42,6 +46,8 @@ function apply{T<:SourceOffset}(
     apply_binary_op(dt, offset) = apply(offset, dt, latest, sim_now)
     return foldl(apply_binary_op, observation, offsets)
 end
+# TODO include tests that verify that multiple offsets applied at once are the same as
+# applying those offsets one at a time in sequence
 
 # TODO: Docstring
 # Handle Nullables
@@ -51,32 +57,37 @@ function apply{T<:SourceOffset}(
     return isnull(observation) ? observation : apply(offset, get(observation), args...)
 end
 
-# TODO docstring
-function observations{T<:SourceOffset}(
-    offsets::Vector{T}, horizon::Horizon, sim_now::ZonedDateTime, latest::ZonedDateTime
+# TODO not exported
+function observation_matrix{T<:SourceOffset}(
+    horizon::Horizon, sim_now::ZonedDateTime, latest::ZonedDateTime, offsets::Vector{T}...
 )
-    dates = targets(horizon, sim_now)
-    sim_nows = repeat([sim_now]; inner=length(dates))
-    dates = map(dt -> apply(offsets, dt, latest, sim_now), dates)
-
-    return (sim_nows, dates)
-end
-
-# TODO docstring
-function observations{T<:SourceOffset}(
-    offset::Vector{T}, horizon::Horizon, sim_now::Vector{ZonedDateTime},
-    latest::Vector{ZonedDateTime}
-)
-    # TODO omigod make this better
-    # Use chain from Iterators.jl and/or Base.flatten?
-    dates, sim_nows = ZonedDateTime[], ZonedDateTime[]
-    for (s, l) in zip(sim_now, latest)
-        s, d = observations(offset, horizon, s, l)
-        append!(dates, d)
-        append!(sim_nows, s)
+    dates = repmat(targets(horizon, sim_now), 1, length(offsets))
+    for (i, offset) in enumerate(offsets)
+        dates[:, i] = map(dt -> apply(offset, dt, latest, sim_now), dates[:, i])
     end
-    return (sim_nows, dates)
+
+    return hcat(repmat([sim_now], size(dates, 1)), dates)
 end
+
+# TODO docstring
+function observations{T<:SourceOffset}(
+    horizon::Horizon, sim_now::ZonedDateTime, latest::ZonedDateTime, offsets::Vector{T}...
+)
+    matrix = observation_matrix(horizon, sim_now, latest, offsets...)
+    return (matrix[:, 1], matrix[:, 2:end])
+end
+
+# TODO docstring
+function observations{T<:SourceOffset}(
+    horizon::Horizon, sim_now::Vector{ZonedDateTime}, latest::Vector{ZonedDateTime},
+    offsets::Vector{Vector{T}}...
+)
+    matrix = vcat(
+        map((sn, lt) -> observation_matrix(horizon, sn, lt, offsets...), sim_now, latest)...
+    )
+    return (matrix[:, 1], matrix[:, 2:end])
+end
+
 
 
 #=
@@ -235,6 +246,8 @@ end
 
 """
     recent_offset(dates::AbstractArray{ZonedDateTime}, sim_now::AbstractArray{ZonedDateTime}, table::Table) -> Array{ZonedDateTime}
+
+    #TODO Renamed LatestOffset
 
 Provides the target dates of the most recent available data in the table.
 

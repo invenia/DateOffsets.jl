@@ -5,21 +5,20 @@ abstract Offset
 immutable Horizon <: Offset
     coverage::Period
     step::Period
-    ceil_to::Period
+    start_ceil::Period
     start_offset::Period
 end
 
 # "Static" horizons (e.g., 2 to 8 hours ahead, 0 to 75 minutes ahead)
-Horizon(r::StepRange, ceil_to) = Horizon(r.stop - r.start + r.step, r.step, ceil_to, r.start - r.step)
+Horizon(r::StepRange, ceil_start) = Horizon(r.stop - r.start + r.step, r.step, ceil_to, r.start - r.step)
 Horizon(r::StepRange) = Horizon(r.stop - r.start + r.step, r.step, r.step, r.start - r.step)
 # TODO: Test these, using the examples above.
 
 # "Daily" horizons
-Horizon(coverage::Period, step, ceil_to) = Horizon(coverage, step, ceil_to, Day(0))
-Horizon(coverage::Period, step) = Horizon(coverage, step, Day(1), Day(0))
-Horizon(coverage::Period) = Horizon(coverage, Hour(1), Day(1), Day(0))
-Horizon() = Horizon(Day(1))
-# TODO: Test these.
+function Horizon(; coverage=Day(1), step=Hour(1), start_ceil=Day(1), start_offset=Hour(0))
+    return Horizon(coverage, step, start_ceil, start_offset)
+end
+# TODO: Test this
 
 abstract SourceOffset <: Offset
 
@@ -27,19 +26,19 @@ immutable StaticOffset <: SourceOffset
     offset::Period
 end
 
-immutable RecentOffset <: SourceOffset end
+immutable LatestOffset <: SourceOffset end
 
 immutable DynamicOffset <: SourceOffset
-    step::Period
+    fallback::Period
     match::Function
 
-    function DynamicOffset(step, match)
-        step < zero(step) || throw(ArgumentError("step must be negative"))
-        return new(step, match)
+    function DynamicOffset(fallback, match)
+        fallback < zero(fallback) || throw(ArgumentError("fallback must be negative"))
+        return new(fallback, match)
     end
 end
 
-DynamicOffset(step) = DynamicOffset(step, t -> true)
+DynamicOffset(; fallback=Day(-1), match=t -> true) = DynamicOffset(fallback, match)
 
 # TODO docstring
 immutable CustomOffset <: SourceOffset
@@ -53,3 +52,15 @@ end
 #
 # Curtis Vogt [12:26]  
 # Maybe we want to have a section in the docstring which mentions equivalent examples in MATLAB?
+
+function show(io::IO, horizon::Horizon)
+    start_info = ""
+    has_offset = horizon.start_offset != zero(horizon.start_offset)
+    if horizon.start_ceil != Day(1) || has_offset
+        start_info = ", start date rounded up to $(horizon.start_ceil)"
+        if has_offset
+            start_info *= "with an offset of $(horizon.start_offset)"
+        end
+    end
+    print(io, "Horizon($(horizon.coverage) at $(horizon.step) resolution$start_info)")
+end
