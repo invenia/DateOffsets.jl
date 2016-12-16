@@ -1,5 +1,3 @@
-# TODO rename this file
-
 #TODO docstring
 # TODO hypothetically possible to land on nonexistent/ambiguous, here?
 function targets(horizon::Horizon, sim_now::ZonedDateTime)
@@ -11,7 +9,7 @@ end
 #TODO docstring
 # varargs used to allow it to have the same signature as every other apply function
 function apply(offset::StaticOffset, observation::ZonedDateTime, args...)
-    return observation + offset.offset
+    return observation + offset.period
 end
 
 #TODO docstring
@@ -39,27 +37,25 @@ end
 #TODO docstring
 #TODO tests!
 # Multiple offsets in sequence
-function apply{T<:SourceOffset}(
-    offsets::Vector{T}, observation::ZonedDateTime, latest::ZonedDateTime,
+function apply(
+    offset::CompoundOffset, observation::ZonedDateTime, latest::ZonedDateTime,
     sim_now::ZonedDateTime
 )
     apply_binary_op(dt, offset) = apply(offset, dt, latest, sim_now)
-    return foldl(apply_binary_op, observation, offsets)
+    return foldl(apply_binary_op, observation, offset.offsets)
 end
 # TODO include tests that verify that multiple offsets applied at once are the same as
 # applying those offsets one at a time in sequence
 
 # TODO: Docstring
 # Handle Nullables
-function apply{T<:SourceOffset}(
-    offset::Union{T, Vector{T}}, observation::Nullable{ZonedDateTime}, args...
-)
+function apply(offset::SourceOffset, observation::Nullable{ZonedDateTime}, args...)
     return isnull(observation) ? observation : apply(offset, get(observation), args...)
 end
 
 # TODO not exported
 function observation_matrix{T<:SourceOffset}(
-    horizon::Horizon, sim_now::ZonedDateTime, latest::ZonedDateTime, offsets::Vector{T}...
+    offsets::Vector{T}, horizon::Horizon, sim_now::ZonedDateTime, latest::ZonedDateTime
 )
     dates = repmat(targets(horizon, sim_now), 1, length(offsets))
     for (i, offset) in enumerate(offsets)
@@ -71,19 +67,19 @@ end
 
 # TODO docstring
 function observations{T<:SourceOffset}(
-    horizon::Horizon, sim_now::ZonedDateTime, latest::ZonedDateTime, offsets::Vector{T}...
+    offsets::Vector{T}, horizon::Horizon, sim_now::ZonedDateTime, latest::ZonedDateTime
 )
-    matrix = observation_matrix(horizon, sim_now, latest, offsets...)
+    matrix = observation_matrix(horizon, sim_now, latest, offsets)
     return (matrix[:, 1], matrix[:, 2:end])
 end
 
 # TODO docstring
 function observations{T<:SourceOffset}(
-    horizon::Horizon, sim_now::Vector{ZonedDateTime}, latest::Vector{ZonedDateTime},
-    offsets::Vector{Vector{T}}...
+    offsets::Vector{T}, horizon::Horizon, sim_now::Vector{ZonedDateTime},
+    latest::Vector{ZonedDateTime}
 )
     matrix = vcat(
-        map((sn, lt) -> observation_matrix(horizon, sn, lt, offsets...), sim_now, latest)...
+        map((sn, lt) -> observation_matrix(horizon, sn, lt, offsets), sim_now, latest)...
     )
     return (matrix[:, 1], matrix[:, 2:end])
 end

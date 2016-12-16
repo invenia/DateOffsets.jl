@@ -10,8 +10,6 @@ using Intervals
 using Mocking
 # TODO: Some of the above aren't needed anymore
 
-import Base.show
-
 include("types.jl")
 #include("utils.jl")    # TODO: this probably isn't needed.
 include("dates.jl")
@@ -23,6 +21,7 @@ export Offset,
        LatestOffset,
        DynamicOffset,
        CustomOffset,    # TODO add tests for this
+       CompoundOffset,
        targets,
        apply,
        observations

@@ -1,6 +1,6 @@
-typealias NZDT Union{ZonedDateTime, Nullable{ZonedDateTime}}
-
 abstract Offset
+
+##### Horizon #####
 
 immutable Horizon <: Offset
     coverage::Period
@@ -20,15 +20,38 @@ function Horizon(; coverage=Day(1), step=Hour(1), start_ceil=Day(1), start_offse
 end
 # TODO: Test this
 
-abstract SourceOffset <: Offset
-
-immutable StaticOffset <: SourceOffset
-    offset::Period
+function Base.string(h::Horizon)
+    start_info = ""
+    has_offset = h.start_offset != zero(h.start_offset)
+    if h.start_ceil != Day(1) || has_offset
+        start_info = ", start date rounded up to $(h.start_ceil)"
+        if has_offset
+            start_info *= "+ $(h.start_offset)"
+        end
+    end
+    return "Horizon($(h.coverage) at $(h.step) resolution$start_info)"
 end
 
-immutable LatestOffset <: SourceOffset end
+Base.show(io::IO, h::Horizon) = print(io, string(h))
 
-immutable DynamicOffset <: SourceOffset
+##### SourceOffset #####
+
+abstract SourceOffset <: Offset
+abstract ScalarOffset <: SourceOffset
+
+immutable StaticOffset <: ScalarOffset
+    period::Period
+end
+
+Base.string(o::StaticOffset) = "StaticOffset($(o.period))"
+Base.show(io::IO, o::StaticOffset) = print(io, string(o))
+
+immutable LatestOffset <: ScalarOffset end
+
+Base.string(o::LatestOffset) = "LatestOffset()"
+Base.show(io::IO, o::LatestOffset) = print(io, string(o))
+
+immutable DynamicOffset <: ScalarOffset
     fallback::Period
     match::Function
 
@@ -40,10 +63,8 @@ end
 
 DynamicOffset(; fallback=Day(-1), match=t -> true) = DynamicOffset(fallback, match)
 
-# TODO docstring
-immutable CustomOffset <: SourceOffset
-    apply::Function     # Should take (sim_now, observation) and return observation
-end
+Base.string(o::DynamicOffset) = "DynamicOffset($(o.fallback), $(o.match))"
+Base.show(io::IO, o::DynamicOffset) = print(io, string(o))
 
 # TODO add docstring info for hourofday and hourofweek
 #
@@ -53,14 +74,48 @@ end
 # Curtis Vogt [12:26]  
 # Maybe we want to have a section in the docstring which mentions equivalent examples in MATLAB?
 
-function show(io::IO, horizon::Horizon)
-    start_info = ""
-    has_offset = horizon.start_offset != zero(horizon.start_offset)
-    if horizon.start_ceil != Day(1) || has_offset
-        start_info = ", start date rounded up to $(horizon.start_ceil)"
-        if has_offset
-            start_info *= "with an offset of $(horizon.start_offset)"
-        end
-    end
-    print(io, "Horizon($(horizon.coverage) at $(horizon.step) resolution$start_info)")
+# TODO docstring
+immutable CustomOffset <: ScalarOffset
+    apply::Function     # Should take (sim_now, observation) and return observation
 end
+
+Base.string(o::CustomOffset) = "CustomOffset($(o.apply))"
+Base.show(io::IO, o::CustomOffset) = print(io, string(o))
+
+##### CompoundOffset #####
+
+# TODO docstring
+immutable CompoundOffset <: SourceOffset
+    offsets::Vector{ScalarOffset}
+
+    function CompoundOffset(o::Vector{ScalarOffset})
+        if isempty(o)
+            # CompoundOffsets must contain at least one ScalarOffset.
+            push!(o, StaticOffset(Day(0)))
+        elseif length(o) > 1
+            # Remove extraneous StaticOffsets of zero.
+            filter!(x -> !isa(x, StaticOffset) || x.period != zero(x.period), o)
+        end
+        return new(o)
+    end
+end
+
+CompoundOffset{T<:ScalarOffset}(o::Vector{T}) = CompoundOffset(Vector{ScalarOffset}(o))
+
+CompoundOffset(o::ScalarOffset...) = CompoundOffset(o)
+
+Base.convert(::Type{CompoundOffset}, o::ScalarOffset) = CompoundOffset(ScalarOffset[o])
+
+Base.:+(x::ScalarOffset, y::ScalarOffset) = CompoundOffset(ScalarOffset[x, y])
+Base.:+(x::CompoundOffset, y::ScalarOffset) = CompoundOffset(vcat(x.offsets, y))
+Base.:+(x::ScalarOffset, y::CompoundOffset) = CompoundOffset(vcat(x, y.offsets))
+Base.:+(x::CompoundOffset, y::CompoundOffset) = CompoundOffset(vcat(x.offsets, y.offsets))
+# TODO TEST THESE
+Base.:.+{T<:ScalarOffset}(x::ScalarOffset, y::Array{T}) = [x] .+ y  # Needed until v0.6
+Base.:.+{T<:ScalarOffset}(x::Array{T}, y::ScalarOffset) = x .+ [y]  # Needed until v0.6
+
+function Base.string(o::CompoundOffset)
+    return "CompoundOffset($(join([string(offset) for offset in o.offsets], ", ")))"
+end
+
+Base.show(io::IO, o::CompoundOffset) = print(io, string(o))
