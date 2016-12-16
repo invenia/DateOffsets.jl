@@ -17,6 +17,7 @@ include("dates.jl")
 export Offset,
        Horizon,
        SourceOffset,
+       ScalarOffset,
        StaticOffset,
        LatestOffset,
        DynamicOffset,

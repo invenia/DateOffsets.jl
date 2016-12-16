@@ -1,7 +1,10 @@
-# Horizons.jl
+# Offsets.jl
 
-Horizons.jl provides the tools necessary to generate dates with specific temporal offsets
+Offsets.jl provides the tools necessary to generate dates with specific temporal offsets
 for use in training and forecasting.
+
+
+### Note: Since merging in the `offset_type` branch, content bellow is entirely out-of-date
 
 ## Contents
 
