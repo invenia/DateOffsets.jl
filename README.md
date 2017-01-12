@@ -6,6 +6,40 @@ for use in training and forecasting.
 
 ### Note: Since merging in the `offset_type` branch, content bellow is entirely out-of-date
 
+### TODO: Convert this all to proper doc format
+
+### TODO: Show type hierarchy for offsets
+
+### TODO: Mention that every subtype of `SourceOffset` should implement `apply(offset::SourceOffset, observation::ZonedDateTime, latest::ZonedDateTime, sim_now::ZonedDateTime)`
+
+### TODO: Horizon Example
+
+```julia
+julia> using Offsets, TimeZones
+
+julia> sim_now = now(TimeZone("America/Winnipeg"))
+2016-12-28T11:20:30.054-06:00
+
+julia> horizon = Horizon()
+Horizon(1 day at 1 hour resolution)
+
+julia> targets(horizon, sim_now)
+2016-12-29T01:00:00-06:00:1 hour:2016-12-30T00:00:00-06:00
+```
+
+```julia
+julia> using Offsets, TimeZones, Base.Dates
+
+julia> sim_now = now(TimeZone("America/Winnipeg"))
+2016-12-28T11:20:30.054-06:00
+
+julia> horizon = Horizon(Hour(1):Hour(4))
+Horizon(4 hours at 1 hour resolution, start date rounded up to 1 hour)
+
+julia> targets(horizon, sim_now)
+2016-12-28T13:00:00-06:00:1 hour:2016-12-28T16:00:00-06:00
+```
+
 ## Contents
 
 * [Overview](#overview)
