@@ -1,5 +1,8 @@
 # Offsets.jl
 
+[![Build Status](https://gitlab.invenia.ca/invenia/Offsets.jl/badges/master/build.svg)](https://gitlab.invenia.ca/invenia/Offsets.jl/commits/master)
+[![Coverage Status](https://gitlab.invenia.ca/invenia/Offsets.jl/badges/master/coverage.svg)](https://gitlab.invenia.ca/invenia/Offsets.jl/commits/master)
+
 Offsets.jl provides the tools necessary to generate dates with specific temporal offsets
 for use in training and forecasting.
 
