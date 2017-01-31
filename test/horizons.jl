@@ -187,15 +187,9 @@ winnipeg = TimeZone("America/Winnipeg")
         results = targets(horizon, sim_now)
         @test collect(results) == [
             LaxZonedDateTime(DateTime(2016, 3, 12, 2), winnipeg)
-            LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg)
+            LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg)    # DNE
             LaxZonedDateTime(DateTime(2016, 3, 14, 2), winnipeg)
         ]
-
-        # TODO: Is there a way to solve this problem without adding Range support to
-        # LaxZonedDateTime? Would adding that really help, given you're going to be
-        # incrementing by one hour all the time anyway?
-        # Best approach is probably just doing a bunch of checks inside `targets`. Sigh.
-        # TODO: This will probably change the resturn type to a Vector, which is fine.
     end
 
     @testset "fall back" begin
@@ -253,7 +247,7 @@ winnipeg = TimeZone("America/Winnipeg")
             ZonedDateTime(2016, 11, 6, 2, winnipeg)
         ]
 
-        sim_now = ZonedDateTime(2016, 11, 6, 0, 30, winnipeg)
+        sim_now = ZonedDateTime(2016, 11, 5, 0, 30, winnipeg)
         horizon = Horizon(Day(0):Day(2), Hour(1))
         results = targets(horizon, sim_now)
         @test_throws AmbiguousTimeError collect(results)
@@ -261,10 +255,9 @@ winnipeg = TimeZone("America/Winnipeg")
         sim_now = LaxZonedDateTime(sim_now)
         results = targets(horizon, sim_now)
         @test collect(results) == [
-            LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg)
+            LaxZonedDateTime(DateTime(2016, 11, 5, 1), winnipeg)
+            LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg)    # AMB
             LaxZonedDateTime(DateTime(2016, 11, 7, 1), winnipeg)
-            LaxZonedDateTime(DateTime(2016, 11, 8, 1), winnipeg)
         ]
-        # TODO: Fix however the above is fixed.
     end
 end

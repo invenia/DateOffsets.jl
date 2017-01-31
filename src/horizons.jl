@@ -30,6 +30,12 @@ function Horizon(; coverage=Day(1), step=Hour(1), start_ceil=Day(1), start_offse
     return Horizon(coverage, step, start_ceil, start_offset)
 end
 
+function Horizon(r::StepRange, start_ceil)
+    return Horizon(r.stop - r.start + r.step, r.step, start_ceil, r.start - r.step)
+end
+
+Horizon(r::StepRange) = Horizon(r.stop - r.start + r.step, r.step, r.step, r.start - r.step)
+
 """
     Horizon(r::StepRange, [start_ceil::Period]) -> Horizon
 
@@ -40,11 +46,7 @@ defined as `Horizon(Dates.Hour(2):Dates.Hour(8))`.
 
 If `start_ceil` is not specified, it will default to the `StepRange`'s `step` attribute.
 """
-function Horizon(r::StepRange, start_ceil)
-    return Horizon(r.stop - r.start + r.step, r.step, start_ceil, r.start - r.step)
-end
-
-Horizon(r::StepRange) = Horizon(r.stop - r.start + r.step, r.step, r.step, r.start - r.step)
+Horizon(::StepRange, ::Any), Horizon(::StepRange)
 
 function Base.string{T}(h::Horizon{T})
     start_info = ""
@@ -75,6 +77,3 @@ function targets{P<:Period, T<:LZDT}(horizon::Horizon{P}, sim_now::T)
     base = ceil(sim_now, horizon.start_ceil) + horizon.start_offset
     return (base + horizon.step):horizon.step:(base + horizon.coverage)
 end
-
-# TODO: Associate docstrings with correct definitions
-# How would that work for the two different definitions of horizon with `StepRange`?

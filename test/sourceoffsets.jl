@@ -54,6 +54,10 @@ when laxzoneddatetimes are passed in, things will not throw errors
 =#
 
 
+# TODO Using + with two offsets will create (or expand) a compound offset
+# TODO Using .+ will create or expand lists of compound offsets
+
+
 
 @testset "observations" begin
     @testset "basic" begin

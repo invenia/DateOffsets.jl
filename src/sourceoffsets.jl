@@ -14,8 +14,6 @@ end
 Base.string(o::StaticOffset) = "StaticOffset($(o.period))"
 Base.show(io::IO, o::StaticOffset) = print(io, string(o))
 
-# TODO: Associate docstrings with correct definitions
-
 """
     LatestOffset() -> LatestOffset
 
@@ -144,9 +142,10 @@ Base.:+(x::ScalarOffset, y::ScalarOffset) = CompoundOffset(ScalarOffset[x, y])
 Base.:+(x::CompoundOffset, y::ScalarOffset) = CompoundOffset(vcat(x.offsets, y))
 Base.:+(x::ScalarOffset, y::CompoundOffset) = CompoundOffset(vcat(x, y.offsets))
 Base.:+(x::CompoundOffset, y::CompoundOffset) = CompoundOffset(vcat(x.offsets, y.offsets))
-# TODO TEST THESE
-Base.:.+{T<:ScalarOffset}(x::ScalarOffset, y::Array{T}) = [x] .+ y  # Needed until v0.6
-Base.:.+{T<:ScalarOffset}(x::Array{T}, y::ScalarOffset) = x .+ [y]  # Needed until v0.6
+if VERSION < v"0.6-"
+    Base.:.+{T<:ScalarOffset}(x::ScalarOffset, y::Array{T}) = [x] .+ y
+    Base.:.+{T<:ScalarOffset}(x::Array{T}, y::ScalarOffset) = x .+ [y]
+end
 
 function Base.string(o::CompoundOffset)
     return "CompoundOffset($(join([string(offset) for offset in o.offsets], ", ")))"
@@ -154,14 +153,6 @@ end
 
 Base.show(io::IO, o::CompoundOffset) = print(io, string(o))
 
-"""
-    apply(offset::SourceOffset, target_date::ZonedDateTime, latest::ZonedDateTime, sim_now::ZonedDateTime) -> ZonedDateTime
-
-Applies `offset` to the `target_date`, returning the new observation date. Methods for some
-subtypes of `SourceOffset` also use `latest` and `sim_now` in their calculations. If the
-`offset` is a `CompoundOffset`, each of the `ScalarOffset`s is applied sequentially to
-generate the final observation date.
-"""
 function apply(offset::StaticOffset, target_date::LZDT, args...)
     return target_date + offset.period
 end
@@ -193,6 +184,16 @@ end
 function apply(offset::SourceOffset, target_date::Nullable{ZonedDateTime}, args...)
     return isnull(target_date) ? target_date : apply(offset, get(target_date), args...)
 end
+
+"""
+    apply(offset::SourceOffset, target_date::Union{ZonedDateTime, LaxZonedDateTime}, latest::ZonedDateTime, sim_now::ZonedDateTime) -> ZonedDateTime
+
+Applies `offset` to the `target_date`, returning the new observation date. Methods for some
+subtypes of `SourceOffset` also use `latest` and `sim_now` in their calculations. If the
+`offset` is a `CompoundOffset`, each of the `ScalarOffset`s is applied sequentially to
+generate the final observation date.
+"""
+apply(::SourceOffset, ::LZDT, ::ZonedDateTime, ::ZonedDateTime)
 
 function observation_matrix{S<:SourceOffset}(
     offsets::Vector{S}, horizon::Horizon, sim_now::LZDT, latest::ZonedDateTime

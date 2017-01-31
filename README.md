@@ -14,6 +14,8 @@ for use in training and forecasting.
 
 ### TODO: Horizon Example
 
+### TODO: Note that you can use LaxZonedDAteTimes for Horizons if you want to avoid errors for Horizons (but shouldn't be necessary)
+
 ```julia
 julia> using Offsets, TimeZones
 

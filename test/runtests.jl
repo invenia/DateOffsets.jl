@@ -4,15 +4,16 @@ Mocking.enable()
 using Offsets
 using TimeZones
 using LaxZonedDateTimes
-#using DateUtils
 #using DataSources
 #using Intervals
 #using NullableArrays
 using Base.Test
 using Base.Dates
 
-include("horizons.jl")
-include("sourceoffsets.jl")
+@testset "Offsets" begin
+    include("horizons.jl")
+    include("sourceoffsets.jl")
+end
 
 #=
 Repurpose "observation_dates" basic tests to be tests with static offset 0 (in part)?
