@@ -1,20 +1,23 @@
 # Offsets.jl
 
+[![Build Status](https://gitlab.invenia.ca/invenia/Offsets.jl/badges/master/build.svg)](https://gitlab.invenia.ca/invenia/Offsets.jl/commits/master)
+[![Coverage Status](https://gitlab.invenia.ca/invenia/Offsets.jl/badges/master/coverage.svg)](https://gitlab.invenia.ca/invenia/Offsets.jl/commits/master)
+
 Offsets.jl provides the tools necessary to generate dates with specific temporal offsets
 for use in training and forecasting.
 
 
-### Note: Since merging in the `offset_type` branch, content bellow is entirely out-of-date
+**Note: Since merging in the `offset_type` branch, content bellow is entirely out-of-date**
 
-### TODO: Convert this all to proper doc format
+**TODO: Convert this all to proper doc format**
 
-### TODO: Show type hierarchy for offsets
+**TODO: Show type hierarchy for offsets**
 
-### TODO: Mention that every subtype of `SourceOffset` should implement `apply(offset::SourceOffset, observation::ZonedDateTime, latest::ZonedDateTime, sim_now::ZonedDateTime)`
+**TODO: Mention that every subtype of `SourceOffset` should implement `apply(offset::SourceOffset, observation::ZonedDateTime, latest::ZonedDateTime, sim_now::ZonedDateTime)`**
 
-### TODO: Horizon Example
+**TODO: Horizon Example**
 
-### TODO: Note that you can use LaxZonedDAteTimes for Horizons if you want to avoid errors for Horizons (but shouldn't be necessary)
+**TODO: Note that you can use LaxZonedDAteTimes for Horizons if you want to avoid errors for Horizons (but shouldn't be necessary)**
 
 ```julia
 julia> using Offsets, TimeZones

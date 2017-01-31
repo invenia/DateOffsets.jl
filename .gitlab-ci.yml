@@ -1,50 +1,79 @@
+.test_template: &test_definition
+  before_script:
+    - curl -s -o setup-julia https://gitlab.invenia.ca/infrastructure/gitlab-ci-helper/raw/master/setup-julia
+    - chmod +x setup-julia
+    - ./setup-julia install $JULIA_VERSION
+  script:
+    - source setup-julia export
+    - julia -e "Pkg.clone(pwd()); Pkg.build(\"$PKG_NAME\"); Pkg.test(\"$PKG_NAME\"; coverage=true)"
+    - julia --depwarn=no -e "cd(Pkg.dir(\"$PKG_NAME\")); Pkg.add(\"Coverage\"); using Coverage; c, t = get_summary(process_folder()); @printf(\"Test Coverage %.2f%%\\n\", c/t * 100)"
+  after_script:
+    - ./setup-julia clean
+
+.test_tmp_04: &test_04
+  variables:
+    JULIA_VERSION: "0.4"
+  <<: *test_definition
+
+.test_tmp_release: &test_release
+  variables:
+    JULIA_VERSION: release
+  <<: *test_definition
+
+.test_tmp_nightly: &test_nightly
+  variables:
+    JULIA_VERSION: nightly
+  allow_failure: true
+  <<: *test_definition
+
+
 "Julia 0.4, OS X":
   tags:
     - osx
-  script:
-    - curl -s -o setup-julia https://gitlab.invenia.ca/infrastructure/gitlab-ci-helper/raw/master/setup-julia && source setup-julia 0.4
-    - julia -e 'symlink(ENV["CI_PROJECT_DIR"], Pkg.dir(ENV["PKG_NAME"])); Pkg.resolve(); Pkg.build(ENV["PKG_NAME"]); Pkg.test(ENV["PKG_NAME"])'
-
+  <<: *test_04
 
 "Julia 0.4, Linux (amd64)":
   tags:
     - linux
     - amd64
-  script:
-    - curl -s -o setup-julia https://gitlab.invenia.ca/infrastructure/gitlab-ci-helper/raw/master/setup-julia && source setup-julia 0.4
-    - julia -e 'symlink(ENV["CI_PROJECT_DIR"], Pkg.dir(ENV["PKG_NAME"])); Pkg.resolve(); Pkg.build(ENV["PKG_NAME"]); Pkg.test(ENV["PKG_NAME"])'
-
+  <<: *test_04
 
 "Julia 0.4, Linux (i386)":
   tags:
     - linux
     - i386
-  script:
-    - curl -s -o setup-julia https://gitlab.invenia.ca/infrastructure/gitlab-ci-helper/raw/master/setup-julia && source setup-julia 0.4
-    - julia -e 'symlink(ENV["CI_PROJECT_DIR"], Pkg.dir(ENV["PKG_NAME"])); Pkg.resolve(); Pkg.build(ENV["PKG_NAME"]); Pkg.test(ENV["PKG_NAME"])'
+  <<: *test_04
 
+"Julia release, OS X":
+  tags:
+    - osx
+  <<: *test_release
+
+"Julia release, Linux (amd64)":
+  tags:
+    - linux
+    - amd64
+  <<: *test_release
+
+"Julia release, Linux (i386)":
+  tags:
+    - linux
+    - i386
+  <<: *test_release
 
 "Julia nightly, OS X":
   tags:
     - osx
-  script:
-    - curl -s -o setup-julia https://gitlab.invenia.ca/infrastructure/gitlab-ci-helper/raw/master/setup-julia && source setup-julia nightly
-    - julia -e 'symlink(ENV["CI_PROJECT_DIR"], Pkg.dir(ENV["PKG_NAME"])); Pkg.resolve(); Pkg.build(ENV["PKG_NAME"]); Pkg.test(ENV["PKG_NAME"])'
-
+  <<: *test_nightly
 
 "Julia nightly, Linux (amd64)":
   tags:
     - linux
     - amd64
-  script:
-    - curl -s --insecure -o setup-julia https://gitlab.invenia.ca/infrastructure/gitlab-ci-helper/raw/master/setup-julia && source setup-julia nightly
-    - julia -e 'symlink(ENV["CI_PROJECT_DIR"], Pkg.dir(ENV["PKG_NAME"])); Pkg.resolve(); Pkg.build(ENV["PKG_NAME"]); Pkg.test(ENV["PKG_NAME"])'
-
+  <<: *test_nightly
 
 "Julia nightly, Linux (i386)":
   tags:
     - linux
     - i386
-  script:
-    - curl -s --insecure -o setup-julia https://gitlab.invenia.ca/infrastructure/gitlab-ci-helper/raw/master/setup-julia && source setup-julia nightly
-    - julia -e 'symlink(ENV["CI_PROJECT_DIR"], Pkg.dir(ENV["PKG_NAME"])); Pkg.resolve(); Pkg.build(ENV["PKG_NAME"]); Pkg.test(ENV["PKG_NAME"])'
+  <<: *test_nightly
