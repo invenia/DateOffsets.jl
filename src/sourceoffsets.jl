@@ -182,7 +182,7 @@ function apply(
 end
 
 function apply(offset::SourceOffset, target_date::Nullable{ZonedDateTime}, args...)
-    return isnull(target_date) ? target_date : apply(offset, get(target_date), args...)
+    return isnull(target_date)?target_date:Nullable(apply(offset,get(target_date),args...))
 end
 
 """
