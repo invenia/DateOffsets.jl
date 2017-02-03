@@ -150,13 +150,42 @@ end
 end
 
 @testset "CompoundOffset" begin
+    static = StaticOffset(Minute(-30))
+    recent = LatestOffset()
+    dynamic = DynamicOffset(; fallback=Week(-1))
+
+    # == operator
+    @test CompoundOffset([StaticOffset(Minute(0)), dynamic]) == CompoundOffset([dynamic])
+    @test CompoundOffset([static, dynamic]) == CompoundOffset([static, dynamic])
+    @test CompoundOffset([static, dynamic]) != CompoundOffset([static, recent])
+
+    # + operator
+    @test static + dynamic == CompoundOffset([static, dynamic])
+    @test recent + dynamic + static == CompoundOffset([recent, dynamic, static])
+
+    # .+ operator
+    @test recent .+ [StaticOffset(Hour(-i)) for i in 1:4] == [
+        CompoundOffset([recent, StaticOffset(Hour(-1))]),
+        CompoundOffset([recent, StaticOffset(Hour(-2))]),
+        CompoundOffset([recent, StaticOffset(Hour(-3))]),
+        CompoundOffset([recent, StaticOffset(Hour(-4))])
+    ]
+
+    sim_now = ZonedDateTime(2016, 8, 11, 1, 30, winnipeg)
+    target = ZonedDateTime(2016, 8, 11, 8, winnipeg)
+    latest = ZonedDateTime(2016, 8, 11, 1, 15, winnipeg)
+
+    compound_result = apply(static + dynamic, target, sim_now, latest)
+    chain_result = apply(static, target, sim_now, latest)
+    chain_result = apply(dynamic, chain_result, sim_now, latest)
+    @test compound_result == chain_result
+
+    compound_result = apply(recent + dynamic + static, target, sim_now, latest)
+    chain_result = apply(recent, target, sim_now, latest)
+    chain_result = apply(dynamic, chain_result, sim_now, latest)
+    chain_result = apply(static, chain_result, sim_now, latest)
+    @test compound_result == chain_result
 end
-
-# include tests that verify that multiple offsets applied at once are the same as
-# applying those offsets one at a time in sequence
-
-# TODO Using + with two offsets will create (or expand) a compound offset
-# TODO Using .+ will create or expand lists of compound offsets
 
 @testset "Nullable{ZonedDateTime}" begin
     target = ZonedDateTime(2016, 8, 11, 2, winnipeg)
@@ -177,8 +206,6 @@ end
 end
 
 # TODO: test multiple columns of offsets (for observations function)
-
-# TODO: test applying offsets to nullables (the only thing that is different is the isnull check)
 
 @testset "observations" begin
     @testset "basic" begin
