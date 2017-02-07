@@ -1,9 +1,9 @@
-# Offsets.jl
+# DateOffsets.jl
 
-[![Build Status](https://gitlab.invenia.ca/invenia/Offsets.jl/badges/master/build.svg)](https://gitlab.invenia.ca/invenia/Offsets.jl/commits/master)
-[![Coverage Status](https://gitlab.invenia.ca/invenia/Offsets.jl/badges/master/coverage.svg)](https://gitlab.invenia.ca/invenia/Offsets.jl/commits/master)
+[![Build Status](https://gitlab.invenia.ca/invenia/DateOffsets.jl/badges/master/build.svg)](https://gitlab.invenia.ca/invenia/DateOffsets.jl/commits/master)
+[![Coverage Status](https://gitlab.invenia.ca/invenia/DateOffsets.jl/badges/master/coverage.svg)](https://gitlab.invenia.ca/invenia/DateOffsets.jl/commits/master)
 
-Offsets.jl provides the tools necessary to generate dates with specific temporal offsets
+DateOffsets.jl provides the tools necessary to generate dates with specific temporal offsets
 for use in training and forecasting.
 
 
@@ -20,7 +20,7 @@ for use in training and forecasting.
 **TODO: Note that you can use LaxZonedDAteTimes for Horizons if you want to avoid errors for Horizons (but shouldn't be necessary)**
 
 ```julia
-julia> using Offsets, TimeZones
+julia> using DateOffsets, TimeZones
 
 julia> sim_now = now(TimeZone("America/Winnipeg"))
 2016-12-28T11:20:30.054-06:00
@@ -33,7 +33,7 @@ julia> targets(horizon, sim_now)
 ```
 
 ```julia
-julia> using Offsets, TimeZones, Base.Dates
+julia> using DateOffsets, TimeZones, Base.Dates
 
 julia> sim_now = now(TimeZone("America/Winnipeg"))
 2016-12-28T11:20:30.054-06:00

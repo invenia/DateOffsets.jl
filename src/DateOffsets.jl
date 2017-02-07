@@ -1,4 +1,4 @@
-module Offsets
+module DateOffsets
 
 using Base.Dates
 using TimeZones
@@ -6,13 +6,14 @@ using LaxZonedDateTimes
 using Intervals
 using Mocking
 
-abstract Offset
+abstract DateOffset
 typealias LZDT Union{ZonedDateTime, LaxZonedDateTime}
 
 include("horizons.jl")
 include("sourceoffsets.jl")
+include("observations.jl")
 
-export Offset,
+export DateOffset,
        Horizon,
        SourceOffset,
        ScalarOffset,

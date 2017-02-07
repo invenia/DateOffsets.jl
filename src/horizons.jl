@@ -1,4 +1,4 @@
-immutable Horizon{T<:Period} <: Offset
+immutable Horizon{T<:Period} <: DateOffset
     coverage::Period
     step::T
     start_ceil::Period
