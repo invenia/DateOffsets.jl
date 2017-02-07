@@ -101,36 +101,62 @@ end
 end
 
 @testset "DynamicOffset" begin
-    def = DynamicOffset()
-    match_hod = DynamicOffset(; fallback=Day(-1))
-    match_how = DynamicOffset(; fallback=Week(-1))
-    match_hod_tuesday = DynamicOffset(; match=t -> dayofweek(t) == Tuesday)
+    @testset "basic" begin
+        def = DynamicOffset()
+        match_hod = DynamicOffset(; fallback=Day(-1))
+        match_how = DynamicOffset(; fallback=Week(-1))
+        match_hod_tuesday = DynamicOffset(; match=t -> dayofweek(t) == Tuesday)
 
-    sim_now = ZonedDateTime(2016, 8, 11, 1, 30, winnipeg)
-    target = ZonedDateTime(2016, 8, 11, 8, winnipeg)                            # Thursday
-    latest = ZonedDateTime(2016, 8, 11, 10, winnipeg)
+        sim_now = ZonedDateTime(2016, 8, 11, 1, 30, winnipeg)
+        target = ZonedDateTime(2016, 8, 11, 8, winnipeg)                            # THU
+        latest = ZonedDateTime(2016, 8, 11, 10, winnipeg)
 
-    # Data for target date should be available (accoring to latest), so not much happens.
-    @test apply(def, target, latest, sim_now) == apply(match_hod, target, latest, sim_now)
-    @test apply(match_hod, target, latest, sim_now) == target
-    @test apply(match_how, target, latest, sim_now) == target
-    @test apply(match_hod_tuesday, target, latest, sim_now) == target - Day(2)  # Tuesday
+        # Data for target date should be available (accoring to latest), so not much happens.
+        @test apply(def, target, latest, sim_now) == apply(match_hod,target,latest,sim_now)
+        @test apply(match_hod, target, latest, sim_now) == target
+        @test apply(match_how, target, latest, sim_now) == target
+        @test apply(match_hod_tuesday, target, latest, sim_now) == target - Day(2)  # TUE
 
-    latest = ZonedDateTime(2016, 8, 11, 1, 15, winnipeg)
+        latest = ZonedDateTime(2016, 8, 11, 1, 15, winnipeg)
 
-    # Data for target date isn't available, so fall back.
-    @test apply(def, target, latest, sim_now) == apply(match_hod, target, latest, sim_now)
-    @test apply(match_hod, target, latest, sim_now) == target - Day(1)
-    @test apply(match_how, target, latest, sim_now) == target - Week(1)
-    @test apply(match_hod_tuesday, target, latest, sim_now) == target - Day(2)  # Tuesday
+        # Data for target date isn't available, so fall back.
+        @test apply(def, target, latest, sim_now) == apply(match_hod,target,latest,sim_now)
+        @test apply(match_hod, target, latest, sim_now) == target - Day(1)
+        @test apply(match_how, target, latest, sim_now) == target - Week(1)
+        @test apply(match_hod_tuesday, target, latest, sim_now) == target - Day(2)  # TUE
 
-    latest = ZonedDateTime(2016, 8, 1, 1, 15, winnipeg)
+        latest = ZonedDateTime(2016, 8, 1, 1, 15, winnipeg)
 
-    # Data for target date isn't available, so fall back more.
-    @test apply(def, target, latest, sim_now) == apply(match_hod, target, latest, sim_now)
-    @test apply(match_hod, target, latest, sim_now) == target - Day(11)
-    @test apply(match_how, target, latest, sim_now) == target - Week(2)
-    @test apply(match_hod_tuesday, target, latest, sim_now) == target - Day(16) # Tuesday
+        # Data for target date isn't available, so fall back more.
+        @test apply(def, target, latest, sim_now) == apply(match_hod,target,latest,sim_now)
+        @test apply(match_hod, target, latest, sim_now) == target - Day(11)
+        @test apply(match_how, target, latest, sim_now) == target - Week(2)
+        @test apply(match_hod_tuesday, target, latest, sim_now) == target - Day(16) # TUE
+    end
+
+    @testset "spring forward" begin
+        match_hod = DynamicOffset(; fallback=Day(-1))
+        sim_now = ZonedDateTime(2016, 3, 14, 1, 30, winnipeg)
+        target = ZonedDateTime(2016, 3, 14, 2, winnipeg)
+        latest = ZonedDateTime(2016, 3, 14, 1, winnipeg)
+        @test_throws NonExistentTimeError apply(match_hod, target, latest, sim_now)
+
+        target = LaxZonedDateTime(target)
+        result = apply(match_hod, target, latest, sim_now)
+        @test result == LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg)
+    end
+
+    @testset "fall back" begin
+        match_hod = DynamicOffset(; fallback=Day(-1))
+        sim_now = ZonedDateTime(2016, 11, 7, 0, 30, winnipeg)
+        target = ZonedDateTime(2016, 11, 7, 1, winnipeg)
+        latest = ZonedDateTime(2016, 11, 7, winnipeg)
+        @test_throws AmbiguousTimeError apply(match_hod, target, latest, sim_now)
+
+        target = LaxZonedDateTime(target)
+        result = apply(match_hod, target, latest, sim_now)
+        @test result == LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg)
+    end
 end
 
 @testset "CustomOffset" begin
