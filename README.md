@@ -9,6 +9,8 @@ for use in training and forecasting.
 
 **Note: Since merging in the `offset_type` branch, content bellow is entirely out-of-date**
 
+**TODO: Explain why the output of observations is shaped the way it is, and how it is indexed (repeat this explanation in DataFeatures)**
+
 **TODO: Convert this all to proper doc format**
 
 **TODO: Show type hierarchy for offsets**
