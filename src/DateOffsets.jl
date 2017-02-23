@@ -3,7 +3,6 @@ module DateOffsets
 using Base.Dates
 using TimeZones
 using LaxZonedDateTimes
-using Intervals
 using Mocking
 
 abstract DateOffset
