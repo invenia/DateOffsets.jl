@@ -1,3 +1,7 @@
+stages:
+  - test
+  - docs
+
 .test_template: &test_definition
   before_script:
     - curl -s -o setup-julia https://gitlab.invenia.ca/infrastructure/gitlab-ci-helper/raw/master/setup-julia

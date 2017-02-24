@@ -9,6 +9,9 @@ function observation_matrix{S<:SourceOffset}(
     return hcat(repmat([sim_now], size(dates, 1)), dates)
 end
 
+
+# TODO update code and documentation to reflect target_date indices as well
+
 """
     observations{S<:SourceOffset, T<:Union{ZonedDateTime, LaxZonedDateTime}}(offsets::Vector{S}, horizon::Horizon, sim_now::T, latest::ZonedDateTime) -> (Vector{T}, Matrix{T})
 

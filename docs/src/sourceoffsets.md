@@ -4,6 +4,19 @@ A `SourceOffset` is an abstract type that allows the user to define the relation
 between a forecast target date (or `sim_now`) and the date associated with the input data
 used to generate that forecast (also called the "observation date").
 
+## Types
+
+```
+abstract DateOffset
+    abstract SourceOffset
+        immutable ScalarOffset
+        immutable StaticOffset
+        immutable LatestOffset
+        immutable DynamicOffset
+        immutable CustomOffset
+    immutable CompoundOffset
+```
+
 ## API
 
 ```@docs
@@ -14,6 +27,9 @@ CustomOffset
 CompoundOffset
 apply
 ```
+
+Any new subtype of `SourceOffset` should implement [`apply`](@ref) with the appropriate
+signature.
 
 ## Examples
 

@@ -33,6 +33,8 @@ o
 
 ## FAQ
 
+# TODO: Does this need updating?
+
 > As per the documentation above, the observation dates are returned in a matrix
 > indexed row-wise by `sim_now` and `target_date` and column-wise by `offset`. So if the
 > user passes in a vector of three `sim_nows`, a horizon that generates 24 target dates

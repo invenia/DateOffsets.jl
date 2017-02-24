@@ -13,6 +13,13 @@ and forecasting. Date offsets are important for defining data features with
 
 `DateOffset` is an abstract type with two subtypes: `Horizon`s and `SourceOffset`s.
 
+```
+abstract DateOffset
+    immutable Horizon
+    abstract SourceOffset
+        ...
+```
+
 ### Horizon Type
 
 [Horizons](@ref) allow the user to define the relationship between the time at which a
