@@ -6,16 +6,18 @@
         sim_now = ZonedDateTime(2016, 8, 11, 12, 31, 12, winnipeg)
         latest = ZonedDateTime(2016, 8, 11, 6, 15, winnipeg)
 
-        s, o = observations([LatestOffset()], horizon, sim_now, latest)
+        s, t, o = observations([LatestOffset()], horizon, sim_now, latest)
         @test s == fill(sim_now, (24))
+        @test t == collect(targets(horizon, sim_now))
         @test o == fill(latest, (24, 1))
 
         offsets = [
             LatestOffset() + StaticOffset(Hour(-1)),
             DynamicOffset(; fallback=Day(-1))
         ]
-        s, o = observations(offsets, horizon, sim_now, latest)
+        s, t, o = observations(offsets, horizon, sim_now, latest)
         @test s == fill(sim_now, (24))
+        @test t == collect(targets(horizon, sim_now))
         expected = hcat(
             fill(latest, (24, 1)) .- Hour(1),
             [
@@ -55,8 +57,9 @@
         sim_now = ZonedDateTime(2016, 8, 11, 12, 31, 12, winnipeg)
         latest = ZonedDateTime(2016, 8, 12, 12, winnipeg)
 
-        s, o = observations([LatestOffset()], horizon, sim_now, latest)
+        s, t, o = observations([LatestOffset()], horizon, sim_now, latest)
         @test s == fill(sim_now, (24))
+        @test t == collect(targets(horizon, sim_now))
         expected = [
             [
                 ZonedDateTime(2016, 8, 12, 1, winnipeg),
@@ -80,8 +83,9 @@
             LatestOffset() + StaticOffset(Hour(-1)),
             DynamicOffset(; fallback=Day(-1))
         ]
-        s, o = observations(offsets, horizon, sim_now, latest)
+        s, t, o = observations(offsets, horizon, sim_now, latest)
         @test s == fill(sim_now, (24))
+        @test t == collect(targets(horizon, sim_now))
         expected = hcat(
             [
                 [
@@ -143,16 +147,18 @@
             ZonedDateTime(2016, 8, 11, 6, 15, winnipeg)
         ]
 
-        s, o = observations([LatestOffset()], horizon, sim_now, latest)
+        s, t, o = observations([LatestOffset()], horizon, sim_now, latest)
         @test s == repeat(sim_now, inner=24)
+        @test t == vcat([collect(targets(horizon, s)) for s in sim_now]...)
         @test o == reshape(repeat(latest, inner=24), (72, 1))
 
         offsets = [
             LatestOffset() + StaticOffset(Hour(-1)),
             DynamicOffset(; fallback=Day(-1))
         ]
-        s, o = observations(offsets, horizon, sim_now, latest)
+        s, t, o = observations(offsets, horizon, sim_now, latest)
         @test s == repeat(sim_now, inner=24)
+        @test t == vcat([collect(targets(horizon, s)) for s in sim_now]...)
         expected = hcat(
             repeat(latest, inner=24) .- Hour(1),
             [
@@ -243,9 +249,9 @@
 
         @test_throws NonExistentTimeError observations(offsets, horizon, sim_now, latest)
 
-        s, o = observations(offsets, horizon, LaxZonedDateTime(sim_now), latest)
+        s, t, o = observations(offsets, horizon, LaxZonedDateTime(sim_now), latest)
         @test s == fill(sim_now, (24))
-        targets = [
+        target_dates = [
             LaxZonedDateTime(DateTime(2016, 3, 12, 1), winnipeg),
             LaxZonedDateTime(DateTime(2016, 3, 12, 2), winnipeg),
             LaxZonedDateTime(DateTime(2016, 3, 12, 3), winnipeg),
@@ -271,7 +277,8 @@
             LaxZonedDateTime(DateTime(2016, 3, 12, 23), winnipeg),
             LaxZonedDateTime(DateTime(2016, 3, 13, 0), winnipeg)
         ]
-        @test o == [targets + Hour(2) targets + Hour(24) targets + Day(1)]
+        @test t == target_dates
+        @test o == [target_dates + Hour(2) target_dates + Hour(24) target_dates + Day(1)]
     end
 
     @testset "fall back" begin
@@ -284,9 +291,9 @@
 
         @test_throws AmbiguousTimeError observations(offsets, horizon, sim_now, latest)
 
-        s, o = observations(offsets, horizon, LaxZonedDateTime(sim_now), latest)
+        s, t, o = observations(offsets, horizon, LaxZonedDateTime(sim_now), latest)
         @test s == fill(sim_now, (24))
-        targets = [
+        target_dates = [
             LaxZonedDateTime(DateTime(2016, 11, 5, 1), winnipeg),
             LaxZonedDateTime(DateTime(2016, 11, 5, 2), winnipeg),
             LaxZonedDateTime(DateTime(2016, 11, 5, 3), winnipeg),
@@ -312,6 +319,7 @@
             LaxZonedDateTime(DateTime(2016, 11, 5, 23), winnipeg),
             LaxZonedDateTime(DateTime(2016, 11, 6, 0), winnipeg)
         ]
-        @test o == [targets + Hour(2) targets + Hour(24) targets + Day(1)]
+        @test t == target_dates
+        @test o == [target_dates + Hour(2) target_dates + Hour(24) target_dates + Day(1)]
     end
 end

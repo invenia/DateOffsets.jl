@@ -15,9 +15,9 @@ stages:
   after_script:
     - ./setup-julia clean
 
-.test_tmp_04: &test_04
+.test_tmp_05: &test_05
   variables:
-    JULIA_VERSION: "0.4"
+    JULIA_VERSION: "0.5"
   <<: *test_definition
 
 .test_tmp_release: &test_release
@@ -32,22 +32,22 @@ stages:
   <<: *test_definition
 
 
-"Julia 0.4, OS X":
+"Julia 0.5, OS X":
   tags:
     - osx
-  <<: *test_04
+  <<: *test_05
 
-"Julia 0.4, Linux (amd64)":
+"Julia 0.5, Linux (amd64)":
   tags:
     - linux
     - amd64
-  <<: *test_04
+  <<: *test_05
 
-"Julia 0.4, Linux (i386)":
+"Julia 0.5, Linux (i386)":
   tags:
     - linux
     - i386
-  <<: *test_04
+  <<: *test_05
 
 "Julia release, OS X":
   tags:

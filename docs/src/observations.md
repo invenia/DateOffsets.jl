@@ -7,8 +7,8 @@ For example, say it's `2016-08-11T09:00` and we want to predict the electrical l
 tomorrow at noon (target date: `2016-08-12T12:00`). We might want to look at the most
 recent available electrical load for the same hour of the day (a dynamic offset which
 would give us an observation date of `2016-08-10T12:00`) and the most recent available
-weather forecast for two hours leading up to the target date (static offsets of -2 and -1
-hours, giving us observation dates of `2016-08-12T10:00` and `2016-08-12T11:00`).
+weather forecast for the two hours leading up to the target date (static offsets of -2 and
+-1 hours, giving us observation dates of `2016-08-12T10:00` and `2016-08-12T11:00`).
 
 The `observations` function translates a set of offsets into the observation dates of the
 data that needs to be fetched from the S3DB.
@@ -33,16 +33,15 @@ o
 
 ## FAQ
 
-# TODO: Does this need updating?
-
 > As per the documentation above, the observation dates are returned in a matrix
 > indexed row-wise by `sim_now` and `target_date` and column-wise by `offset`. So if the
 > user passes in a vector of three `sim_nows`, a horizon that generates 24 target dates
 > for each `sim_now`, and two offsets to apply, we'll end up with 72 rows and 2 columns.
 >
-> So we're essentially indexing our result by three vectors, two of which are combined
-> (`sim_now * target_date` and `offset`). Wouldn't it be much simpler to index by those
-> three vectors individually, and return a three-dimensional array?
+> So we're essentially indexing our result by three vectors, but two of them are combined
+> (so one index is `sim_now * target_date` and the other is `offset`). Wouldn't it be much
+> simpler to index by those three vectors individually, and return a three-dimensional
+> array?
 
 Yes. It would also simplify the
 [DataFeatures.jl](https://gitlab.invenia.ca/invenia/DataFeatures.jl) code quite a bit.
