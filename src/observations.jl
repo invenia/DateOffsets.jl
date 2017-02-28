@@ -7,7 +7,7 @@ function observation_matrix{S<:SourceOffset}(
         o[:, i] = map(dt -> apply(offset, dt, latest, sim_now), o[:, i])
     end
 
-    return hcat(fill(sim_now, (length(t),)), t, o)
+    return hcat(fill(sim_now, length(t)), t, o)
 end
 
 
