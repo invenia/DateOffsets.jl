@@ -1,4 +1,4 @@
 julia 0.5
 TimeZones
 Mocking
-# LaxZonedDateTimes git@gitlab.invenia.ca:invenia/LaxZonedDateTimes.jl.git
+LaxZonedDateTimes 0.0.2

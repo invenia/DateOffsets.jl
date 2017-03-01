@@ -9,7 +9,6 @@ stages:
     - ./setup-julia install $JULIA_VERSION
   script:
     - source setup-julia export
-    - git clone https://gitlab-ci-token:$CI_BUILD_TOKEN@gitlab.invenia.ca/invenia/LaxZonedDateTimes.jl && julia -e 'Pkg.clone("LaxZonedDateTimes.jl")'; rm LaxZonedDateTimes.jl
     - julia -e "Pkg.clone(pwd()); Pkg.build(\"$PKG_NAME\"); Pkg.test(\"$PKG_NAME\"; coverage=true)"
     - julia --depwarn=no -e "cd(Pkg.dir(\"$PKG_NAME\")); Pkg.add(\"Coverage\"); using Coverage; c, t = get_summary(process_folder()); @printf(\"Test Coverage %.2f%%\\n\", c/t * 100)"
   after_script:
@@ -18,11 +17,6 @@ stages:
 .test_tmp_05: &test_05
   variables:
     JULIA_VERSION: "0.5"
-  <<: *test_definition
-
-.test_tmp_release: &test_release
-  variables:
-    JULIA_VERSION: release
   <<: *test_definition
 
 .test_tmp_nightly: &test_nightly
@@ -48,23 +42,6 @@ stages:
     - linux
     - i386
   <<: *test_05
-
-"Julia release, OS X":
-  tags:
-    - osx
-  <<: *test_release
-
-"Julia release, Linux (amd64)":
-  tags:
-    - linux
-    - amd64
-  <<: *test_release
-
-"Julia release, Linux (i386)":
-  tags:
-    - linux
-    - i386
-  <<: *test_release
 
 "Julia nightly, OS X":
   tags:
