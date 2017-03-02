@@ -7,9 +7,11 @@ function observation_matrix{S<:SourceOffset}(
         o[:, i] = map(dt -> apply(offset, dt, latest, sim_now), o[:, i])
     end
 
+    # I'd prefer to use this fill dispatch, but it has type issues on 32-bit systems:
+    # return hcat(fill(sim_now, (length(t),)), t, o)
+    # https://github.com/JuliaLang/julia/issues/20855
     return hcat(fill(sim_now, length(t)), t, o)
 end
-
 
 """
     observations{S<:SourceOffset, T<:Union{ZonedDateTime, LaxZonedDateTime}}(offsets::Vector{S}, horizon::Horizon, sim_now::T, latest::ZonedDateTime) -> (Vector{T}, Vector{T}, Matrix{T})
