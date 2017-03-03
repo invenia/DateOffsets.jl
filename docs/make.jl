@@ -4,11 +4,11 @@ makedocs(
     modules=[DateOffsets],
     format=:html,
     pages=[
-        "Home"=>"DateOffsets.md",
+        "Home"=>"index.md",
         "Horizons"=>"horizons.md",
         "Source Offsets"=>"sourceoffsets.md",
         "Observation Dates"=>"observations.md",
-        "Index"=>"index.md"
+        "Index"=>"apiindex.md"
     ],
     repo="https://gitlab.invenia.ca/invenia/DateOffsets.jl/blob/{commit}{path}#L{line}",
     sitename="DateOffsets.jl",
