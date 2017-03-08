@@ -26,8 +26,9 @@ using DateOffsets, TimeZones, Base.Dates
 sim_now = ZonedDateTime(2016, 8, 11, 2, 30, TimeZone("America/Winnipeg"))
 latest = ZonedDateTime(2016, 8, 11, 2, TimeZone("America/Winnipeg"))
 offsets = [LatestOffset(), StaticOffset(Day(1))]
-s, o = observations(offsets, Horizon(), sim_now, latest);
+s, t, o = observations(offsets, Horizon(), sim_now, latest);
 s
+t
 o
 ```
 
@@ -55,3 +56,7 @@ or sparse array.) But this solution has the advantage of having the observation 
 matrix conform more closely to the eventual output format of the data being fetched from
 S3DB (and being similar to the indexing scheme used in older versions of the prediction
 system).
+
+Given how this data is eventually used by DataFeatures.jl, it's possible that returning
+the offset dates as a vector (alongside an additional index representing the offsets)
+would be an even better solution. This change may be considered in the future.
