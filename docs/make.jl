@@ -12,6 +12,6 @@ makedocs(
     ],
     repo="https://gitlab.invenia.ca/invenia/DateOffsets.jl/blob/{commit}{path}#L{line}",
     sitename="DateOffsets.jl",
-    authors="Invenia Technical Computing",
+    authors="Curtis Vogt, Gem Newman",
     assets=["assets/invenia.css"],
 )
