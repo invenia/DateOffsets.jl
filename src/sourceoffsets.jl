@@ -167,20 +167,20 @@ function apply(::LatestOffset, target_date::LZDT, latest::ZonedDateTime, args...
 end
 
 function apply(
-    offset::DynamicOffset, target_date::LZDT, latest::ZonedDateTime, sim_now::ZonedDateTime
+    offset::DynamicOffset, target_date::LZDT, latest::ZonedDateTime, sim_now::LZDT
 )
     criteria = t -> t <= latest && offset.match(t)
     return toprev(criteria, target_date; step=offset.fallback, same=true)
 end
 
 function apply(
-    offset::CustomOffset, target_date::LZDT, latest, sim_now::ZonedDateTime
+    offset::CustomOffset, target_date::LZDT, latest, sim_now::LZDT
 )
     return offset.apply(sim_now, target_date)
 end
 
 function apply(
-    offset::CompoundOffset, target_date::LZDT, latest::ZonedDateTime, sim_now::ZonedDateTime
+    offset::CompoundOffset, target_date::LZDT, latest::ZonedDateTime, sim_now::LZDT
 )
     apply_binary_op(dt, offset) = apply(offset, dt, latest, sim_now)
     return foldl(apply_binary_op, target_date, offset.offsets)
