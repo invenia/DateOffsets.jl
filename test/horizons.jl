@@ -180,8 +180,9 @@ winnipeg = TimeZone("America/Winnipeg")
 
         sim_now = ZonedDateTime(2016, 3, 12, 1, 30, winnipeg)
         horizon = Horizon(Day(0):Day(2), Hour(1))
-        results = targets(horizon, sim_now)
-        @test_throws NonExistentTimeError collect(results)
+        @test_throws NonExistentTimeError collect(targets(horizon, sim_now))
+        # Depending on the version of Julia, the error will be thrown either by the call to
+        # targets or by the collect. (The distinction isn't deemed particularly important.)
 
         sim_now = LaxZonedDateTime(sim_now)
         results = targets(horizon, sim_now)
@@ -249,8 +250,9 @@ winnipeg = TimeZone("America/Winnipeg")
 
         sim_now = ZonedDateTime(2016, 11, 5, 0, 30, winnipeg)
         horizon = Horizon(Day(0):Day(2), Hour(1))
-        results = targets(horizon, sim_now)
-        @test_throws AmbiguousTimeError collect(results)
+        @test_throws AmbiguousTimeError collect(targets(horizon, sim_now))
+        # Depending on the version of Julia, the error will be thrown either by the call to
+        # targets or by the collect. (The distinction isn't deemed particularly important.)
 
         sim_now = LaxZonedDateTime(sim_now)
         results = targets(horizon, sim_now)
@@ -259,5 +261,23 @@ winnipeg = TimeZone("America/Winnipeg")
             LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg)    # AMB
             LaxZonedDateTime(DateTime(2016, 11, 7, 1), winnipeg)
         ]
+    end
+
+    @testset "show" begin
+        io = IOBuffer()
+        show(io, Horizon())
+        seekstart(io)
+        @test readstring(io) == "Horizon(1 day at 1 hour resolution)"
+
+        horizon = Horizon(;
+            coverage=Day(5),
+            step=Minute(15),
+            start_ceil=Minute(30),
+            start_offset=Second(15)
+        )
+        io = IOBuffer()
+        show(io, horizon)
+        seekstart(io)
+        @test readstring(io) == "Horizon(5 days at 15 minutes resolution, start date rounded up to 30 minutes + 15 seconds)"
     end
 end

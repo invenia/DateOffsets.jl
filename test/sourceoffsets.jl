@@ -87,6 +87,18 @@ winnipeg = TimeZone("America/Winnipeg")
         result = apply(StaticOffset(Day(1)), dt)
         @test result == LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg)    # AMB
     end
+
+    @testset "show" begin
+        io = IOBuffer()
+        show(io, StaticOffset(Day(-1)))
+        seekstart(io)
+        @test readstring(io) == "StaticOffset(-1 day)"
+
+        io = IOBuffer()
+        show(io, StaticOffset(Week(2)))
+        seekstart(io)
+        @test readstring(io) == "StaticOffset(2 weeks)"
+    end
 end
 
 @testset "LatestOffset" begin
@@ -98,6 +110,13 @@ end
 
     latest = ZonedDateTime(2016, 8, 11, 8, winnipeg)
     @test apply(offset, target, latest) == target
+
+    @testset "show" begin
+        io = IOBuffer()
+        show(io, LatestOffset())
+        seekstart(io)
+        @test readstring(io) == "LatestOffset()"
+    end
 end
 
 @testset "DynamicOffset" begin
@@ -157,6 +176,20 @@ end
         result = apply(match_hod, target, latest, sim_now)
         @test result == LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg)
     end
+
+    @testset "show" begin
+        io = IOBuffer()
+        show(io, DynamicOffset())
+        seekstart(io)
+        @test ismatch(r"DynamicOffset\(-1 day, DateOffsets.+\)", readstring(io))
+
+        match_function(x) = true
+        offset = DynamicOffset(; fallback=Week(-1), match=match_function)
+        io = IOBuffer()
+        show(io, offset)
+        seekstart(io)
+        @test readstring(io) == "DynamicOffset(-1 week, match_function)"
+    end
 end
 
 @testset "CustomOffset" begin
@@ -172,6 +205,14 @@ end
     for h in 18:23
         sim_now = sim_now_base + Hour(h)
         @test apply(offset, target, nothing, sim_now) == sim_now
+    end
+
+    @testset "show" begin
+        custom_function(x, y) = x
+        io = IOBuffer()
+        show(io, CustomOffset(custom_function))
+        seekstart(io)
+        @test readstring(io) == "CustomOffset(custom_function)"
     end
 end
 
@@ -211,6 +252,26 @@ end
     chain_result = apply(dynamic, chain_result, sim_now, latest)
     chain_result = apply(static, chain_result, sim_now, latest)
     @test compound_result == chain_result
+
+    @testset "display" begin
+        offset = StaticOffset(Day(1)) + LatestOffset()
+        io = IOBuffer()
+        show(io, offset)
+        seekstart(io)
+        @test readstring(io) == "CompoundOffset(StaticOffset(1 day), LatestOffset())"
+
+        offset = LatestOffset() + StaticOffset(Day(1))
+        io = IOBuffer()
+        show(io, offset)
+        seekstart(io)
+        @test readstring(io) == "CompoundOffset(LatestOffset(), StaticOffset(1 day))"
+
+        offset = LatestOffset() + StaticOffset(Day(0))
+        io = IOBuffer()
+        show(io, offset)
+        seekstart(io)
+        @test readstring(io) == "CompoundOffset(LatestOffset())"
+    end
 end
 
 @testset "Nullable{ZonedDateTime}" begin

@@ -34,7 +34,7 @@ julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, TimeZone("America/Winnipeg"))
 2016-08-11T02:30:00-05:00
 
 julia> horizon = Horizon(; coverage=Day(1), step=Hour(1))
-Horizon{Base.Dates.Hour}(1 day at 1 hour resolution)
+Horizon(1 day at 1 hour resolution)
 
 julia> targets(horizon, sim_now)
 2016-08-12T01:00:00-05:00:1 hour:2016-08-13T00:00:00-05:00

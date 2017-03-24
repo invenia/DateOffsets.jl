@@ -55,8 +55,7 @@ function Base.string{T}(h::Horizon{T})
             start_info *= " + $(h.start_offset)"
         end
     end
-    # Displaying {$T} seems like cluttery overkill here, but I'll keep it for now. —Gem
-    return "Horizon{$T}($(h.coverage) at $(h.step) resolution$start_info)"
+    return "Horizon($(h.coverage) at $(h.step) resolution$start_info)"
 end
 
 Base.show(io::IO, h::Horizon) = print(io, string(h))
