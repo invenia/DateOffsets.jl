@@ -1,7 +1,8 @@
 # DateOffsets.jl
 
-[![Build Status](https://gitlab.invenia.ca/invenia/DateOffsets.jl/badges/master/build.svg)](https://gitlab.invenia.ca/invenia/DateOffsets.jl/commits/master)
-[![Coverage Status](https://gitlab.invenia.ca/invenia/DateOffsets.jl/badges/master/coverage.svg)](https://gitlab.invenia.ca/invenia/DateOffsets.jl/commits/master)
+[![docs](https://img.shields.io/badge/docs-stable-blue.svg)](https://doc.invenia.ca/invenia/DataOffsets.jl/master)
+[![build](https://gitlab.invenia.ca/invenia/DateOffsets.jl/badges/master/build.svg)](https://gitlab.invenia.ca/invenia/DateOffsets.jl/commits/master)
+[![coverage](https://gitlab.invenia.ca/invenia/DateOffsets.jl/badges/master/coverage.svg)](https://gitlab.invenia.ca/invenia/DateOffsets.jl/commits/master)
 
 DateOffsets.jl provides the types and functions necessary to generate dates with specific
 temporal offsets for use in training and forecasting. Date offsets are important for
