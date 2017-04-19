@@ -264,10 +264,7 @@ winnipeg = TimeZone("America/Winnipeg")
     end
 
     @testset "show" begin
-        io = IOBuffer()
-        show(io, Horizon())
-        seekstart(io)
-        @test readstring(io) == "Horizon(1 day at 1 hour resolution)"
+        @test sprint(show, Horizon()) == "Horizon(1 day at 1 hour resolution)"
 
         horizon = Horizon(;
             coverage=Day(5),
@@ -275,9 +272,9 @@ winnipeg = TimeZone("America/Winnipeg")
             start_ceil=Minute(30),
             start_offset=Second(15)
         )
-        io = IOBuffer()
-        show(io, horizon)
-        seekstart(io)
-        @test readstring(io) == "Horizon(5 days at 15 minutes resolution, start date rounded up to 30 minutes + 15 seconds)"
+        @test sprint(show, horizon) == (
+            "Horizon(5 days at 15 minutes resolution, " *
+            "start date rounded up to 30 minutes + 15 seconds)"
+        )
     end
 end
