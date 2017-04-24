@@ -25,4 +25,4 @@ export DateOffset,
        apply,
        observations
 
-end
+end  # module
