@@ -46,7 +46,7 @@ end
 
 Horizon(r::StepRange) = Horizon(r.stop - r.start + r.step, r.step, r.step, r.start - r.step)
 
-function Base.string{T}(h::Horizon{T})
+function Base.show{T}(io::IO, h::Horizon{T})
     start_info = ""
     has_offset = h.start_offset != zero(h.start_offset)
     if h.start_ceil != Day(1) || has_offset
@@ -55,10 +55,8 @@ function Base.string{T}(h::Horizon{T})
             start_info *= " + $(h.start_offset)"
         end
     end
-    return "Horizon($(h.coverage) at $(h.step) resolution$start_info)"
+    print(io, "Horizon($(h.coverage) at $(h.step) resolution$start_info)")
 end
-
-Base.show(io::IO, h::Horizon) = print(io, string(h))
 
 """
     targets{P<:Period, T<:Union{ZonedDateTime, LaxZonedDateTime}}(horizon::Horizon{P}, sim_now::ZonedDateTime) -> StepRange{T, P}

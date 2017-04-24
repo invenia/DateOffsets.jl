@@ -11,8 +11,7 @@ immutable StaticOffset <: ScalarOffset
     period::Period
 end
 
-Base.string(o::StaticOffset) = "StaticOffset($(o.period))"
-Base.show(io::IO, o::StaticOffset) = print(io, string(o))
+Base.show(io::IO, o::StaticOffset) = print(io, "StaticOffset($(o.period))")
 
 """
     LatestOffset() -> LatestOffset
@@ -26,8 +25,7 @@ the latest target date expected to be available (based on table metadata) is ret
 """
 immutable LatestOffset <: ScalarOffset end
 
-Base.string(o::LatestOffset) = "LatestOffset()"
-Base.show(io::IO, o::LatestOffset) = print(io, string(o))
+Base.show(io::IO, o::LatestOffset) = print(io, "LatestOffset()")
 
 immutable DynamicOffset <: ScalarOffset
     fallback::Period
@@ -73,8 +71,7 @@ match_hourofday_tuesday = DynamicOffset(; match=t -> Dates.dayofweek(t) == Dates
 """
 DynamicOffset(; fallback=Day(-1), match=t -> true) = DynamicOffset(fallback, match)
 
-Base.string(o::DynamicOffset) = "DynamicOffset($(o.fallback), $(o.match))"
-Base.show(io::IO, o::DynamicOffset) = print(io, string(o))
+Base.show(io::IO, o::DynamicOffset) = print(io, "DynamicOffset($(o.fallback), $(o.match))")
 
 """
     CustomOffset(apply::Function) -> CustomOffset
@@ -93,8 +90,7 @@ immutable CustomOffset <: ScalarOffset
     apply::Function     # Should take (sim_now, observation) and return observation
 end
 
-Base.string(o::CustomOffset) = "CustomOffset($(o.apply))"
-Base.show(io::IO, o::CustomOffset) = print(io, string(o))
+Base.show(io::IO, o::CustomOffset) = print(io, "CustomOffset($(o.apply))")
 
 ##### CompoundOffset #####
 
@@ -152,11 +148,11 @@ if VERSION < v"0.6-"
     Base.:.+{T<:ScalarOffset}(x::Array{T}, y::ScalarOffset) = x .+ [y]
 end
 
-function Base.string(o::CompoundOffset)
-    return "CompoundOffset($(join([string(offset) for offset in o.offsets], ", ")))"
+function Base.show(io::IO, o::CompoundOffset)
+    return print(
+        io, "CompoundOffset($(join([string(offset) for offset in o.offsets], ", ")))"
+    )
 end
-
-Base.show(io::IO, o::CompoundOffset) = print(io, string(o))
 
 function apply(offset::StaticOffset, target_date::LZDT, args...)
     return target_date + offset.period
