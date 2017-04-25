@@ -11,6 +11,8 @@ immutable StaticOffset <: ScalarOffset
     period::Period
 end
 
+Base.isless(a::StaticOffset, b::StaticOffset) = isless(a.period, b.period)
+
 Base.show(io::IO, o::StaticOffset) = print(io, "StaticOffset($(o.period))")
 
 """
