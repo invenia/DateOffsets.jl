@@ -12,6 +12,7 @@ immutable StaticOffset <: ScalarOffset
 end
 
 Base.isless(a::StaticOffset, b::StaticOffset) = isless(a.period, b.period)
+Base.:-(a::StaticOffset) = (StaticOffset(-a.period))
 
 Base.show(io::IO, o::StaticOffset) = print(io, "StaticOffset($(o.period))")
 
@@ -118,6 +119,16 @@ CompoundOffset(LatestOffset(), StaticOffset(-1 hour))
 Note that because the order in which `SourceOffset`s are applied is relevant,
 `LatestOffset() + StaticOffset(Dates.Hour(-1))` will be functionally distinct from
 `StaticOffset(Dates.Hour(-1)) + LatestOffset()`.
+
+`CompoundOffset`s may also be constructed by subtracting a `StaticOffset` from another
+`SourceOffset`. This is equivalent to the example above:
+
+```julia
+julia> LatestOffset() - StaticOffset(Dates.Hour(1))
+CompoundOffset(LatestOffset(), StaticOffset(-1 hour))
+```
+
+Note that subtraction is only available for `StaticOffset`s.
 """
 immutable CompoundOffset <: SourceOffset
     offsets::Vector{ScalarOffset}
@@ -148,6 +159,12 @@ Base.:+(x::CompoundOffset, y::CompoundOffset) = CompoundOffset(vcat(x.offsets, y
 if VERSION < v"0.6-"
     Base.:.+{T<:ScalarOffset}(x::ScalarOffset, y::Array{T}) = [x] .+ y
     Base.:.+{T<:ScalarOffset}(x::Array{T}, y::ScalarOffset) = x .+ [y]
+end
+Base.:-(x::ScalarOffset, y::StaticOffset) = CompoundOffset(ScalarOffset[x, -y])
+Base.:-(x::CompoundOffset, y::StaticOffset) = CompoundOffset(vcat(x.offsets, -y))
+if VERSION < v"0.6-"
+    Base.:.-(x::ScalarOffset, y::Array{StaticOffset}) = [x] .- y
+    Base.:.-{T<:ScalarOffset}(x::Array{T}, y::StaticOffset) = x .- [y]
 end
 
 function Base.show(io::IO, o::CompoundOffset)
