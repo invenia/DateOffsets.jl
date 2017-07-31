@@ -20,6 +20,19 @@ winnipeg = TimeZone("America/Winnipeg")
         @test result == ZonedDateTime(2016, 1, 16, 1, winnipeg)
     end
 
+    @testset "unary negation" begin
+        @test -StaticOffset(Minute(15)) == StaticOffset(Minute(-15))
+        @test -StaticOffset(Minute(-15)) == StaticOffset(Minute(15))
+
+        dt = ZonedDateTime(2016, 1, 2, 1, winnipeg)
+
+        result = apply(StaticOffset(Minute(-15)), dt)
+        @test result == ZonedDateTime(2016, 1, 2, 0, 45, winnipeg)
+
+        result = apply(-StaticOffset(Minute(15)), dt)
+        @test result == ZonedDateTime(2016, 1, 2, 0, 45, winnipeg)
+    end
+
     @testset "spring forward" begin
         dt = ZonedDateTime(2016, 3, 13, 1, winnipeg)
         result = apply(StaticOffset(Minute(90)), dt)
@@ -219,6 +232,18 @@ end
 
         # .+ operator
         @test recent .+ [StaticOffset(Hour(-i)) for i in 1:4] == [
+            CompoundOffset([recent, StaticOffset(Hour(-1))]),
+            CompoundOffset([recent, StaticOffset(Hour(-2))]),
+            CompoundOffset([recent, StaticOffset(Hour(-3))]),
+            CompoundOffset([recent, StaticOffset(Hour(-4))])
+        ]
+
+        # - operator
+        @test dynamic - static == CompoundOffset([dynamic, -static])
+        @test recent + dynamic - static == CompoundOffset([recent, dynamic, -static])
+
+        # .- operator
+        @test recent .- [StaticOffset(Hour(i)) for i in 1:4] == [
             CompoundOffset([recent, StaticOffset(Hour(-1))]),
             CompoundOffset([recent, StaticOffset(Hour(-2))]),
             CompoundOffset([recent, StaticOffset(Hour(-3))]),
