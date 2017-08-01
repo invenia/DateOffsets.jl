@@ -22,7 +22,7 @@ end
 ### Basic Constructor
 
 ```jldoctest
-julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, TimeZone("America/Winnipeg"))
+julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
 julia> horizon = Horizon(; coverage=Day(1), step=Hour(1))
@@ -38,10 +38,10 @@ The user may also specify "old style" horizons (e.g. "two to eight hours ahead")
 range constructor.
 
 ```jldoctest
-julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, TimeZone("America/Winnipeg"))
+julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
-julia> horizon = Horizon(Hour(2):Hour(8))
+julia> horizon = Horizon(Hour(2):Hour(1):Hour(8))
 Horizon(7 hours at 1 hour resolution, start date rounded up to 1 hour + 1 hour)
 
 julia> targets(horizon, sim_now)
@@ -61,7 +61,7 @@ Because the relationship is more complex than one might initially guess. (Take a
 the `start_ceil` and `start_offset` keyword arguments for the constructor, for example.)
 
 Additionally, our typical use case covers one day at one hour resolution. Since many
-markets observe DST, this may mean 23 or 25 hours (and as of v0.5, Julia does not support
+markets observe DST, this may mean 23 or 25 hours (and as of v0.6, Julia does not support
 `Hour(1):Hour(1):Day(1)`).
 
 > Are the target dates returned by `targets` in hour ending format?

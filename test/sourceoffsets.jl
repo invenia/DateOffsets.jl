@@ -1,4 +1,4 @@
-winnipeg = TimeZone("America/Winnipeg")
+winnipeg = tz"America/Winnipeg"
 
 @testset "StaticOffset" begin
     @testset "basic" begin

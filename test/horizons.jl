@@ -1,4 +1,4 @@
-winnipeg = TimeZone("America/Winnipeg")
+winnipeg = tz"America/Winnipeg"
 
 @testset "Horizon" begin
     @testset "constructor" begin
@@ -10,8 +10,8 @@ winnipeg = TimeZone("America/Winnipeg")
             start_offset=Second(2)
         ) == Horizon(Day(5), Hour(4), Minute(3), Second(2))
 
-        @test Horizon(Hour(1):Hour(24)) == Horizon(Hour(1):Hour(24), Hour(1))
-        @test Horizon(Hour(1):Hour(24)) == Horizon(;
+        @test Horizon(Hour(1):Hour(1):Hour(24)) == Horizon(Hour(1):Hour(1):Hour(24),Hour(1))
+        @test Horizon(Hour(1):Hour(1):Hour(24)) == Horizon(;
             coverage=Hour(24),
             step=Hour(1),
             start_ceil=Hour(1),
@@ -95,7 +95,7 @@ winnipeg = TimeZone("America/Winnipeg")
     @testset "range" begin
         sim_now = ZonedDateTime(2016, 1, 1, 9, 35, winnipeg)
 
-        horizon = Horizon(Hour(1):Hour(3))
+        horizon = Horizon(Hour(1):Hour(1):Hour(3))
         results = targets(horizon, sim_now)
         @test collect(results) == [
             ZonedDateTime(2016, 1, 1, 11, winnipeg),
@@ -116,7 +116,7 @@ winnipeg = TimeZone("America/Winnipeg")
             ZonedDateTime(2016, 1, 1, 11, 45, winnipeg)
         ]
 
-        horizon = Horizon(Hour(1):Hour(3), Day(1))
+        horizon = Horizon(Hour(1):Hour(1):Hour(3), Day(1))
         results = targets(horizon, sim_now)
         @test collect(results) == [
             ZonedDateTime(2016, 1, 2, 1, winnipeg),
@@ -156,7 +156,7 @@ winnipeg = TimeZone("America/Winnipeg")
         ]
 
         sim_now = ZonedDateTime(2016, 3, 12, 23, 59, winnipeg)
-        horizon = Horizon(Hour(1):Hour(3), Day(1))
+        horizon = Horizon(Hour(1):Hour(1):Hour(3), Day(1))
         results = targets(horizon, sim_now)
         @test collect(results) == [
             ZonedDateTime(2016, 3, 13, 1, winnipeg),
@@ -179,7 +179,7 @@ winnipeg = TimeZone("America/Winnipeg")
         ]
 
         sim_now = ZonedDateTime(2016, 3, 12, 1, 30, winnipeg)
-        horizon = Horizon(Day(0):Day(2), Hour(1))
+        horizon = Horizon(Day(0):Day(1):Day(2), Hour(1))
         @test_throws NonExistentTimeError collect(targets(horizon, sim_now))
         # Depending on the version of Julia, the error will be thrown either by the call to
         # targets or by the collect. (The distinction isn't deemed particularly important.)
@@ -226,7 +226,7 @@ winnipeg = TimeZone("America/Winnipeg")
         ]
 
         sim_now = ZonedDateTime(2016, 11, 5, 23, 59, winnipeg)
-        horizon = Horizon(Hour(1):Hour(3), Day(1))
+        horizon = Horizon(Hour(1):Hour(1):Hour(3), Day(1))
         results = targets(horizon, sim_now)
         @test collect(results) == [
             ZonedDateTime(2016, 11, 6, 1, winnipeg, 1),
@@ -249,7 +249,7 @@ winnipeg = TimeZone("America/Winnipeg")
         ]
 
         sim_now = ZonedDateTime(2016, 11, 5, 0, 30, winnipeg)
-        horizon = Horizon(Day(0):Day(2), Hour(1))
+        horizon = Horizon(Day(0):Day(1):Day(2), Hour(1))
         @test_throws AmbiguousTimeError collect(targets(horizon, sim_now))
         # Depending on the version of Julia, the error will be thrown either by the call to
         # targets or by the collect. (The distinction isn't deemed particularly important.)

@@ -1,3 +1,5 @@
+winnipeg = tz"America/Winnipeg"
+
 @testset "observations" begin
     @testset "no available targets" begin
         # None of the target dates are available (this is typically the case if the input

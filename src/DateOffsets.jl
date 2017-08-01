@@ -5,8 +5,8 @@ using TimeZones
 using LaxZonedDateTimes
 using Mocking
 
-abstract DateOffset
-typealias LZDT Union{ZonedDateTime, LaxZonedDateTime}
+abstract type DateOffset end
+const LZDT = Union{ZonedDateTime, LaxZonedDateTime}
 
 include("horizons.jl")
 include("sourceoffsets.jl")

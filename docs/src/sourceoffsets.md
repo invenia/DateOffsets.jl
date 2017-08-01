@@ -36,20 +36,20 @@ signature.
 ```@meta
 DocTestSetup = quote
     using DateOffsets, TimeZones, Base.Dates
-    sim_now = ZonedDateTime(2016, 8, 11, 2, 30, TimeZone("America/Winnipeg"))
-    latest_available = ZonedDateTime(2016, 8, 11, 2, TimeZone("America/Winnipeg"))
-    target_date = ZonedDateTime(2016, 8, 12, 1, TimeZone("America/Winnipeg"))
+    sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
+    latest_available = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
+    target_date = ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg")
 end
 ```
 
 ```jldoctest
-julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, TimeZone("America/Winnipeg"))
+julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
-julia> latest_available = ZonedDateTime(2016, 8, 11, 2, TimeZone("America/Winnipeg"))
+julia> latest_available = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
 2016-08-11T02:00:00-05:00
 
-julia> target_date = ZonedDateTime(2016, 8, 12, 1, TimeZone("America/Winnipeg"))
+julia> target_date = ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg")
 2016-08-12T01:00:00-05:00
 ```
 

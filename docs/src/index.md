@@ -35,7 +35,7 @@ The relationship between `sim_now` and the target dates is one-to-many.
 ```jldoctest
 julia> using DateOffsets, TimeZones, Base.Dates
 
-julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, TimeZone("America/Winnipeg"))
+julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
 julia> horizon = Horizon(; coverage=Day(1), step=Hour(1))
@@ -57,7 +57,7 @@ a single offset to a single target date will return a single observation date).
 ```jldoctest
 julia> using DateOffsets, TimeZones, Base.Dates
 
-julia> target_date = ZonedDateTime(2016, 8, 12, 1, TimeZone("America/Winnipeg"))
+julia> target_date = ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg")
 2016-08-12T01:00:00-05:00
 
 julia> static_offset = StaticOffset(Day(-1))

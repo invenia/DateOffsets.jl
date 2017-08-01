@@ -1,5 +1,5 @@
-abstract SourceOffset <: DateOffset
-abstract ScalarOffset <: SourceOffset
+abstract type SourceOffset <: DateOffset end
+abstract type ScalarOffset <: SourceOffset end
 
 """
     StaticOffset(period::Period) -> StaticOffset
@@ -7,7 +7,7 @@ abstract ScalarOffset <: SourceOffset
 Constructs a `StaticOffset`. When a `StaticOffset` is applied to a target date, the `period`
 is simply added to the target date to create the observation date.
 """
-immutable StaticOffset <: ScalarOffset
+struct StaticOffset <: ScalarOffset
     period::Period
 end
 
@@ -26,11 +26,11 @@ date is expected to be available (for the given `sim_now`).
 If the target date is available, that date is returned as the observation date; otherwise,
 the latest target date expected to be available (based on table metadata) is returned.
 """
-immutable LatestOffset <: ScalarOffset end
+struct LatestOffset <: ScalarOffset end
 
 Base.show(io::IO, o::LatestOffset) = print(io, "LatestOffset()")
 
-immutable DynamicOffset <: ScalarOffset
+struct DynamicOffset <: ScalarOffset
     fallback::Period
     match::Function
 
@@ -89,7 +89,7 @@ Example:
 custom_offset = CustomOffset((sn, td) -> min(ceil(sn, Dates.Day), td) + Dates.Hour(1))
 ```
 """
-immutable CustomOffset <: ScalarOffset
+struct CustomOffset <: ScalarOffset
     apply::Function     # Should take (sim_now, observation) and return observation
 end
 
@@ -130,7 +130,7 @@ CompoundOffset(LatestOffset(), StaticOffset(-1 hour))
 
 Note that subtraction is only available for `StaticOffset`s.
 """
-immutable CompoundOffset <: SourceOffset
+struct CompoundOffset <: SourceOffset
     offsets::Vector{ScalarOffset}
 
     function CompoundOffset(o::Vector{ScalarOffset})
@@ -145,7 +145,7 @@ immutable CompoundOffset <: SourceOffset
     end
 end
 
-CompoundOffset{T<:ScalarOffset}(o::Vector{T}) = CompoundOffset(Vector{ScalarOffset}(o))
+CompoundOffset(o::Vector{<:ScalarOffset}) = CompoundOffset(Vector{ScalarOffset}(o))
 
 CompoundOffset(o::ScalarOffset...) = CompoundOffset(o)
 
@@ -156,16 +156,8 @@ Base.:+(x::ScalarOffset, y::ScalarOffset) = CompoundOffset(ScalarOffset[x, y])
 Base.:+(x::CompoundOffset, y::ScalarOffset) = CompoundOffset(vcat(x.offsets, y))
 Base.:+(x::ScalarOffset, y::CompoundOffset) = CompoundOffset(vcat(x, y.offsets))
 Base.:+(x::CompoundOffset, y::CompoundOffset) = CompoundOffset(vcat(x.offsets, y.offsets))
-if VERSION < v"0.6-"
-    Base.:.+{T<:ScalarOffset}(x::ScalarOffset, y::Array{T}) = [x] .+ y
-    Base.:.+{T<:ScalarOffset}(x::Array{T}, y::ScalarOffset) = x .+ [y]
-end
 Base.:-(x::ScalarOffset, y::StaticOffset) = CompoundOffset(ScalarOffset[x, -y])
 Base.:-(x::CompoundOffset, y::StaticOffset) = CompoundOffset(vcat(x.offsets, -y))
-if VERSION < v"0.6-"
-    Base.:.-(x::ScalarOffset, y::Array{StaticOffset}) = [x] .- y
-    Base.:.-{T<:ScalarOffset}(x::Array{T}, y::StaticOffset) = x .- [y]
-end
 
 function Base.show(io::IO, o::CompoundOffset)
     return print(

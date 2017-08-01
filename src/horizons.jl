@@ -1,4 +1,4 @@
-immutable Horizon{T<:Period} <: DateOffset
+struct Horizon{T<:Period} <: DateOffset
     coverage::Period
     step::T
     start_ceil::Period
@@ -46,7 +46,7 @@ end
 
 Horizon(r::StepRange) = Horizon(r.stop - r.start + r.step, r.step, r.step, r.start - r.step)
 
-function Base.show{T}(io::IO, h::Horizon{T})
+function Base.show(io::IO, h::Horizon{T}) where T
     start_info = ""
     has_offset = h.start_offset != zero(h.start_offset)
     if h.start_ceil != Day(1) || has_offset
@@ -59,7 +59,7 @@ function Base.show{T}(io::IO, h::Horizon{T})
 end
 
 """
-    targets{P<:Period, T<:Union{ZonedDateTime, LaxZonedDateTime}}(horizon::Horizon{P}, sim_now::ZonedDateTime) -> StepRange{T, P}
+    targets(horizon::Horizon{P}, sim_now::T) where {P<:Period, T<:Union{ZonedDateTime, LaxZonedDateTime}} -> StepRange{T, P}
 
 Generates the appropriate target dates for a batch of forecasts, given a `horizon` and a
 `sim_now`.
@@ -68,7 +68,7 @@ Since `sim_now` is time zone–aware, Daylight Saving Time will be properly acco
 no target dates will be produced for hours that don't exist in the time zone and hours that
 are "duplicated" will appear twice (with each being zoned correctly).
 """
-function targets{P<:Period, T<:LZDT}(horizon::Horizon{P}, sim_now::T)
+function targets(horizon::Horizon{<:Period}, sim_now::T) where T<:LZDT
     base = ceil(sim_now, horizon.start_ceil) + horizon.start_offset
     return (base + horizon.step):horizon.step:(base + horizon.coverage)
 end
