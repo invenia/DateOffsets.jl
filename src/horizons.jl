@@ -46,7 +46,7 @@ end
 
 Horizon(r::StepRange) = Horizon(r.stop - r.start + r.step, r.step, r.step, r.start - r.step)
 
-function Base.show(io::IO, h::Horizon{T}) where T
+function Base.show(io::IO, h::Horizon)
     start_info = ""
     has_offset = h.start_offset != zero(h.start_offset)
     if h.start_ceil != Day(1) || has_offset
@@ -68,7 +68,7 @@ Since `sim_now` is time zone–aware, Daylight Saving Time will be properly acco
 no target dates will be produced for hours that don't exist in the time zone and hours that
 are "duplicated" will appear twice (with each being zoned correctly).
 """
-function targets(horizon::Horizon{<:Period}, sim_now::T) where T<:LZDT
+function targets(horizon::Horizon{<:Period}, sim_now::LZDT)
     base = ceil(sim_now, horizon.start_ceil) + horizon.start_offset
     return (base + horizon.step):horizon.step:(base + horizon.coverage)
 end
