@@ -112,10 +112,39 @@ DocTestSetup = nothing
 
 ## FAQ
 
+> When I'm building a [`DataFeature`](https://doc.invenia.ca/invenia/DataFeatures.jl/master/types.html),
+> I already have to specify a `sim_now`, a `horizon`, and a `window`. What are
+> `SourceOffset`s even for?
+
+Let's assume that you are defining a `DataFeature` without any `SourceOffset`s,
+which might look something like this:
+
+```julia
+source = DataSource(S3DB.Client(); collection="ercot", table="realtime_lmp", object_ids=["AEEC"])
+feature = DataFeature(source, StaticOffset(Hour(0)))
+query = FeatureQuery(feature, Horizon(), now(tz"America/Winnipeg"))
+```
+
+When you `fetch(query)`, you'll get a single `realtime_lmp` value for the AEEC object for
+every target date (since you used `now` and the default `Horizon` constructor, that means
+every hour of tomorrow in local Winnipeg time). Each realtime LMP value for AEEC will be
+the value recorded in S3DB for that time.
+
+However, suppose you add another couple of `SourceOffset`s, like this:
+
+```julia
+feature = DataFeature(source, StaticOffset(Hour(0)), StaticOffset(Day(-1)), DynamicOffset(fallback=Week(-1)))
+query = FeatureQuery(feature, Horizon(), now(tz"America/Winnipeg"))
+```
+
+Now if you `fetch(query)`, for each of the 24 target dates you'll get three values
+(observations) back: one for that target date, one for that target date minus one day, and
+one for the latest date/time (at or earlier than the target date) that is the same hour of
+week as the target date but that is also "available" at `sim_now`.
+
 > What is `latest_available`? Where does it come from?
 
 Essentially, it represents the most recent available data (for a given data source) as of
-`sim_now`, and it is calculated by pulling metadata from
-[S3DB](https://gitlab.invenia.ca/invenia/S3DB.jl). For most users, who will be `apply`ing
-all of their offsets via `DataFeature` and `FeatureQuery`, it will be calculated
-automatically.
+`sim_now`, and it is calculated by pulling metadata from [S3DB](https://gitlab.invenia.ca/invenia/S3DB.jl).
+For most users, who will be `apply`ing all of their offsets via `DataFeature` and
+`FeatureQuery`, it will be calculated automatically.
