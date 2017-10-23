@@ -3,7 +3,7 @@ stages:
   - coverage
   - docs
 
-.test_template: &test_definition
+.test_template: &test_shell
   artifacts:
     name: "$CI_JOB_NAME coverage"
     expire_in: 1 week
@@ -15,56 +15,79 @@ stages:
     - ./julia-ci install $JULIA_VERSION
   script:
     - source julia-ci export
+    - export PYTHON=""  # TODO: Include in julia-ci export
     - julia -e "Pkg.clone(pwd()); Pkg.build(\"$PKG_NAME\"); Pkg.test(\"$PKG_NAME\"; coverage=true)"
     - ./julia-ci coverage
   after_script:
     - ./julia-ci clean
 
-.test_tmp_release: &test_release
+.test_shell_06: &test_shell_06
   variables:
-    JULIA_VERSION: release
-  <<: *test_definition
+    JULIA_VERSION: "0.6"
+  <<: *test_shell
 
-.test_tmp_nightly: &test_nightly
+.test_shell_07-: &test_shell_07-
   variables:
-    JULIA_VERSION: nightly
+    JULIA_VERSION: "0.7-"
   allow_failure: true
-  <<: *test_definition
+  <<: *test_shell
 
 
-"Julia release, OS X":
+.test_docker: &test_docker
+  artifacts:
+    name: coverage
+    expire_in: 1 week
+    paths:
+      - "$CI_JOB_NAME coverage/"
+  script:
+    - export PYTHON=""  # TODO: Include in julia-ci export
+    - julia -e "Pkg.clone(pwd()); Pkg.build(\"$PKG_NAME\"); Pkg.test(\"$PKG_NAME\"; coverage=true)"
+    - julia-coverage $PKG_NAME
+
+.test_docker_06: &test_docker_06
+  image: 292522074875.dkr.ecr.us-east-1.amazonaws.com/julia-gitlab-ci:0.6
+  <<: *test_docker
+
+
+"0.6 (Mac)":
   tags:
-    - osx
-  <<: *test_release
+    - mac
+    - shell-ci
+  <<: *test_shell_06
 
-"Julia release, Linux (i386)":
-  tags:
-    - linux
-    - i386
-  <<: *test_release
-
-"Julia release, Linux (amd64)":
-  tags:
-    - linux
-    - amd64
-  <<: *test_release
-
-"Julia nightly, OS X":
-  tags:
-    - osx
-  <<: *test_nightly
-
-"Julia nightly, Linux (i386)":
-  tags:
-    - linux
-    - i386
-  <<: *test_nightly
-
-"Julia nightly, Linux (amd64)":
+"0.6 (Linux, 64-bit)":
   tags:
     - linux
-    - amd64
-  <<: *test_nightly
+    - 64-bit
+    - docker-ci
+  <<: *test_docker_06
+
+"0.6 (Linux, 32-bit)":
+  tags:
+    - linux
+    - 32-bit
+    - shell-ci
+  <<: *test_shell_06
+
+"0.7- (Mac)":
+  tags:
+    - mac
+    - shell-ci
+  <<: *test_shell_07-
+
+"0.7- (Linux, 64-bit)":
+  tags:
+    - linux
+    - 64-bit
+    - shell-ci
+  <<: *test_shell_07-
+
+"0.7- (Linux, 32-bit)":
+  tags:
+    - linux
+    - 32-bit
+    - shell-ci
+  <<: *test_shell_07-
 
 
 "Coverage":
@@ -77,7 +100,8 @@ stages:
       - combined_coverage/
   tags:
     - linux
-    - amd64
+    - 64-bit  # LCOV version 1.9 on 32-bit Wheezy is too old
+    - shell-ci
   script:
     - genhtml --version
     - mkdir $CI_PROJECT_DIR/combined_coverage
@@ -91,6 +115,7 @@ stages:
   stage: docs
   tags:
     - docs
+    - shell-ci
   only:
     - master
     - develop
@@ -102,6 +127,7 @@ stages:
     - ./julia-ci install release
   script:
     - source julia-ci export
+    - export PYTHON=""  # TODO: Include in julia-ci export
     - julia --depwarn=no -e "Pkg.clone(pwd()); Pkg.build(\"$PKG_NAME\"); Pkg.add(\"Documenter\"); Pkg.checkout(\"Documenter\")"
     - julia --depwarn=no -e "cd(Pkg.dir(\"$PKG_NAME\", \"docs\")); include(\"make.jl\")"
     - julia --depwarn=no -e "const DOCS_DIR = joinpath(\"/mnt\", \"docs\", \"$CI_PROJECT_NAMESPACE\", \"$CI_PROJECT_NAME\", \"$CI_BUILD_REF_NAME\"); mkpath(DOCS_DIR); cp(Pkg.dir(\"$PKG_NAME\", \"docs\", \"build\"), DOCS_DIR; remove_destination=true, follow_symlinks=true)"
