@@ -169,6 +169,18 @@ function apply(offset::StaticOffset, target_date::LZDT, args...)
     return target_date + offset.period
 end
 
+# Only works for StaticOffsets, because they don't need latest/sim_now information.
+Base.:+(offset::StaticOffset, target_date::LZDT) = apply(offset, target_date)
+Base.:+(target_date::LZDT, offset::SourceOffset) = offset + target_date
+function Base.:+(offset::SourceOffset, target_date::LZDT)
+    throw(
+        ArgumentError(
+            "addition between ZonedDateTimes and SourceOffsets is only supported for " *
+            "StaticOffsets"
+        )
+    )
+end
+
 function apply(::LatestOffset, target_date::LZDT, latest::ZonedDateTime, args...)
     return min(target_date, latest)
 end
@@ -204,5 +216,8 @@ Applies `offset` to the `target_date`, returning the new observation date. Metho
 subtypes of `SourceOffset` also use `latest` and `sim_now` in their calculations. If the
 `offset` is a `CompoundOffset`, each of the `ScalarOffset`s is applied sequentially to
 generate the final observation date.
+
+If `offset` is a `StaticOffset`, you can use `offset + target_date` syntax, as neither
+`latest` nor `sim_now` information is required.
 """
 apply(::SourceOffset, ::LZDT, ::ZonedDateTime, ::ZonedDateTime)
