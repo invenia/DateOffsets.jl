@@ -20,6 +20,25 @@ winnipeg = tz"America/Winnipeg"
         @test result == ZonedDateTime(2016, 1, 16, 1, winnipeg)
     end
 
+    @testset "addition" begin
+        dt = ZonedDateTime(2016, 1, 2, 1, winnipeg)
+
+        offset = StaticOffset(Second(0))
+        @test apply(offset, dt) == offset + dt == dt + offset
+
+        offset = StaticOffset(Minute(-15))
+        @test apply(offset, dt) == offset + dt == dt + offset
+
+        offset = StaticOffset(Hour(6))
+        @test apply(offset, dt) == offset + dt == dt + offset
+
+        offset = StaticOffset(Day(-1))
+        @test apply(offset, dt) == offset + dt == dt + offset
+
+        offset = StaticOffset(Week(2))
+        @test apply(offset, dt) == offset + dt == dt + offset
+    end
+
     @testset "unary negation" begin
         @test -StaticOffset(Minute(15)) == StaticOffset(Minute(-15))
         @test -StaticOffset(Minute(-15)) == StaticOffset(Minute(15))
@@ -119,6 +138,11 @@ end
         @test apply(offset, target, latest) == target
     end
 
+    @testset "addition" begin
+        @test_throws ArgumentError LatestOffset() + ZonedDateTime(2016, winnipeg)
+        @test_throws ArgumentError ZonedDateTime(2016, winnipeg) + LatestOffset()
+    end
+
     @testset "show" begin
         @test sprint(show, LatestOffset()) == "LatestOffset()"
     end
@@ -156,6 +180,11 @@ end
         @test apply(match_hod, target, latest, sim_now) == target - Day(11)
         @test apply(match_how, target, latest, sim_now) == target - Week(2)
         @test apply(match_hod_tuesday, target, latest, sim_now) == target - Day(16) # TUE
+    end
+
+    @testset "addition" begin
+        @test_throws ArgumentError DynamicOffset() + ZonedDateTime(2016, winnipeg)
+        @test_throws ArgumentError ZonedDateTime(2016, winnipeg) + DynamicOffset()
     end
 
     @testset "spring forward" begin
@@ -207,6 +236,12 @@ end
             sim_now = sim_now_base + Hour(h)
             @test apply(offset, target, nothing, sim_now) == sim_now
         end
+    end
+
+    @testset "addition" begin
+        offset = CustomOffset((x, y) -> x)
+        @test_throws ArgumentError offset + ZonedDateTime(2016, winnipeg)
+        @test_throws ArgumentError ZonedDateTime(2016, winnipeg) + offset
     end
 
     @testset "show" begin
@@ -264,6 +299,12 @@ end
         chain_result = apply(dynamic, chain_result, sim_now, latest)
         chain_result = apply(static, chain_result, sim_now, latest)
         @test compound_result == chain_result
+    end
+
+    @testset "addition" begin
+        offset = LatestOffset() + StaticOffset(Day(-2))
+        @test_throws ArgumentError offset + ZonedDateTime(2016, winnipeg)
+        @test_throws ArgumentError ZonedDateTime(2016, winnipeg) + offset
     end
 
     @testset "show" begin
