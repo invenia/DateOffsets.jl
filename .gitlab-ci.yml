@@ -92,6 +92,7 @@ stages:
 
 "Coverage":
   stage: coverage
+  image: 292522074875.dkr.ecr.us-east-1.amazonaws.com/julia-gitlab-ci:0.6
   coverage: /Test Coverage (\d+\.\d+%)/
   artifacts:
     name: combined_coverage
@@ -100,8 +101,7 @@ stages:
       - combined_coverage/
   tags:
     - linux
-    - 64-bit  # LCOV version 1.9 on 32-bit Wheezy is too old
-    - shell-ci
+    - docker-ci
   script:
     - genhtml --version
     - mkdir $CI_PROJECT_DIR/combined_coverage
