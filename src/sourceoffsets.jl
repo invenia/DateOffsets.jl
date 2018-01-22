@@ -130,7 +130,7 @@ CompoundOffset(LatestOffset(), StaticOffset(-1 hour))
 
 Note that subtraction is only available for `StaticOffset`s.
 """
-struct CompoundOffset <: SourceOffset
+@auto_hash_equals struct CompoundOffset <: SourceOffset
     offsets::Vector{ScalarOffset}
 
     function CompoundOffset(o::Vector{ScalarOffset})
@@ -151,7 +151,6 @@ CompoundOffset(o::ScalarOffset...) = CompoundOffset(o)
 
 Base.convert(::Type{CompoundOffset}, o::ScalarOffset) = CompoundOffset(ScalarOffset[o])
 
-Base.:(==)(x::CompoundOffset, y::CompoundOffset) = x.offsets == y.offsets
 Base.:+(x::ScalarOffset, y::ScalarOffset) = CompoundOffset(ScalarOffset[x, y])
 Base.:+(x::CompoundOffset, y::ScalarOffset) = CompoundOffset(vcat(x.offsets, y))
 Base.:+(x::ScalarOffset, y::CompoundOffset) = CompoundOffset(vcat(x, y.offsets))

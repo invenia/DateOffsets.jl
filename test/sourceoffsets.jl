@@ -120,6 +120,12 @@ winnipeg = tz"America/Winnipeg"
         @test result == LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg)    # AMB
     end
 
+    @testset "equality" begin
+        @test StaticOffset(Day(1)) == StaticOffset(Day(1))
+        @test isequal(StaticOffset(Day(1)), StaticOffset(Day(1)))
+        @test hash(StaticOffset(Day(1))) == hash(StaticOffset(Day(1)))
+    end
+
     @testset "show" begin
         @test sprint(show, StaticOffset(Day(-1))) == "StaticOffset(-1 day)"
         @test sprint(show, StaticOffset(Week(2))) == "StaticOffset(2 weeks)"
@@ -136,6 +142,12 @@ end
 
         latest = ZonedDateTime(2016, 8, 11, 8, winnipeg)
         @test apply(offset, target, latest) == target
+    end
+
+    @testset "equality" begin
+        @test LatestOffset() == LatestOffset()
+        @test isequal(LatestOffset(), LatestOffset())
+        @test hash(LatestOffset()) == hash(LatestOffset())
     end
 
     @testset "addition" begin
@@ -211,6 +223,17 @@ end
         @test result == LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg)
     end
 
+    @testset "equality" begin
+        @test DynamicOffset() == DynamicOffset()
+        @test isequal(DynamicOffset(), DynamicOffset())
+        @test hash(DynamicOffset()) == hash(DynamicOffset())
+
+        match(x) = true
+        @test DynamicOffset(; match=match) == DynamicOffset(; match=match)
+        @test isequal(DynamicOffset(; match=match), DynamicOffset(; match=match))
+        @test hash(DynamicOffset(; match=match)) == hash(DynamicOffset(; match=match))
+    end
+
     @testset "show" begin
         offset = DynamicOffset()
         @test ismatch(r"DynamicOffset\(-1 day, DateOffsets.+\)", sprint(show, offset))
@@ -242,6 +265,13 @@ end
         offset = CustomOffset((x, y) -> x)
         @test_throws ArgumentError offset + ZonedDateTime(2016, winnipeg)
         @test_throws ArgumentError ZonedDateTime(2016, winnipeg) + offset
+    end
+
+    @testset "equality" begin
+        match(x, y) = x != y
+        @test CustomOffset(match) == CustomOffset(match)
+        @test isequal(CustomOffset(match), CustomOffset(match))
+        @test hash(CustomOffset(match)) == hash(CustomOffset(match))
     end
 
     @testset "show" begin
@@ -305,6 +335,20 @@ end
         offset = LatestOffset() + StaticOffset(Day(-2))
         @test_throws ArgumentError offset + ZonedDateTime(2016, winnipeg)
         @test_throws ArgumentError ZonedDateTime(2016, winnipeg) + offset
+    end
+
+    @testset "equality" begin
+        o1 = StaticOffset(Day(1)) + LatestOffset()
+        o2 = StaticOffset(Day(1)) + LatestOffset()
+        @test o1 == o2
+        @test isequal(o1, o2)
+        @test hash(o1) == hash(o2)
+
+        # Order matters!
+        o3 = LatestOffset() + StaticOffset(Day(1))
+        @test o1 != o3
+        @test !isequal(o1, o3)
+        @test hash(o1) != hash(o3)
     end
 
     @testset "show" begin
