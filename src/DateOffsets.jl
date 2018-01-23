@@ -7,6 +7,7 @@ using TimeZones
 using LaxZonedDateTimes
 using Mocking
 using AutoHashEquals
+using PeriodIntervals
 
 abstract type DateOffset end
 const LZDT = Union{ZonedDateTime, LaxZonedDateTime}
