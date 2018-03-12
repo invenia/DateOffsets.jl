@@ -91,8 +91,6 @@ function Horizon(r::StepRange)
 end
 ##### END v0.3 DEPRECATION ####
 
-span(h::Horizon) = h.span
-
 function Base.print(io::IO, h::Horizon{T}) where T
     # Print to io in order to keep properties like :limit and :compact
     if get(io, :compact, false)
@@ -107,7 +105,7 @@ function Base.print(io::IO, h::Horizon{T}) where T
             start_info *= " + $(h.start_offset)"
         end
     end
-    print(io, "Horizon{$T}($(span(h))$start_info)")
+    print(io, "Horizon{$T}($(h.span)$start_info)")
 end
 
 function Base.show(io::IO, h::Horizon{T}) where T

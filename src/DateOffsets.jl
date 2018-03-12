@@ -29,7 +29,6 @@ export DateOffset,
        CompoundOffset,
        targets,
        apply,
-       observations,
-       span
+       observations
 
 end
