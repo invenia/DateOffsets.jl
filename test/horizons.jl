@@ -2,27 +2,12 @@ winnipeg = tz"America/Winnipeg"
 
 @testset "Horizon" begin
     @testset "constructor" begin
-        @test Horizon() == Horizon(Day(1), Hour(1), Day(1), Hour(0))
-        @test Horizon(;
-            coverage=Day(5),
-            step=Hour(4),
+        @test Horizon() == Horizon{HourEnding}(Day(1), Day(1), Hour(0))
+        @test Horizon{AnchoredInterval{Hour(-5)}}(;
+            span=Day(4),
             start_ceil=Minute(3),
-            start_offset=Second(2)
-        ) == Horizon(Day(5), Hour(4), Minute(3), Second(2))
-
-        @test Horizon(Hour(1):Hour(1):Hour(24)) == Horizon(Hour(1):Hour(1):Hour(24),Hour(1))
-        @test Horizon(Hour(1):Hour(1):Hour(24)) == Horizon(;
-            coverage=Hour(24),
-            step=Hour(1),
-            start_ceil=Hour(1),
-            start_offset=Hour(0)
-        )
-        @test Horizon(Minute(45):Minute(15):Minute(180), Hour(1)) == Horizon(;
-            coverage=Minute(150),   # 2.5 hours
-            step=Minute(15),
-            start_ceil=Hour(1),
-            start_offset=Minute(30)
-        )
+            start_offset=Second(2),
+        ) == Horizon{AnchoredInterval{Hour(-5)}}(Day(4), Minute(3), Second(2))
     end
 
     @testset "basic" begin
@@ -30,99 +15,32 @@ winnipeg = tz"America/Winnipeg"
 
         horizon = Horizon()
         results = targets(horizon, sim_now)
-        @test collect(results) == [
-            ZonedDateTime(2016, 1, 2, 1, winnipeg),
-            ZonedDateTime(2016, 1, 2, 2, winnipeg),
-            ZonedDateTime(2016, 1, 2, 3, winnipeg),
-            ZonedDateTime(2016, 1, 2, 4, winnipeg),
-            ZonedDateTime(2016, 1, 2, 5, winnipeg),
-            ZonedDateTime(2016, 1, 2, 6, winnipeg),
-            ZonedDateTime(2016, 1, 2, 7, winnipeg),
-            ZonedDateTime(2016, 1, 2, 8, winnipeg),
-            ZonedDateTime(2016, 1, 2, 9, winnipeg),
-            ZonedDateTime(2016, 1, 2, 10, winnipeg),
-            ZonedDateTime(2016, 1, 2, 11, winnipeg),
-            ZonedDateTime(2016, 1, 2, 12, winnipeg),
-            ZonedDateTime(2016, 1, 2, 13, winnipeg),
-            ZonedDateTime(2016, 1, 2, 14, winnipeg),
-            ZonedDateTime(2016, 1, 2, 15, winnipeg),
-            ZonedDateTime(2016, 1, 2, 16, winnipeg),
-            ZonedDateTime(2016, 1, 2, 17, winnipeg),
-            ZonedDateTime(2016, 1, 2, 18, winnipeg),
-            ZonedDateTime(2016, 1, 2, 19, winnipeg),
-            ZonedDateTime(2016, 1, 2, 20, winnipeg),
-            ZonedDateTime(2016, 1, 2, 21, winnipeg),
-            ZonedDateTime(2016, 1, 2, 22, winnipeg),
-            ZonedDateTime(2016, 1, 2, 23, winnipeg),
-            ZonedDateTime(2016, 1, 3, winnipeg)
-        ]
+        @test collect(results) == collect(
+            HourEnding(ZonedDateTime(2016, 1, 2, 1, winnipeg)):
+            HourEnding(ZonedDateTime(2016, 1, 3, winnipeg))
+        )
 
-        horizon = Horizon(;
-            coverage=Day(2),
-            step=Hour(2),
+        horizon = Horizon{AnchoredInterval{Hour(-2)}}(;
+            span=Day(2),
             start_offset=Day(-4),
             start_ceil=Week(1)
         )
         results = targets(horizon, sim_now)
-        @test collect(results) == [
-            ZonedDateTime(2015, 12, 31, 2, winnipeg),
-            ZonedDateTime(2015, 12, 31, 4, winnipeg),
-            ZonedDateTime(2015, 12, 31, 6, winnipeg),
-            ZonedDateTime(2015, 12, 31, 8, winnipeg),
-            ZonedDateTime(2015, 12, 31, 10, winnipeg),
-            ZonedDateTime(2015, 12, 31, 12, winnipeg),
-            ZonedDateTime(2015, 12, 31, 14, winnipeg),
-            ZonedDateTime(2015, 12, 31, 16, winnipeg),
-            ZonedDateTime(2015, 12, 31, 18, winnipeg),
-            ZonedDateTime(2015, 12, 31, 20, winnipeg),
-            ZonedDateTime(2015, 12, 31, 22, winnipeg),
-            ZonedDateTime(2016, 1, 1, winnipeg),
-            ZonedDateTime(2016, 1, 1, 2, winnipeg),
-            ZonedDateTime(2016, 1, 1, 4, winnipeg),
-            ZonedDateTime(2016, 1, 1, 6, winnipeg),
-            ZonedDateTime(2016, 1, 1, 8, winnipeg),
-            ZonedDateTime(2016, 1, 1, 10, winnipeg),
-            ZonedDateTime(2016, 1, 1, 12, winnipeg),
-            ZonedDateTime(2016, 1, 1, 14, winnipeg),
-            ZonedDateTime(2016, 1, 1, 16, winnipeg),
-            ZonedDateTime(2016, 1, 1, 18, winnipeg),
-            ZonedDateTime(2016, 1, 1, 20, winnipeg),
-            ZonedDateTime(2016, 1, 1, 22, winnipeg),
-            ZonedDateTime(2016, 1, 2, winnipeg)
-        ]
-    end
+        @test collect(results) == collect(
+            AnchoredInterval{Hour(-2)}(ZonedDateTime(2015, 12, 31, 2, winnipeg)):
+            AnchoredInterval{Hour(-2)}(ZonedDateTime(2016, 1, 2, winnipeg))
+        )
 
-    @testset "range" begin
-        sim_now = ZonedDateTime(2016, 1, 1, 9, 35, winnipeg)
-
-        horizon = Horizon(Hour(1):Hour(1):Hour(3))
+        horizon = Horizon{HourBeginning}(;
+            span=Day(2),
+            start_offset=Day(-4),
+            start_ceil=Week(1)
+        )
         results = targets(horizon, sim_now)
-        @test collect(results) == [
-            ZonedDateTime(2016, 1, 1, 11, winnipeg),
-            ZonedDateTime(2016, 1, 1, 12, winnipeg),
-            ZonedDateTime(2016, 1, 1, 13, winnipeg)
-        ]
-
-        horizon = Horizon(Minute(15):Minute(15):Minute(120))
-        results = targets(horizon, sim_now)
-        @test collect(results) == [
-            ZonedDateTime(2016, 1, 1, 10, winnipeg),
-            ZonedDateTime(2016, 1, 1, 10, 15, winnipeg),
-            ZonedDateTime(2016, 1, 1, 10, 30, winnipeg),
-            ZonedDateTime(2016, 1, 1, 10, 45, winnipeg),
-            ZonedDateTime(2016, 1, 1, 11, winnipeg),
-            ZonedDateTime(2016, 1, 1, 11, 15, winnipeg),
-            ZonedDateTime(2016, 1, 1, 11, 30, winnipeg),
-            ZonedDateTime(2016, 1, 1, 11, 45, winnipeg)
-        ]
-
-        horizon = Horizon(Hour(1):Hour(1):Hour(3), Day(1))
-        results = targets(horizon, sim_now)
-        @test collect(results) == [
-            ZonedDateTime(2016, 1, 2, 1, winnipeg),
-            ZonedDateTime(2016, 1, 2, 2, winnipeg),
-            ZonedDateTime(2016, 1, 2, 3, winnipeg)
-        ]
+        @test collect(results) == collect(
+            HourBeginning(ZonedDateTime(2015, 12, 31, winnipeg)):
+            HourBeginning(ZonedDateTime(2016, 1, 1, 23, winnipeg))
+        )
     end
 
     @testset "spring forward" begin
@@ -130,56 +48,60 @@ winnipeg = tz"America/Winnipeg"
         horizon = Horizon()
         results = targets(horizon, sim_now)
         @test collect(results) == [
-            ZonedDateTime(2016, 3, 13, 1, winnipeg),
-            ZonedDateTime(2016, 3, 13, 3, winnipeg),
-            ZonedDateTime(2016, 3, 13, 4, winnipeg),
-            ZonedDateTime(2016, 3, 13, 5, winnipeg),
-            ZonedDateTime(2016, 3, 13, 6, winnipeg),
-            ZonedDateTime(2016, 3, 13, 7, winnipeg),
-            ZonedDateTime(2016, 3, 13, 8, winnipeg),
-            ZonedDateTime(2016, 3, 13, 9, winnipeg),
-            ZonedDateTime(2016, 3, 13, 10, winnipeg),
-            ZonedDateTime(2016, 3, 13, 11, winnipeg),
-            ZonedDateTime(2016, 3, 13, 12, winnipeg),
-            ZonedDateTime(2016, 3, 13, 13, winnipeg),
-            ZonedDateTime(2016, 3, 13, 14, winnipeg),
-            ZonedDateTime(2016, 3, 13, 15, winnipeg),
-            ZonedDateTime(2016, 3, 13, 16, winnipeg),
-            ZonedDateTime(2016, 3, 13, 17, winnipeg),
-            ZonedDateTime(2016, 3, 13, 18, winnipeg),
-            ZonedDateTime(2016, 3, 13, 19, winnipeg),
-            ZonedDateTime(2016, 3, 13, 20, winnipeg),
-            ZonedDateTime(2016, 3, 13, 21, winnipeg),
-            ZonedDateTime(2016, 3, 13, 22, winnipeg),
-            ZonedDateTime(2016, 3, 13, 23, winnipeg),
-            ZonedDateTime(2016, 3, 14, winnipeg)
+            HourEnding(ZonedDateTime(2016, 3, 13, 1, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 3, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 4, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 5, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 6, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 7, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 8, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 9, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 10, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 11, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 12, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 13, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 14, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 15, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 16, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 17, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 18, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 19, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 20, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 21, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 22, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 23, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 14, winnipeg)),
         ]
 
         sim_now = ZonedDateTime(2016, 3, 12, 23, 59, winnipeg)
-        horizon = Horizon(Hour(1):Hour(1):Hour(3), Day(1))
+        horizon = Horizon{HourEnding}(; span=Hour(3), start_ceil=Day(1))
         results = targets(horizon, sim_now)
         @test collect(results) == [
-            ZonedDateTime(2016, 3, 13, 1, winnipeg),
-            ZonedDateTime(2016, 3, 13, 3, winnipeg),
-            ZonedDateTime(2016, 3, 13, 4, winnipeg)
+            HourEnding(ZonedDateTime(2016, 3, 13, 1, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 3, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 3, 13, 4, winnipeg)),
         ]
 
         sim_now = ZonedDateTime(2016, 3, 13, 0, 59, winnipeg)
-        horizon = Horizon(Minute(15):Minute(15):Minute(120))
+        horizon = Horizon{AnchoredInterval{Minute(-15)}}(;
+            span=Minute(120), start_ceil=Minute(15)
+        )
         results = targets(horizon, sim_now)
         @test collect(results) == [
-            ZonedDateTime(2016, 3, 13, 1, 15, winnipeg),
-            ZonedDateTime(2016, 3, 13, 1, 30, winnipeg),
-            ZonedDateTime(2016, 3, 13, 1, 45, winnipeg),
-            ZonedDateTime(2016, 3, 13, 3, winnipeg),
-            ZonedDateTime(2016, 3, 13, 3, 15, winnipeg),
-            ZonedDateTime(2016, 3, 13, 3, 30, winnipeg),
-            ZonedDateTime(2016, 3, 13, 3, 45, winnipeg),
-            ZonedDateTime(2016, 3, 13, 4, winnipeg)
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 3, 13, 1, 15, winnipeg)),
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 3, 13, 1, 30, winnipeg)),
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 3, 13, 1, 45, winnipeg)),
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 3, 13, 3, winnipeg)),
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 3, 13, 3, 15, winnipeg)),
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 3, 13, 3, 30, winnipeg)),
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 3, 13, 3, 45, winnipeg)),
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 3, 13, 4, winnipeg)),
         ]
 
         sim_now = ZonedDateTime(2016, 3, 12, 1, 30, winnipeg)
-        horizon = Horizon(Day(0):Day(1):Day(2), Hour(1))
+        horizon = Horizon{AnchoredInterval{Day(-1)}}(;
+            span=Day(3), start_ceil=Hour(1), start_offset=Day(-1)
+        )
         @test_throws NonExistentTimeError collect(targets(horizon, sim_now))
         # Depending on the version of Julia, the error will be thrown either by the call to
         # targets or by the collect. (The distinction isn't deemed particularly important.)
@@ -187,9 +109,9 @@ winnipeg = tz"America/Winnipeg"
         sim_now = LaxZonedDateTime(sim_now)
         results = targets(horizon, sim_now)
         @test collect(results) == [
-            LaxZonedDateTime(DateTime(2016, 3, 12, 2), winnipeg)
-            LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg)    # DNE
-            LaxZonedDateTime(DateTime(2016, 3, 14, 2), winnipeg)
+            AnchoredInterval{Day(-1)}(LaxZonedDateTime(DateTime(2016, 3, 12, 2), winnipeg)),
+            AnchoredInterval{Day(-1)}(LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg)),
+            AnchoredInterval{Day(-1)}(LaxZonedDateTime(DateTime(2016, 3, 14, 2), winnipeg)),
         ]
     end
 
@@ -198,58 +120,62 @@ winnipeg = tz"America/Winnipeg"
         horizon = Horizon()
         results = targets(horizon, sim_now)
         @test collect(results) == [
-            ZonedDateTime(2016, 11, 6, 1, winnipeg, 1),
-            ZonedDateTime(2016, 11, 6, 1, winnipeg, 2),
-            ZonedDateTime(2016, 11, 6, 2, winnipeg),
-            ZonedDateTime(2016, 11, 6, 3, winnipeg),
-            ZonedDateTime(2016, 11, 6, 4, winnipeg),
-            ZonedDateTime(2016, 11, 6, 5, winnipeg),
-            ZonedDateTime(2016, 11, 6, 6, winnipeg),
-            ZonedDateTime(2016, 11, 6, 7, winnipeg),
-            ZonedDateTime(2016, 11, 6, 8, winnipeg),
-            ZonedDateTime(2016, 11, 6, 9, winnipeg),
-            ZonedDateTime(2016, 11, 6, 10, winnipeg),
-            ZonedDateTime(2016, 11, 6, 11, winnipeg),
-            ZonedDateTime(2016, 11, 6, 12, winnipeg),
-            ZonedDateTime(2016, 11, 6, 13, winnipeg),
-            ZonedDateTime(2016, 11, 6, 14, winnipeg),
-            ZonedDateTime(2016, 11, 6, 15, winnipeg),
-            ZonedDateTime(2016, 11, 6, 16, winnipeg),
-            ZonedDateTime(2016, 11, 6, 17, winnipeg),
-            ZonedDateTime(2016, 11, 6, 18, winnipeg),
-            ZonedDateTime(2016, 11, 6, 19, winnipeg),
-            ZonedDateTime(2016, 11, 6, 20, winnipeg),
-            ZonedDateTime(2016, 11, 6, 21, winnipeg),
-            ZonedDateTime(2016, 11, 6, 22, winnipeg),
-            ZonedDateTime(2016, 11, 6, 23, winnipeg),
-            ZonedDateTime(2016, 11, 7, winnipeg)
+            HourEnding(ZonedDateTime(2016, 11, 6, 1, winnipeg, 1)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 1, winnipeg, 2)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 2, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 3, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 4, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 5, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 6, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 7, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 8, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 9, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 10, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 11, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 12, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 13, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 14, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 15, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 16, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 17, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 18, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 19, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 20, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 21, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 22, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 23, winnipeg)),
+            HourEnding(ZonedDateTime(2016, 11, 7, winnipeg)),
         ]
 
         sim_now = ZonedDateTime(2016, 11, 5, 23, 59, winnipeg)
-        horizon = Horizon(Hour(1):Hour(1):Hour(3), Day(1))
+        horizon = Horizon{HourEnding}(; span=Hour(3), start_ceil=Day(1))
         results = targets(horizon, sim_now)
         @test collect(results) == [
-            ZonedDateTime(2016, 11, 6, 1, winnipeg, 1),
-            ZonedDateTime(2016, 11, 6, 1, winnipeg, 2),
-            ZonedDateTime(2016, 11, 6, 2, winnipeg)
+            HourEnding(ZonedDateTime(2016, 11, 6, 1, winnipeg, 1)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 1, winnipeg, 2)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 2, winnipeg)),
         ]
 
         sim_now = ZonedDateTime(2016, 11, 6, 0, 59, winnipeg)
-        horizon = Horizon(Minute(15):Minute(15):Minute(120))
+        horizon = Horizon{AnchoredInterval{Minute(-15)}}(;
+			span=Minute(120), start_ceil=Minute(15)
+		)
         results = targets(horizon, sim_now)
         @test collect(results) == [
-            ZonedDateTime(2016, 11, 6, 1, 15, winnipeg, 1),
-            ZonedDateTime(2016, 11, 6, 1, 30, winnipeg, 1),
-            ZonedDateTime(2016, 11, 6, 1, 45, winnipeg, 1),
-            ZonedDateTime(2016, 11, 6, 1, winnipeg, 2),
-            ZonedDateTime(2016, 11, 6, 1, 15, winnipeg, 2),
-            ZonedDateTime(2016, 11, 6, 1, 30, winnipeg, 2),
-            ZonedDateTime(2016, 11, 6, 1, 45, winnipeg, 2),
-            ZonedDateTime(2016, 11, 6, 2, winnipeg)
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 11, 6, 1, 15, winnipeg, 1)),
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 11, 6, 1, 30, winnipeg, 1)),
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 11, 6, 1, 45, winnipeg, 1)),
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 11, 6, 1, winnipeg, 2)),
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 11, 6, 1, 15, winnipeg, 2)),
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 11, 6, 1, 30, winnipeg, 2)),
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 11, 6, 1, 45, winnipeg, 2)),
+            AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 11, 6, 2, winnipeg)),
         ]
 
         sim_now = ZonedDateTime(2016, 11, 5, 0, 30, winnipeg)
-        horizon = Horizon(Day(0):Day(1):Day(2), Hour(1))
+        horizon = Horizon{AnchoredInterval{Day(-1)}}(;
+            span=Day(3), start_ceil=Hour(1), start_offset=Day(-1)
+        )
         @test_throws AmbiguousTimeError collect(targets(horizon, sim_now))
         # Depending on the version of Julia, the error will be thrown either by the call to
         # targets or by the collect. (The distinction isn't deemed particularly important.)
@@ -257,24 +183,30 @@ winnipeg = tz"America/Winnipeg"
         sim_now = LaxZonedDateTime(sim_now)
         results = targets(horizon, sim_now)
         @test collect(results) == [
-            LaxZonedDateTime(DateTime(2016, 11, 5, 1), winnipeg)
-            LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg)    # AMB
-            LaxZonedDateTime(DateTime(2016, 11, 7, 1), winnipeg)
+            AnchoredInterval{Day(-1)}(LaxZonedDateTime(DateTime(2016, 11, 5, 1), winnipeg)),
+            AnchoredInterval{Day(-1)}(LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg)),
+            AnchoredInterval{Day(-1)}(LaxZonedDateTime(DateTime(2016, 11, 7, 1), winnipeg)),
         ]
     end
 
     @testset "show" begin
-        @test sprint(show, Horizon()) == "Horizon(1 day at 1 hour resolution)"
+        @test string(Horizon()) ==
+            "Horizon{HourEnding{T} where T<:Base.Dates.TimeType}(1 day)"
+        @test sprint(show, Horizon()) ==
+            "Horizon{HourEnding{T} where T<:Base.Dates.TimeType}(1 day, 1 day, 0 hours)"
 
-        horizon = Horizon(;
-            coverage=Day(5),
-            step=Minute(15),
-            start_ceil=Minute(30),
-            start_offset=Second(15)
+        horizon = Horizon{AnchoredInterval{Minute(-15)}}(;
+            span=Day(5),
+            start_ceil=Minute(15),
+            start_offset=Minute(30),
         )
-        @test sprint(show, horizon) == (
-            "Horizon(5 days at 15 minutes resolution, " *
-            "start date rounded up to 30 minutes + 15 seconds)"
+        @test string(horizon) == string(
+            "Horizon{Intervals.AnchoredInterval{-15 minutes,T} where T}",
+            "(5 days, start date rounded up to 15 minutes + 30 minutes)",
+        )
+        @test sprint(show, horizon) == string(
+            "Horizon{Intervals.AnchoredInterval{-15 minutes,T} where T}",
+            "(5 days, 15 minutes, 30 minutes)",
         )
     end
 end

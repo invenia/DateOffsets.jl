@@ -1,21 +1,20 @@
 # Source Offsets
 
 A `SourceOffset` is an abstract type that allows the user to define the relationship
-between a forecast target date (or `sim_now`) and the date associated with the input data
-used to generate that forecast (also called the "observation date").
+between a forecast target (or `sim_now`) and the date interval associated with the input
+data used to generate that forecast (also called the "observation date" or "observation
+interval").
 
 ## Types
 
-```
-abstract DateOffset
-    abstract SourceOffset
-        immutable ScalarOffset
-        immutable StaticOffset
-        immutable LatestOffset
-        immutable DynamicOffset
-        immutable CustomOffset
-    immutable CompoundOffset
-```
+* `DateOffset` (abstract)
+    * `SourceOffset` (abstract)
+        * `ScalarOffset`
+        * `StaticOffset`
+        * `LatestOffset`
+        * `DynamicOffset`
+        * `CustomOffset`
+    * `CompoundOffset`
 
 ## API
 
@@ -37,8 +36,8 @@ signature.
 DocTestSetup = quote
     using DateOffsets, TimeZones, Base.Dates
     sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
-    latest_available = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
-    target_date = ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg")
+    content_end = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
+    target = HE(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
 end
 ```
 
@@ -46,11 +45,11 @@ end
 julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
-julia> latest_available = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
+julia> content_end = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
 2016-08-11T02:00:00-05:00
 
-julia> target_date = ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg")
-2016-08-12T01:00:00-05:00
+julia> target = HE(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
+HourEnding{TimeZones.ZonedDateTime}(2016-08-12T01:00:00-05:00, Inclusivity(false, true))
 ```
 
 ### StaticOffset
@@ -59,8 +58,8 @@ julia> target_date = ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg")
 julia> static_offset = StaticOffset(Hour(-1))
 StaticOffset(-1 hour)
 
-julia> apply(static_offset, target_date)
-2016-08-12T00:00:00-05:00
+julia> apply(static_offset, target)
+HourEnding{TimeZones.ZonedDateTime}(2016-08-12T00:00:00-05:00, Inclusivity(false, true))
 ```
 
 ### LatestOffset
@@ -69,41 +68,41 @@ julia> apply(static_offset, target_date)
 julia> latest_offset = LatestOffset()
 LatestOffset()
 
-julia> apply(latest_offset, target_date, latest_available, sim_now)
-2016-08-11T02:00:00-05:00
+julia> apply(latest_offset, target, content_end, sim_now)
+HourEnding{TimeZones.ZonedDateTime}(2016-08-11T02:00:00-05:00, Inclusivity(false, true))
 ```
 
 ### DynamicOffset
 
 ```jldoctest
 julia> match_hourofweek = DynamicOffset(; fallback=Week(-1))
-DynamicOffset(-1 week, DateOffsets.#4)
+DynamicOffset(-1 week, DateOffsets.#5)
 
-julia> apply(match_hourofweek, target_date, latest_available, sim_now)
-2016-08-05T01:00:00-05:00
+julia> apply(match_hourofweek, target, content_end, sim_now)
+HourEnding{TimeZones.ZonedDateTime}(2016-08-05T01:00:00-05:00, Inclusivity(false, true))
 ```
 
 ### CustomOffset
 
 ```jldoctest
-julia> offset_fn(sim_now, target) = (hour(sim_now) ≥ 18) ? sim_now : target
+julia> offset_fn(sim_now, target) = (hour(sim_now) ≥ 18) ? HE(sim_now) : target
 offset_fn (generic function with 1 method)
 
 julia> custom_offset = CustomOffset(offset_fn)
 CustomOffset(offset_fn)
 
-julia> apply(custom_offset, target_date, latest_available, sim_now)
-2016-08-12T01:00:00-05:00
+julia> apply(custom_offset, target, content_end, sim_now)
+HourEnding{TimeZones.ZonedDateTime}(2016-08-12T01:00:00-05:00, Inclusivity(false, true))
 ```
 
 ### CompoundOffset
 
 ```jldoctest
 julia> compound_offset = DynamicOffset(; fallback=Week(-1)) + StaticOffset(Hour(-1))
-CompoundOffset(DynamicOffset(-1 week, DateOffsets.#4), StaticOffset(-1 hour))
+CompoundOffset(DynamicOffset(-1 week, DateOffsets.#5), StaticOffset(-1 hour))
 
-julia> apply(compound_offset, target_date, latest_available, sim_now)
-2016-08-05T00:00:00-05:00
+julia> apply(compound_offset, target, content_end, sim_now)
+HourEnding{TimeZones.ZonedDateTime}(2016-08-05T00:00:00-05:00, Inclusivity(false, true))
 ```
 
 ```@meta
@@ -120,8 +119,9 @@ Let's assume that you are defining a `DataFeature` without any `SourceOffset`s,
 which might look something like this:
 
 ```julia
-source = DataSource(S3DB.Client(); collection="ercot", table="realtime_lmp", object_ids=["AEEC"])
-feature = DataFeature(source, StaticOffset(Hour(0)))
+source = DataSource(S3DB.Client(), "ercot", "realtime_lmp")
+filter = Dict("tag" => ["HTTPFinal"], "object_id" => ["AEEC"])
+feature = DataFeature(source, filter, StaticOffset(Hour(0)))
 query = FeatureQuery(feature, Horizon(), now(tz"America/Winnipeg"))
 ```
 
@@ -133,7 +133,7 @@ the value recorded in S3DB for that time.
 However, suppose you add another couple of `SourceOffset`s, like this:
 
 ```julia
-feature = DataFeature(source, StaticOffset(Hour(0)), StaticOffset(Day(-1)), DynamicOffset(fallback=Week(-1)))
+feature = DataFeature(source, filter, StaticOffset(Hour(0)), StaticOffset(Day(-1)), DynamicOffset(fallback=Week(-1)))
 query = FeatureQuery(feature, Horizon(), now(tz"America/Winnipeg"))
 ```
 
@@ -142,7 +142,7 @@ Now if you `fetch(query)`, for each of the 24 target dates you'll get three valu
 one for the latest date/time (at or earlier than the target date) that is the same hour of
 week as the target date but that is also "available" at `sim_now`.
 
-> What is `latest_available`? Where does it come from?
+> What is `content_end`? Where does it come from?
 
 Essentially, it represents the most recent available data (for a given data source) as of
 `sim_now`, and it is calculated by pulling metadata from [S3DB](https://gitlab.invenia.ca/invenia/S3DB.jl).

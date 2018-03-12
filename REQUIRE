@@ -1,5 +1,5 @@
 julia 0.6
-TimeZones
-LaxZonedDateTimes 0.1.0
+TimeZones 0.4
+LaxZonedDateTimes 0.1.2
 AutoHashEquals
-PeriodIntervals
+Intervals 0.0.3

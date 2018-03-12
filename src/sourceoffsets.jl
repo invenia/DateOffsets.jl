@@ -4,8 +4,8 @@ abstract type ScalarOffset <: SourceOffset end
 """
     StaticOffset(period::Period) -> StaticOffset
 
-Constructs a `StaticOffset`. When a `StaticOffset` is applied to a target date, the `period`
-is simply added to the target date to create the observation date.
+Constructs a `StaticOffset`. When a `StaticOffset` is applied to a target interval, the
+`period` is simply added to the target to create the observation interval.
 """
 struct StaticOffset <: ScalarOffset
     period::Period
@@ -14,21 +14,22 @@ end
 Base.isless(a::StaticOffset, b::StaticOffset) = isless(a.period, b.period)
 Base.:-(a::StaticOffset) = (StaticOffset(-a.period))
 
-Base.show(io::IO, o::StaticOffset) = print(io, "StaticOffset($(o.period))")
-
 """
     LatestOffset() -> LatestOffset
 
-Constructs a `LatestOffset`. When a `LatestOffset` is applied to a target date, metadata
-associated with the appropriate `DataSource` is checked to determine whether that target
-date is expected to be available (for the given `sim_now`).
+Constructs a `LatestOffset`. When a `LatestOffset` is applied to a target interval, metadata
+associated with the appropriate `DataFeature` is checked to determine whether that data for
+that target is expected to be available (for the `sim_now` provided).
 
-If the target date is available, that date is returned as the observation date; otherwise,
-the latest target date expected to be available (based on table metadata) is returned.
+If data for the target is expected to be available on S3DB at `sim_now`, that target
+interval is returned as the observation interval; otherwise, an interval with the same span
+as the target that ends at S3DB's estimated content end is returned. (This "end of content"
+value is estimated by `DataFeatures.content_end` based upon the `sim_now` provided, using
+S3DB metadata for the `DataFeature` in question.)
+
+See also: [`DynamicOffset`](@ref)
 """
 struct LatestOffset <: ScalarOffset end
-
-Base.show(io::IO, o::LatestOffset) = print(io, "LatestOffset()")
 
 struct DynamicOffset <: ScalarOffset
     fallback::Period
@@ -43,57 +44,63 @@ end
 """
     DynamicOffset(; fallback=Day(-1), match=t -> true) -> DynamicOffset
 
-Constructs a `DynamicOffset`. When a `DynamicOffset` is applied to a target date, metadata
-associated with the appropriate `DataSource` is checked to determine whether that target
-date is expected to be available (for the given `sim_now`).
+Constructs a `DynamicOffset`. When a `DynamicOffset` is applied to a target interval,
+metadata associated with the appropriate `DataFeature` is checked to determine whether data
+for that target is expected to be available (for the `sim_now` provided).
 
-As with a `LatestOffset`, if the target date is available, it is returned as the observation
-date; otherwise, the value of `fallback` is added to the target date and the check is
-repeated. This process continues until the observation date passes the expected availability
-check.
+As with a `LatestOffset`, if data for the target are expected to be available, the target
+interval is simply returned as the observation interval; otherwise, the value of `fallback`
+is added to the target interval and the check is repeated. This process continues until we
+have an observation interval for which data are expected to be available.
 
-The most common use of `DynamicOffset` is to simultaneously ensure that the observation date
-is available while also matching the hour of day (or hour of week) of the target date. This
-is accomplished by specifying an appropriate `fallback`:
+### Matching Hour of Day (or Week)
+
+The most common use of `DynamicOffset` is to simultaneously ensure that we are requesting
+data that we expect will be available while also ensuring that the observation interval
+matches the hour of day (or hour of week) of the target interval. This is accomplished by
+specifying an appropriate value for `fallback` (which defaults to `Day(1)`):
 
 ```julia
 match_hourofday = DynamicOffset(; fallback=Dates.Day(-1))
 match_hourofweek = DynamicOffset(; fallback=Dates.Week(-1))
 ```
 
-If a `match` date function is provided, its return value is checked alongside the available
-date when determining whether to return the target date or fall back. The observation date
-returned must both be ≤ the latest available target date and return true when passed into
-the `match` function.
+### Arbitrary Matching
 
-Example:
+If a `match` function is provided, its return value is checked alongside the available date
+when determining whether to return the observation interval or fall back. The observation
+interval returned must both be ≤ the estimated end of available content on S3DB and return
+`true` when passed into the `match` function:
 
 ```julia
-match_hourofday_tuesday = DynamicOffset(; match=t -> Dates.dayofweek(t) == Dates.Tuesday)
+match_hourofday_tuesday = DynamicOffset(; match=t -> Dates.dayofweek(last(t)) == Dates.Tuesday)
 ```
+
+Note that if your `target` is of type `<: AbstractInterval` (e.g., `HourEnding`), that will
+be the type of the value passed into the `match` function. If you are planning to use
+standard date functions to interact with this value, you can convert it to a `TimeType` with
+`first` or `last` (to obtain the start or endpoint of the interval, respectively).
+
+See also: [`LatestOffset`](@ref)
 """
 DynamicOffset(; fallback=Day(-1), match=t -> true) = DynamicOffset(fallback, match)
-
-Base.show(io::IO, o::DynamicOffset) = print(io, "DynamicOffset($(o.fallback), $(o.match))")
 
 """
     CustomOffset(apply::Function) -> CustomOffset
 
 Constructs a `CustomOffset` using the supplied `apply` function. The `apply` function should
-take a `sim_now` and a `target_date` (in that order) and return a single observation date.
-Whenever a `CustomOffset` is applied to a target date, the `apply` funcion is called.
+take a `sim_now::ZonedDateTime` and a `target::AbstractInterval` (in that order) and return
+a single observation interval.
 
-Example:
+Whenever a `CustomOffset` is applied to a target interval, the `apply` funcion is called.
 
 ```julia
-custom_offset = CustomOffset((sn, td) -> min(ceil(sn, Dates.Day), td) + Dates.Hour(1))
+custom_offset = CustomOffset((sn, td) -> min(HourEnding(sn), td) + Dates.Hour(1))
 ```
 """
 struct CustomOffset <: ScalarOffset
-    apply::Function     # Should take (sim_now, observation) and return observation
+    apply::Function     # Should take (sim_now, observation) and return observation interval
 end
-
-Base.show(io::IO, o::CustomOffset) = print(io, "CustomOffset($(o.apply))")
 
 ##### CompoundOffset #####
 
@@ -101,8 +108,8 @@ Base.show(io::IO, o::CustomOffset) = print(io, "CustomOffset($(o.apply))")
     CompoundOffset(o::Vector{ScalarOffset}) -> CompoundOffset
 
 Constructs a `CompoundOffset`. A `CompoundOffset` is a "chain" of `SourceOffset`s that are
-all applied to a target date in sequence to yield the observation date. For example,
-`CompoundOffset([LatestOffset(), StaticOffset(Dates.Hour(-1))])` would apply the
+all applied to a target interval in sequence to yield the observation interval. For example,
+`CompoundOffset(LatestOffset(), StaticOffset(Dates.Hour(-1)))` would apply the
 `LatestOffset` then subtract one hour from the result.
 
 A `CompoundOffset` must contain at least one `SourceOffset`. If none are provided, it
@@ -147,7 +154,7 @@ end
 
 CompoundOffset(o::Vector{<:ScalarOffset}) = CompoundOffset(Vector{ScalarOffset}(o))
 
-CompoundOffset(o::ScalarOffset...) = CompoundOffset(o)
+CompoundOffset(o::ScalarOffset...) = CompoundOffset(collect(o))
 
 Base.convert(::Type{CompoundOffset}, o::ScalarOffset) = CompoundOffset(ScalarOffset[o])
 
@@ -158,65 +165,86 @@ Base.:+(x::CompoundOffset, y::CompoundOffset) = CompoundOffset(vcat(x.offsets, y
 Base.:-(x::ScalarOffset, y::StaticOffset) = CompoundOffset(ScalarOffset[x, -y])
 Base.:-(x::CompoundOffset, y::StaticOffset) = CompoundOffset(vcat(x.offsets, -y))
 
+# TODO Remove for 0.7
+Base.show(io::IO, ::Type{LatestOffset}) = print(io, "LatestOffset")
+Base.show(io::IO, ::Type{StaticOffset}) = print(io, "StaticOffset")
+Base.show(io::IO, ::Type{DynamicOffset}) = print(io, "DynamicOffset")
+Base.show(io::IO, ::Type{CustomOffset}) = print(io, "CustomOffset")
+Base.show(io::IO, ::Type{CompoundOffset}) = print(io, "CompoundOffset")
+
 function Base.show(io::IO, o::CompoundOffset)
-    return print(
-        io, "CompoundOffset($(join([string(offset) for offset in o.offsets], ", ")))"
-    )
+    print(io, "CompoundOffset($(join([string(offset) for offset in o.offsets], ", ")))")
 end
 
-function apply(offset::StaticOffset, target_date::LZDT, args...)
-    return target_date + offset.period
+function apply(offset::StaticOffset, target::TargetType, args...)
+    return target + offset.period
 end
 
 # Only works for StaticOffsets, because they don't need latest/sim_now information.
-Base.:+(offset::StaticOffset, target_date::LZDT) = apply(offset, target_date)
-Base.:+(target_date::LZDT, offset::SourceOffset) = offset + target_date
-function Base.:+(offset::SourceOffset, target_date::LZDT)
+Base.:+(offset::StaticOffset, target::TargetType) = apply(offset, target)
+Base.:+(target::TargetType, offset::SourceOffset) = offset + target
+
+# Required to resolve dispatch ambiguity.
+Base.:+(target::AnchoredInterval, offset::SourceOffset) = offset + target
+Base.:+(offset::StaticOffset, target::AnchoredInterval) = apply(offset, target)
+
+function Base.:+(offset::SourceOffset, target::TargetType)
     throw(
         ArgumentError(
-            "addition between ZonedDateTimes and SourceOffsets is only supported for " *
-            "StaticOffsets"
+            "addition between targets and SourceOffsets is only supported for StaticOffsets"
         )
     )
 end
 
-function apply(::LatestOffset, target_date::LZDT, latest::ZonedDateTime, args...)
-    return min(target_date, latest)
+function apply(::LatestOffset, target::TargetType, content_end::ZonedDateTime, args...)
+    return min(target, content_end)
+end
+
+function apply(::LatestOffset, target::T, content_end::ZonedDateTime, args...) where
+        T <: AnchoredInterval
+    return min(target, T(content_end, inclusivity(target)))
 end
 
 function apply(
-    offset::DynamicOffset, target_date::LZDT, latest::ZonedDateTime, sim_now::LZDT
+    offset::DynamicOffset, target::TargetType, content_end::ZonedDateTime, sim_now::NowType
 )
-    criteria = t -> t <= latest && offset.match(t)
-    return toprev(criteria, target_date; step=offset.fallback, same=true)
+    criteria = t -> t <= content_end && offset.match(t)
+    return toprev(criteria, target; step=offset.fallback, same=true)
 end
 
 function apply(
-    offset::CustomOffset, target_date::LZDT, latest, sim_now::LZDT
-)
-    return offset.apply(sim_now, target_date)
+    offset::DynamicOffset, target::T, content_end::ZonedDateTime, sim_now::NowType
+) where T <: AnchoredInterval
+    criteria = t -> t <= content_end && offset.match(t)
+    return T(toprev(criteria, last(target); step=offset.fallback, same=true))
 end
 
 function apply(
-    offset::CompoundOffset, target_date::LZDT, latest::ZonedDateTime, sim_now::LZDT
+    offset::CustomOffset, target::TargetType, content_end, sim_now::NowType
 )
-    apply_binary_op(dt, offset) = apply(offset, dt, latest, sim_now)
-    return foldl(apply_binary_op, target_date, offset.offsets)
+    return offset.apply(sim_now, target)
 end
 
-function apply(offset::SourceOffset, target_date::Nullable{ZonedDateTime}, args...)
-    return isnull(target_date)?target_date:Nullable(apply(offset,get(target_date),args...))
+function apply(
+    offset::CompoundOffset, target::TargetType, content_end::ZonedDateTime, sim_now::NowType
+)
+    apply_binary_op(dt, offset) = apply(offset, dt, content_end, sim_now)
+    return foldl(apply_binary_op, target, offset.offsets)
+end
+
+function apply(offset::SourceOffset, target::Nullable{<:TargetType}, args...)
+    return isnull(target) ? target : Nullable(apply(offset, get(target), args...))
 end
 
 """
-    apply(offset::SourceOffset, target_date::Union{ZonedDateTime, LaxZonedDateTime}, latest::ZonedDateTime, sim_now::ZonedDateTime) -> ZonedDateTime
+    apply(offset::SourceOffset, target::Union{AbstractInterval, ZonedDateTime, LaxZonedDateTime}, content_end::ZonedDateTime, sim_now::ZonedDateTime) -> ZonedDateTime
 
-Applies `offset` to the `target_date`, returning the new observation date. Methods for some
-subtypes of `SourceOffset` also use `latest` and `sim_now` in their calculations. If the
-`offset` is a `CompoundOffset`, each of the `ScalarOffset`s is applied sequentially to
+Applies `offset` to the `target`, returning the new observation date. Methods for some
+subtypes of `SourceOffset` also use `content_end` and `sim_now` in their calculations. If
+the `offset` is a `CompoundOffset`, each of the `ScalarOffset`s is applied sequentially to
 generate the final observation date.
 
-If `offset` is a `StaticOffset`, you can use `offset + target_date` syntax, as neither
-`latest` nor `sim_now` information is required.
+If `offset` is a `StaticOffset`, you can use `offset + target` syntax, as neither
+`content_end` nor `sim_now` information is required.
 """
-apply(::SourceOffset, ::LZDT, ::ZonedDateTime, ::ZonedDateTime)
+apply(::SourceOffset, ::NowType, ::ZonedDateTime, ::ZonedDateTime)

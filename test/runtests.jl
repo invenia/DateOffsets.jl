@@ -1,6 +1,7 @@
 using DateOffsets
 using TimeZones
 using LaxZonedDateTimes
+using Intervals
 using Base.Test
 using Base.Dates
 
