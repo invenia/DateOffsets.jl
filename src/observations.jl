@@ -1,21 +1,3 @@
-function observation_matrix(
-    offsets::Vector{<:SourceOffset},
-    horizon::Horizon,
-    sim_now::NowType,
-    content_end::ZonedDateTime,
-)
-    t = targets(horizon, sim_now)
-    o = repmat(t, 1, length(offsets))
-    for (i, offset) in enumerate(offsets)
-        o[:, i] = map(dt -> apply(offset, dt, content_end, sim_now), o[:, i])
-    end
-
-    # I'd prefer to use this fill dispatch, but it has type issues on 32-bit systems:
-    # return hcat(fill(sim_now, (length(t),)), t, o)
-    # https://github.com/JuliaLang/julia/issues/20855
-    return hcat(fill(sim_now, length(t)), t, o)
-end
-
 """
     observations(offsets::Vector{<:SourceOffset}, horizon::Horizon, sim_now::T, content_end::ZonedDateTime) where T<:Union{ZonedDateTime, LaxZonedDateTime} -> (Vector{T}, Vector{T}, Matrix{T})
 
@@ -53,8 +35,13 @@ function observations(
     sim_now::NowType,
     content_end::ZonedDateTime,
 )
-    matrix = observation_matrix(offsets, horizon, sim_now, content_end)
-    return (matrix[:, 1], matrix[:, 2], matrix[:, 3:end])
+    t = collect(targets(horizon, sim_now))
+    o = repmat(t, 1, length(offsets))
+    for (i, offset) in enumerate(offsets)
+        o[:, i] = map(dt -> apply(offset, dt, content_end, sim_now), o[:, i])
+    end
+
+    return (fill(sim_now, length(t)), t, o)
 end
 
 """
@@ -93,8 +80,9 @@ function observations(
     sim_now::Vector{<:NowType},
     content_end::Vector{ZonedDateTime},
 )
-    matrix = vcat(
-        map((sn, lt) -> observation_matrix(offsets, horizon, sn, lt), sim_now, content_end)...
-    )
-    return (matrix[:, 1], matrix[:, 2], matrix[:, 3:end])
+    tuple = map((s, c) -> observations(offsets, horizon, s, c), sim_now, content_end)
+
+    return map((1, 2, 3)) do i
+        mapreduce(x -> x[i], vcat, tuple)
+    end
 end
