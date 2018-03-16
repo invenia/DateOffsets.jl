@@ -9,12 +9,12 @@ interval").
 
 * `DateOffset` (abstract)
     * `SourceOffset` (abstract)
-        * `ScalarOffset`
-        * `StaticOffset`
-        * `LatestOffset`
-        * `DynamicOffset`
-        * `CustomOffset`
-    * `CompoundOffset`
+        * `ScalarOffset` (abstract)
+            * `StaticOffset`
+            * `LatestOffset`
+            * `DynamicOffset`
+            * `CustomOffset`
+        * `CompoundOffset`
 
 ## API
 
