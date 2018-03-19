@@ -14,6 +14,8 @@ end
 Base.isless(a::StaticOffset, b::StaticOffset) = isless(a.period, b.period)
 Base.:-(a::StaticOffset) = (StaticOffset(-a.period))
 
+Base.isless(::SourceOffset, ::SourceOffset) = false
+
 """
     LatestOffset() -> LatestOffset
 
