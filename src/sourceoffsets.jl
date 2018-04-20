@@ -167,12 +167,13 @@ Base.:+(x::CompoundOffset, y::CompoundOffset) = CompoundOffset(vcat(x.offsets, y
 Base.:-(x::ScalarOffset, y::StaticOffset) = CompoundOffset(ScalarOffset[x, -y])
 Base.:-(x::CompoundOffset, y::StaticOffset) = CompoundOffset(vcat(x.offsets, -y))
 
-# TODO Remove for 0.7
-Base.show(io::IO, ::Type{LatestOffset}) = print(io, "LatestOffset")
-Base.show(io::IO, ::Type{StaticOffset}) = print(io, "StaticOffset")
-Base.show(io::IO, ::Type{DynamicOffset}) = print(io, "DynamicOffset")
-Base.show(io::IO, ::Type{CustomOffset}) = print(io, "CustomOffset")
-Base.show(io::IO, ::Type{CompoundOffset}) = print(io, "CompoundOffset")
+if VERSION < v"0.7-"
+    Base.show(io::IO, ::Type{LatestOffset}) = print(io, "LatestOffset")
+    Base.show(io::IO, ::Type{StaticOffset}) = print(io, "StaticOffset")
+    Base.show(io::IO, ::Type{DynamicOffset}) = print(io, "DynamicOffset")
+    Base.show(io::IO, ::Type{CustomOffset}) = print(io, "CustomOffset")
+    Base.show(io::IO, ::Type{CompoundOffset}) = print(io, "CompoundOffset")
+end
 
 function Base.show(io::IO, o::CompoundOffset)
     print(io, "CompoundOffset($(join([string(offset) for offset in o.offsets], ", ")))")
@@ -234,8 +235,8 @@ function apply(
     return foldl(apply_binary_op, target, offset.offsets)
 end
 
-function apply(offset::SourceOffset, target::Nullable{<:TargetType}, args...)
-    return isnull(target) ? target : Nullable(apply(offset, get(target), args...))
+function apply(offset::SourceOffset, target::Union{Missing, TargetType}, args...)
+    return ismissing(target) ? missing : apply(offset, get(target), args...)
 end
 
 """

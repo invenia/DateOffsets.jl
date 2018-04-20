@@ -8,11 +8,12 @@ using LaxZonedDateTimes
 using Mocking
 using AutoHashEquals
 using Intervals
+using Missings
 
 abstract type DateOffset end
 
 const NowType = Union{ZonedDateTime, LaxZonedDateTime}
-const TargetType = Union{AbstractInterval, ZonedDateTime, LaxZonedDateTime}
+const TargetType = Union{AbstractInterval{<:NowType}, NowType}
 
 include("horizons.jl")
 include("sourceoffsets.jl")

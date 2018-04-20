@@ -4,7 +4,7 @@ winnipeg = tz"America/Winnipeg"
     @testset "no available targets" begin
         # None of the target dates are available (this is typically the case if the input
         # data are live actuals).
-        horizon = Horizon{HourEnding}(; span=Day(1))
+        horizon = Horizon(; step=Hour(1), span=Day(1))
         sim_now = ZonedDateTime(2016, 8, 11, 12, 31, 12, winnipeg)
         content_end = ZonedDateTime(2016, 8, 11, 6, 15, winnipeg)
 
@@ -12,7 +12,7 @@ winnipeg = tz"America/Winnipeg"
 
         @test s isa Vector{ZonedDateTime}
         @test t isa Vector{HourEnding{ZonedDateTime}}
-        @test o isa Array{HourEnding{ZonedDateTime}, 2}
+        @test o isa Matrix{HourEnding{ZonedDateTime}}
 
         @test s == fill(sim_now, (24))
         @test t == collect(targets(horizon, sim_now))
@@ -26,7 +26,7 @@ winnipeg = tz"America/Winnipeg"
 
         @test s isa Vector{ZonedDateTime}
         @test t isa Vector{HourEnding{ZonedDateTime}}
-        @test o isa Array{HourEnding{ZonedDateTime}, 2}
+        @test o isa Matrix{HourEnding{ZonedDateTime}}
 
         @test s == fill(sim_now, (24))
         @test t == collect(targets(horizon, sim_now))
@@ -65,7 +65,7 @@ winnipeg = tz"America/Winnipeg"
     @testset "some available targets" begin
         # Some of the target dates are available (this is typically the case if the input
         # data are forecasts).
-        horizon = Horizon{HourEnding}(; span=Day(1))
+        horizon = Horizon(; step=Hour(1), span=Day(1))
         sim_now = ZonedDateTime(2016, 8, 11, 12, 31, 12, winnipeg)
         content_end = ZonedDateTime(2016, 8, 12, 12, winnipeg)
 
@@ -73,7 +73,7 @@ winnipeg = tz"America/Winnipeg"
 
         @test s isa Vector{ZonedDateTime}
         @test t isa Vector{HourEnding{ZonedDateTime}}
-        @test o isa Array{HourEnding{ZonedDateTime}, 2}
+        @test o isa Matrix{HourEnding{ZonedDateTime}}
 
         @test s == fill(sim_now, (24))
         @test t == collect(targets(horizon, sim_now))
@@ -104,7 +104,7 @@ winnipeg = tz"America/Winnipeg"
 
         @test s isa Vector{ZonedDateTime}
         @test t isa Vector{HourEnding{ZonedDateTime}}
-        @test o isa Array{HourEnding{ZonedDateTime}, 2}
+        @test o isa Matrix{HourEnding{ZonedDateTime}}
 
         @test s == fill(sim_now, (24))
         @test t == collect(targets(horizon, sim_now))
@@ -157,7 +157,7 @@ winnipeg = tz"America/Winnipeg"
     end
 
     @testset "multiple dates" begin
-        horizon = Horizon{HourEnding}(; span=Day(1))
+        horizon = Horizon(; step=Hour(1), span=Day(1))
         sim_now = [
             ZonedDateTime(2016, 8, 11, 10, 31, 12, winnipeg),
             ZonedDateTime(2016, 8, 11, 11, 31, 12, winnipeg),
@@ -173,7 +173,7 @@ winnipeg = tz"America/Winnipeg"
 
         @test s isa Vector{ZonedDateTime}
         @test t isa Vector{HourEnding{ZonedDateTime}}
-        @test o isa Array{HourEnding{ZonedDateTime}, 2}
+        @test o isa Matrix{HourEnding{ZonedDateTime}}
 
         @test s == repeat(sim_now, inner=24)
         @test t == vcat([collect(targets(horizon, s)) for s in sim_now]...)
@@ -187,7 +187,7 @@ winnipeg = tz"America/Winnipeg"
 
         @test s isa Vector{ZonedDateTime}
         @test t isa Vector{HourEnding{ZonedDateTime}}
-        @test o isa Array{HourEnding{ZonedDateTime}, 2}
+        @test o isa Matrix{HourEnding{ZonedDateTime}}
 
         @test s == repeat(sim_now, inner=24)
         @test t == vcat([collect(targets(horizon, s)) for s in sim_now]...)
@@ -274,7 +274,7 @@ winnipeg = tz"America/Winnipeg"
     @testset "spring forward" begin
         # DNE: 2016-03-13 02:00
 
-        horizon = Horizon{HourEnding}(; span=Day(1))
+        horizon = Horizon(; step=Hour(1), span=Day(1))
         offsets = [StaticOffset(Hour(2)), StaticOffset(Hour(24)), StaticOffset(Day(1))]
         sim_now = ZonedDateTime(2016, 3, 11, 12, 31, 12, winnipeg)
         content_end = ZonedDateTime(2016, 3, 11, 6, 15, winnipeg)
@@ -285,7 +285,7 @@ winnipeg = tz"America/Winnipeg"
 
         @test s isa Vector{LaxZonedDateTime}
         @test t isa Vector{HourEnding{LaxZonedDateTime}}
-        @test o isa Array{HourEnding{LaxZonedDateTime}, 2}
+        @test o isa Matrix{HourEnding{LaxZonedDateTime}}
 
         @test s == fill(sim_now, (24))
         target_dates = [
@@ -321,7 +321,7 @@ winnipeg = tz"America/Winnipeg"
     @testset "fall back" begin
         # AMB: 2016-11-06 01:00
 
-        horizon = Horizon{HourEnding}(; span=Day(1))
+        horizon = Horizon(; step=Hour(1), span=Day(1))
         offsets = [StaticOffset(Hour(2)), StaticOffset(Hour(24)), StaticOffset(Day(1))]
         sim_now = ZonedDateTime(2016, 11, 4, 12, 31, 12, winnipeg)
         content_end = ZonedDateTime(2016, 11, 4, 6, 15, winnipeg)
@@ -332,7 +332,7 @@ winnipeg = tz"America/Winnipeg"
 
         @test s isa Vector{LaxZonedDateTime}
         @test t isa Vector{HourEnding{LaxZonedDateTime}}
-        @test o isa Array{HourEnding{LaxZonedDateTime}, 2}
+        @test o isa Matrix{HourEnding{LaxZonedDateTime}}
 
         @test s == fill(sim_now, (24))
         target_dates = [

@@ -1,17 +1,18 @@
-struct Horizon{T <: AnchoredInterval} <: DateOffset
+struct Horizon <: DateOffset
+    step::Period
     span::Period
     start_ceil::Period
     start_offset::Period
 end
 
 """
-    Horizon{T <: AnchoredInterval}(; span=Day(1), start_ceil=Day(1), start_offset=Hour(0)) -> Horizon
+    Horizon(; step=Hour(1), span=Day(1), start_ceil=Day(1), start_offset=Hour(0)) -> Horizon
 
 Constructs a `Horizon`, which allows a `sim_now` to be translated into a series of
 `AnchoredInterval`s representing forecast targets.
 
-The type parameter defines the type of the targets that will be returned. If a `T` is not
-specified, the targets will be of type `HourEnding`.
+`step` specifies the duration of the `AnchoredInterval` targets that will be generated. If
+no `step` is specified, the targets will be of type `HourEnding` by default.
 
 `start_ceil` specifies how `sim_now` will be rounded before applying `start_offset`. The
 default value of `Day(1)` means that when the `Horizon` is applied to a `sim_now`, that
@@ -23,23 +24,12 @@ are generated. If the user wanted targets for the current day instead of the nex
 might specify `start_offset=Day(-1)`; if the first target date should be HE7 instead of HE1,
 they might specify `start_offset=Hour(6)`.
 """
-function Horizon{T}(; span=Day(1), start_ceil=Day(1), start_offset=Hour(0)) where T
-    return Horizon{T}(span, start_ceil, start_offset)
-end
-
-#= POST-DEPRECATION VERSION OF THIS FUNCTION:
-function Horizon(; span=Day(1), start_ceil=Day(1), start_offset=Hour(0))
-    return Horizon{HourEnding}(span, start_ceil, start_offset)
-end
-=#
-
-##### v0.3 DEPRECATION ####
 function Horizon(;
+    step=Hour(1),
     span=Day(1),
     start_ceil=Day(1),
     start_offset=Hour(0),
     coverage=nothing,
-    step=nothing,
 )
     if coverage !== nothing
         Base.depwarn(
@@ -50,48 +40,44 @@ function Horizon(;
         span = coverage
     end
 
-    if step !== nothing
-        Base.depwarn(
-            "Horizon(; step=Hour(1), ...) is deprecated, use " *
-            "Horizon{AnchoredInterval{-step}}(...) instead.",
-            :Horizon
-        )
-        interval = AnchoredInterval{-step}
-    else
-        interval = HourEnding
-    end
-
-    return Horizon{interval}(span, start_ceil, start_offset)
+    return Horizon(step, span, start_ceil, start_offset)
 end
 
+#= POST-DEPRECATION VERSION OF THIS FUNCTION:
+function Horizon(; step=Hour(1), span=Day(1), start_ceil=Day(1), start_offset=Hour(0))
+    return Horizon(step, span, start_ceil, start_offset)
+end
+=#
+
+##### v0.3 DEPRECATION ####
 function Horizon(r::StepRange, start_ceil)
     Base.depwarn(
         "Horizon(r::StepRange, start_ceil)) is deprecated, use " *
-        "Horizon{AnchoredInterval{-step(r)}}(last(r) - first(r) + step(r), " *
-        "start_ceil, first(r) - step(r)) instead. Horizons aren't exactly like ranges; " *
-        "if you try to use them that way you're probably going to have a bad time. Sorry.",
-        :Horizon
+        "Horizon(step(r), last(r) - first(r) + step(r), start_ceil, first(r) - step(r)) " *
+        "instead. Horizons aren't exactly like ranges; if you try to use them that way " *
+        "you're probably going to have a bad time. Sorry.",
+        :Horizon,
     )
-    return Horizon{AnchoredInterval{-step(r)}}(
-        last(r) - first(r) + step(r), start_ceil, first(r) - step(r)
+    return Horizon(
+        step(r), last(r) - first(r) + step(r), start_ceil, first(r) - step(r)
     )
 end
 
 function Horizon(r::StepRange)
     Base.depwarn(
         "Horizon(r::StepRange)) is deprecated, use " *
-        "Horizon{AnchoredInterval{-step(r)}}(last(r) - first(r) + step(r), " *
-        "step(r), first(r) - step(r)) instead. Horizons aren't exactly like ranges; if " *
-        "you try to use them that way you're probably going to have a bad time. Sorry.",
-        :Horizon
+        "Horizon(step(r), last(r) - first(r) + step(r), step(r), first(r) - step(r)) " *
+        "instead. Horizons aren't exactly like ranges; if you try to use them that way " *
+        "you're probably going to have a bad time. Sorry.",
+        :Horizon,
     )
-    return Horizon{PeriodEnding{-step(r)}}(
-        last(r) - first(r) + step(r), step(r), first(r) - step(r)
+    return Horizon(
+        step(r), last(r) - first(r) + step(r), step(r), first(r) - step(r)
     )
 end
 ##### END v0.3 DEPRECATION ####
 
-function Base.print(io::IO, h::Horizon{T}) where T
+function Base.print(io::IO, h::Horizon)
     # Print to io in order to keep properties like :limit and :compact
     if get(io, :compact, false)
         io = IOContext(io, :limit=>true)
@@ -105,15 +91,15 @@ function Base.print(io::IO, h::Horizon{T}) where T
             start_info *= " + $(h.start_offset)"
         end
     end
-    print(io, "Horizon{$T}($(h.span)$start_info)")
+    print(io, "Horizon($(h.span) at $(h.step) resolution$start_info)")
 end
 
-function Base.show(io::IO, h::Horizon{T}) where T
-    print(io, "Horizon{$T}($(h.span), $(h.start_ceil), $(h.start_offset))")
+function Base.show(io::IO, h::Horizon)
+    print(io, "Horizon($(h.step), $(h.span), $(h.start_ceil), $(h.start_offset))")
 end
 
 """
-    targets(horizon::Horizon{T}, sim_now::Union{ZonedDateTime, LaxZonedDateTime}) where {P, T<:AnchoredInterval{P}} -> StepRange{T, P}
+    targets(horizon::Horizon, sim_now::Union{ZonedDateTime, LaxZonedDateTime}) -> StepRange
 
 Generates the appropriate target intervals for a batch of forecasts, given a `horizon` and a
 `sim_now`.
@@ -122,13 +108,8 @@ Since `sim_now` is time zone–aware, Daylight Saving Time will be properly acco
 no target dates will be produced for hours that don't exist in the time zone and hours that
 are "duplicated" will appear twice (with each being zoned correctly).
 """
-function targets(horizon::Horizon{T}, sim_now::NowType) where {P, T <: AnchoredInterval{P}}
+function targets(horizon::Horizon, sim_now::NowType)
     base = ceil(sim_now, horizon.start_ceil) + horizon.start_offset
-
-    if P < zero(P)
-        # If we're anchored to the end of the interval, we have to make some adjustments.
-        return T(base - P):-P:T(base + horizon.span)
-    else
-        return T(base):P:T(base + horizon.span - P)
-    end
+    T = AnchoredInterval{-horizon.step}
+    return T(base + horizon.step):horizon.step:T(base + horizon.span)
 end

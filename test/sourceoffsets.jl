@@ -1,3 +1,5 @@
+using Missings
+
 winnipeg = tz"America/Winnipeg"
 
 @testset "StaticOffset" begin
@@ -558,22 +560,18 @@ end
     end
 end
 
-@testset "nullable target" begin
-    target = ZonedDateTime(2016, 8, 11, 2, winnipeg)
+@testset "missing target" begin
+    target_date = ZonedDateTime(2016, 8, 11, 2, winnipeg)
     content_end = ZonedDateTime(2016, 8, 11, 1, 15, winnipeg)
 
-    for f in (x -> x, HourEnding)
-        target = f(target)
-        nullable_result = apply(StaticOffset(Day(1)), Nullable(target))
-        @test get(nullable_result) == apply(StaticOffset(Day(1)), target)
+    result = apply(StaticOffset(Day(1)), missing)
+    @test ismissing(result)
 
-        null_result = apply(StaticOffset(Day(1)), Nullable{ZonedDateTime}())
-        @test isnull(null_result)
+    result = apply(LatestOffset(), missing, content_end)
+    @test ismissing(result)
 
-        nullable_result = apply(LatestOffset(), Nullable(target), content_end)
-        @test get(nullable_result) == apply(LatestOffset(), target, content_end)
-
-        null_result = apply(LatestOffset(), Nullable{ZonedDateTime}(), content_end)
-        @test isnull(null_result)
+    for t in (target_date, HourEnding(target_date))
+        result = apply.(LatestOffset(), [missing, t, missing], content_end)
+        @test isequal(result, [missing, apply(LatestOffset(), t, content_end), missing])
     end
 end

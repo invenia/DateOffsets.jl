@@ -36,7 +36,7 @@ function observations(
     content_end::ZonedDateTime,
 )
     t = collect(targets(horizon, sim_now))
-    o = repmat(t, 1, length(offsets))
+    o = repeat(t; outer=(1, length(offsets)))
     for (i, offset) in enumerate(offsets)
         o[:, i] = map(dt -> apply(offset, dt, content_end, sim_now), o[:, i])
     end

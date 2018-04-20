@@ -5,8 +5,8 @@ between the time at which a forecast runs (`sim_now`) and the target intervals o
 forecast.
 
 These forecast targets will typically be `HourEnding` values, although other interval
-types are also supported. See the [Intervals.jl documentation] for more information about
-intervals.
+types are also supported. See the [Intervals.jl documentation](https://invenia.github.io/Intervals.jl/stable/)
+for more information about intervals.
 
 ## API
 
@@ -29,8 +29,8 @@ end
 julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
-julia> horizon = Horizon{HourEnding}(; span=Day(1))
-Horizon{HourEnding{T} where T<:Base.Dates.TimeType}(1 day, 1 day, 0 hours)
+julia> horizon = Horizon(; step=Hour(1), span=Day(1))
+Horizon(1 hour, 1 day, 1 day, 0 hours)
 
 julia> collect(targets(horizon, sim_now))
 24-element Array{HourEnding{TimeZones.ZonedDateTime},1}:
@@ -72,42 +72,37 @@ Additionally, our typical use case covers one day at one hour resolution. Since 
 markets observe DST, this may mean 23 or 25 hours (and as of v0.6, Julia does not support
 `Hour(1):Hour(1):Day(1)`).
 
+Finally, such a vector would still result in `ZonedDateTime` values, rather than
+`AnchoredInterval`s.
+
 > Are the values returned by `targets` always in hour ending format?
 
-The format of the return value is determined `Horizon`'s type parameter, which defaults to
-`HourEnding` if none is provided. However, it is possible to specify other interval types,
-such as `HourBeginning`:
+The format of the return value is determined by the optional `step` keyword argument passed
+into the `Horizon` constructor, which defaults to `Hour(1)` if none is provided. However, it
+is possible to specify another value:
 
 ```jldoctest
-julia> horizon = Horizon{HourBeginning}(; span=Day(1))
-Horizon{HourBeginning{T} where T<:Base.Dates.TimeType}(1 day, 1 day, 0 hours)
+julia> horizon = Horizon(; step=Minute(15), span=Hour(4))
+Horizon(15 minutes, 1 day, 1 day, 0 hours)
 
 julia> collect(targets(horizon, sim_now))
-24-element Array{HourBeginning{TimeZones.ZonedDateTime},1}:
- [2016-08-12 HB00-05:00)
- [2016-08-12 HB01-05:00)
- [2016-08-12 HB02-05:00)
- [2016-08-12 HB03-05:00)
- [2016-08-12 HB04-05:00)
- [2016-08-12 HB05-05:00)
- [2016-08-12 HB06-05:00)
- [2016-08-12 HB07-05:00)
- [2016-08-12 HB08-05:00)
- [2016-08-12 HB09-05:00)
- [2016-08-12 HB10-05:00)
- [2016-08-12 HB11-05:00)
- [2016-08-12 HB12-05:00)
- [2016-08-12 HB13-05:00)
- [2016-08-12 HB14-05:00)
- [2016-08-12 HB15-05:00)
- [2016-08-12 HB16-05:00)
- [2016-08-12 HB17-05:00)
- [2016-08-12 HB18-05:00)
- [2016-08-12 HB19-05:00)
- [2016-08-12 HB20-05:00)
- [2016-08-12 HB21-05:00)
- [2016-08-12 HB22-05:00)
- [2016-08-12 HB23-05:00)
+16-element Array{AnchoredInterval{-15 minutes, TimeZones.ZonedDateTime},1}:
+ (2016-08-12 15ME00:15-05:00]
+ (2016-08-12 15ME00:30-05:00]
+ (2016-08-12 15ME00:45-05:00]
+ (2016-08-12 15ME01:00-05:00]
+ (2016-08-12 15ME01:15-05:00]
+ (2016-08-12 15ME01:30-05:00]
+ (2016-08-12 15ME01:45-05:00]
+ (2016-08-12 15ME02:00-05:00]
+ (2016-08-12 15ME02:15-05:00]
+ (2016-08-12 15ME02:30-05:00]
+ (2016-08-12 15ME02:45-05:00]
+ (2016-08-12 15ME03:00-05:00]
+ (2016-08-12 15ME03:15-05:00]
+ (2016-08-12 15ME03:30-05:00]
+ (2016-08-12 15ME03:45-05:00]
+ (2016-08-12 15ME04:00-05:00]
 ```
 
 ```@meta

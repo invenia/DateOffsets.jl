@@ -40,8 +40,8 @@ julia> using DateOffsets, Intervals, TimeZones, Base.Dates
 julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
-julia> horizon = Horizon{HourEnding}(; span=Day(1))
-Horizon{HourEnding{T} where T<:Base.Dates.TimeType}(1 day, 1 day, 0 hours)
+julia> horizon = Horizon(; step=Hour(1), span=Day(1))
+Horizon(1 hour, 1 day, 1 day, 0 hours)
 
 julia> collect(targets(horizon, sim_now))
 24-element Array{HourEnding{TimeZones.ZonedDateTime},1}:
