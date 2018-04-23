@@ -7,9 +7,13 @@ using TimeZones
 using LaxZonedDateTimes
 using Mocking
 using AutoHashEquals
+using Intervals
+using Missings
 
 abstract type DateOffset end
-const LZDT = Union{ZonedDateTime, LaxZonedDateTime}
+
+const NowType = Union{ZonedDateTime, LaxZonedDateTime}
+const TargetType = Union{AbstractInterval{<:NowType}, NowType}
 
 include("horizons.jl")
 include("sourceoffsets.jl")
