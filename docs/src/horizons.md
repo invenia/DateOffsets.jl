@@ -43,12 +43,7 @@ julia> collect(targets(horizon, sim_now))
  (2016-08-12 HE07-05:00]
  (2016-08-12 HE08-05:00]
  (2016-08-12 HE09-05:00]
- (2016-08-12 HE10-05:00]
- (2016-08-12 HE11-05:00]
- (2016-08-12 HE12-05:00]
- (2016-08-12 HE13-05:00]
- (2016-08-12 HE14-05:00]
- (2016-08-12 HE15-05:00]
+ ⋮
  (2016-08-12 HE16-05:00]
  (2016-08-12 HE17-05:00]
  (2016-08-12 HE18-05:00]
@@ -82,8 +77,11 @@ into the `Horizon` constructor, which defaults to `Hour(1)` if none is provided.
 is possible to specify another value:
 
 ```jldoctest
+julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
+2016-08-11T02:30:00-05:00
+
 julia> horizon = Horizon(; step=Minute(15), span=Hour(4))
-Horizon(15 minutes, 1 day, 1 day, 0 hours)
+Horizon(15 minutes, 4 hours, 1 day, 0 hours)
 
 julia> collect(targets(horizon, sim_now))
 16-element Array{AnchoredInterval{-15 minutes, TimeZones.ZonedDateTime},1}:
