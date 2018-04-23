@@ -34,7 +34,7 @@ signature.
 
 ```@meta
 DocTestSetup = quote
-    using DateOffsets, TimeZones, Base.Dates
+    using DateOffsets, TimeZones, Intervals, Base.Dates
     sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
     content_end = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
     target = HE(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
@@ -76,7 +76,7 @@ HourEnding{TimeZones.ZonedDateTime}(2016-08-11T02:00:00-05:00, Inclusivity(false
 
 ```jldoctest
 julia> match_hourofweek = DynamicOffset(; fallback=Week(-1))
-DynamicOffset(-1 week, DateOffsets.#5)
+DynamicOffset(-1 week, DateOffsets.#4)
 
 julia> apply(match_hourofweek, target, content_end, sim_now)
 HourEnding{TimeZones.ZonedDateTime}(2016-08-05T01:00:00-05:00, Inclusivity(false, true))
@@ -99,7 +99,7 @@ HourEnding{TimeZones.ZonedDateTime}(2016-08-12T01:00:00-05:00, Inclusivity(false
 
 ```jldoctest
 julia> compound_offset = DynamicOffset(; fallback=Week(-1)) + StaticOffset(Hour(-1))
-CompoundOffset(DynamicOffset(-1 week, DateOffsets.#5), StaticOffset(-1 hour))
+CompoundOffset(DynamicOffset(-1 week, DateOffsets.#4), StaticOffset(-1 hour))
 
 julia> apply(compound_offset, target, content_end, sim_now)
 HourEnding{TimeZones.ZonedDateTime}(2016-08-05T00:00:00-05:00, Inclusivity(false, true))
