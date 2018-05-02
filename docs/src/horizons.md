@@ -62,7 +62,7 @@ julia> collect(targets(horizon, sim_now))
 > relationship between `sim_now` and the targets?
 
 Because the relationship is more complex than one might initially guess. (Take a look at
-the `start_ceil` and `start_offset` keyword arguments for the constructor, for example.)
+the `start_fn` keyword argument for the constructor, for example.)
 
 Additionally, our typical use case covers one day at one hour resolution. Since many
 markets observe DST, this may mean 23 or 25 hours (and as of v0.6, Julia does not support
