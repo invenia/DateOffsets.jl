@@ -166,7 +166,10 @@ winnipeg = tz"America/Winnipeg"
 
             he = HourEnding(LaxZonedDateTime(ZonedDateTime(2016, 3, 12, 2, winnipeg)))
             result = apply(StaticOffset(Day(1)), he)
-            @test result == HourEnding(LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg))
+
+            # DNE LaxZonedDateTime has an INVALID endpoint (Interval will always return false on == comparison)
+            @test result != HourEnding(LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg))
+            @test result === HourEnding(LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg))
         end
     end
 
@@ -244,7 +247,10 @@ winnipeg = tz"America/Winnipeg"
 
             he = HourEnding(LaxZonedDateTime(ZonedDateTime(2016, 11, 5, 1, winnipeg)))
             result = apply(StaticOffset(Day(1)), he)
-            @test result == HourEnding(LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg))
+
+            # AMB LaxZonedDateTime has an INVALID endpoint (Interval will always return false on == comparison)
+            @test result != HourEnding(LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg))
+            @test result === HourEnding(LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg))
         end
     end
 
@@ -367,7 +373,10 @@ end
 
             target = HourEnding(LaxZonedDateTime(ZonedDateTime(2016, 3, 14, 2, winnipeg)))
             result = apply(match_hod, target, content_end, sim_now)
-            @test result == HourEnding(LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg))
+
+            # DNE LaxZonedDateTimes Intervals return false on == comparison
+            @test result != HourEnding(LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg))
+            @test result === HourEnding(LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg))
         end
     end
 
@@ -391,7 +400,10 @@ end
 
             target = HourEnding(LaxZonedDateTime(ZonedDateTime(2016, 11, 7, 1, winnipeg)))
             result = apply(match_hod, target, content_end, sim_now)
-            @test result == HourEnding(LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg))
+
+            # AMB LaxZonedDateTimes Intervals return false on == comparison
+            @test result != HourEnding(LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg))
+            @test result === HourEnding(LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg))
         end
     end
 
