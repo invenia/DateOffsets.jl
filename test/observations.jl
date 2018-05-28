@@ -315,6 +315,9 @@ winnipeg = tz"America/Winnipeg"
             HourEnding(LaxZonedDateTime(DateTime(2016, 3, 13, 0), winnipeg)),
         ]
         @test t == target_dates
+
+        # DNE Interval at [2,3]
+        @test o != [target_dates .+ Hour(2) target_dates .+ Hour(24) target_dates .+ Day(1)]
         @test all(o .=== [target_dates .+ Hour(2) target_dates .+ Hour(24) target_dates .+ Day(1)])
     end
 
@@ -362,6 +365,9 @@ winnipeg = tz"America/Winnipeg"
             HourEnding(LaxZonedDateTime(DateTime(2016, 11, 6, 0), winnipeg)),
         ]
         @test t == target_dates
+
+        # AMB Interval at [1,3]
+        @test o != [target_dates .+ Hour(2) target_dates .+ Hour(24) target_dates .+ Day(1)]
         @test all(o .=== [target_dates .+ Hour(2) target_dates .+ Hour(24) target_dates .+ Day(1)])
     end
 end
