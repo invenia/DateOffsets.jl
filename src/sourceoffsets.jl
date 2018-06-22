@@ -14,6 +14,11 @@ end
 Base.isless(a::StaticOffset, b::StaticOffset) = isless(a.period, b.period)
 Base.:-(a::StaticOffset) = (StaticOffset(-a.period))
 
+Base.:+(x::DateOffset, y::Period) = x + StaticOffset(y)
+Base.:+(x::Period, y::DateOffset) = StaticOffset(x) + y
+Base.:-(x::DateOffset, y::Period) = x - StaticOffset(y)
+Base.:-(x::Period, y::DateOffset) = StaticOffset(x) - y
+
 Base.isless(::SourceOffset, ::SourceOffset) = false
 
 """
