@@ -569,6 +569,10 @@ end
         @test !isless(LatestOffset() + Hour(3), LatestOffset() + Hour(1))
         @test_broken isless(LatestOffset() + Hour(1) + Hour(1), LatestOffset() + Hour(3))
 
+        # Note: zero is a special case as the CompoundOffset offset may just throw it away
+        @test isless(LatestOffset() + Hour(0), LatestOffset() + Hour(3))
+        @test isless(LatestOffset() + Day(0), LatestOffset() + Hour(3))
+
         # Multiple static offsets
         @test isless(StaticOffset(Day(-1)) + Hour(4), StaticOffset(Day(-1)) + Hour(6))
         @test !isless(StaticOffset(Day(-1)) + Hour(6), StaticOffset(Day(-1)) + Hour(4))

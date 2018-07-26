@@ -181,12 +181,17 @@ Base.:-(x::CompoundOffset, y::StaticOffset) = CompoundOffset(vcat(x.offsets, -y)
 # What we've done here is a simplistic comparison which should work fairly well for the
 # typical usage.
 function Base.isless(x::CompoundOffset, y::CompoundOffset)
-    length(x.offsets) == length(y.offsets) || return false
+    len = max(length(x.offsets), length(y.offsets))
 
-    return (
-        x.offsets[1:end - 1] == y.offsets[1:end - 1] &&
-        isless(x.offsets[end], y.offsets[end])
-    )
+    for i in 1:(len - 1)
+        a = get(x.offsets, i, StaticOffset(Hour(0)))
+        b = get(y.offsets, i, StaticOffset(Hour(0)))
+        a == b || return false
+    end
+
+    a = get(x.offsets, len, StaticOffset(Hour(0)))
+    b = get(y.offsets, len, StaticOffset(Hour(0)))
+    return isless(a, b)
 end
 
 if VERSION < v"0.7-"
