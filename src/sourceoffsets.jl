@@ -9,6 +9,7 @@ Constructs a `StaticOffset`. When a `StaticOffset` is applied to a target interv
 """
 struct StaticOffset <: ScalarOffset
     period::Period
+    StaticOffset(p::Period) = new(p)
 end
 
 Base.isless(a::StaticOffset, b::StaticOffset) = isless(a.period, b.period)

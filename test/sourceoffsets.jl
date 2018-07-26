@@ -3,6 +3,10 @@ using Missings
 winnipeg = tz"America/Winnipeg"
 
 @testset "StaticOffset" begin
+    @testset "constructor" begin
+        @test_throws MethodError StaticOffset(0)
+    end
+
     @testset "basic" begin
         dt = ZonedDateTime(2016, 1, 2, 1, winnipeg)
 
