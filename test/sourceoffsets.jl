@@ -578,6 +578,14 @@ end
         # Number of offsets differ
         @test_broken isless(LatestOffset() + Hour(2) + Hour(2), LatestOffset() + Hour(5))
         @test_broken isless(LatestOffset() + Hour(2) + Hour(2), LatestOffset() + Hour(5))
+
+        # Ambiguous which is less than which without applying a time instant. Note that for
+        # most instances these are equal but the behaviour of these can flip around
+        # spring/fall DST transitions
+        a = LatestOffset() + Day(1) + Hour(-24)
+        b = LatestOffset() + Hour(-24) + Day(1)
+        @test !isless(a, b)
+        @test !isless(b, a)
     end
 
     @testset "show" begin
