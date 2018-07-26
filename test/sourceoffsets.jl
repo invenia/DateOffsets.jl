@@ -570,6 +570,13 @@ end
         offset = LatestOffset() + StaticOffset(Day(0))
         @test sprint(show, offset) == "CompoundOffset(LatestOffset())"
     end
+
+    @testset "convenience" begin
+       @test StaticOffset(Day(-1)) + Hour(1) == CompoundOffset(StaticOffset(Day(-1)), StaticOffset(Hour(1)))
+       @test Hour(1) + StaticOffset(Day(-1)) == CompoundOffset(StaticOffset(Hour(1)), StaticOffset(Day(-1)))
+       @test StaticOffset(Day(-1)) - Hour(1) == CompoundOffset(StaticOffset(Day(-1)), StaticOffset(Hour(-1)))
+       @test Hour(1) - StaticOffset(Day(-1)) == CompoundOffset(StaticOffset(Hour(1)), StaticOffset(Day(1)))
+    end
 end
 
 @testset "missing target" begin
