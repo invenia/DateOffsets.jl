@@ -172,6 +172,22 @@ Base.:+(x::CompoundOffset, y::CompoundOffset) = CompoundOffset(vcat(x.offsets, y
 Base.:-(x::ScalarOffset, y::StaticOffset) = CompoundOffset(ScalarOffset[x, -y])
 Base.:-(x::CompoundOffset, y::StaticOffset) = CompoundOffset(vcat(x.offsets, -y))
 
+# Note: computing `isless` for CompoundOffset properly is rather difficult due to strange
+# combinations:
+# * `LatestOffset() - Day(30) + LatestOffset()`
+# * `StaticOffset(Day(1)) - Hour(1)` vs. `StaticOffset(Hour(-1)) + Day(1))`
+#
+# What we've done here is a simplistic comparison which should work fairly well for the
+# typical usage.
+function Base.isless(x::CompoundOffset, y::CompoundOffset)
+    length(x.offsets) == length(y.offsets) || return false
+
+    return (
+        x.offsets[1:end - 1] == y.offsets[1:end - 1] &&
+        isless(x.offsets[end], y.offsets[end])
+    )
+end
+
 if VERSION < v"0.7-"
     Base.show(io::IO, ::Type{LatestOffset}) = print(io, "LatestOffset")
     Base.show(io::IO, ::Type{StaticOffset}) = print(io, "StaticOffset")

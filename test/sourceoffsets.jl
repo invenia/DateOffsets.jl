@@ -560,6 +560,22 @@ end
         @test hash(o1) != hash(o3)
     end
 
+    @testset "isless" begin
+        @test isless(LatestOffset() + Hour(1), LatestOffset() + Hour(3))
+        @test !isless(LatestOffset() + Hour(3), LatestOffset() + Hour(1))
+        @test_broken isless(LatestOffset() + Hour(1) + Hour(1), LatestOffset() + Hour(3))
+
+        # Multiple static offsets
+        @test isless(StaticOffset(Day(-1)) + Hour(4), StaticOffset(Day(-1)) + Hour(6))
+        @test !isless(StaticOffset(Day(-1)) + Hour(6), StaticOffset(Day(-1)) + Hour(4))
+        @test_broken isless(StaticOffset(Day(-2)) + Hour(4), StaticOffset(Day(-1)) + Hour(6))
+        @test_broken isless(StaticOffset(Day(-2)) + Hour(6), StaticOffset(Day(-1)) + Hour(4))
+
+        # Number of offsets differ
+        @test_broken isless(LatestOffset() + Hour(2) + Hour(2), LatestOffset() + Hour(5))
+        @test_broken isless(LatestOffset() + Hour(2) + Hour(2), LatestOffset() + Hour(5))
+    end
+
     @testset "show" begin
         offset = StaticOffset(Day(1)) + LatestOffset()
         @test sprint(show, offset) == "CompoundOffset(StaticOffset(1 day), LatestOffset())"
