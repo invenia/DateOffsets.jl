@@ -96,17 +96,18 @@ DynamicOffset(; fallback=Day(-1), match=t -> true) = DynamicOffset(fallback, mat
     CustomOffset(apply::Function) -> CustomOffset
 
 Constructs a `CustomOffset` using the supplied `apply` function. The `apply` function should
-take a `sim_now::ZonedDateTime` and a `target::AbstractInterval` (in that order) and return
-a single observation interval.
+take a `target::AbstractInterval`, `content_end::ZonedDateTime`, and a
+`sim_now::ZonedDateTime` (in that order) and return a single observation interval.
 
 Whenever a `CustomOffset` is applied to a target interval, the `apply` funcion is called.
 
 ```julia
-custom_offset = CustomOffset((sn, td) -> min(HourEnding(sn), td) + Dates.Hour(1))
+custom_offset = CustomOffset((td, ce, sn) -> min(HourEnding(sn), td) + Dates.Hour(1))
 ```
 """
 struct CustomOffset <: ScalarOffset
-    apply::Function     # Should take (sim_now, observation) and return observation interval
+    # Function should take (target, content_end, sim_now) and return observation interval
+    apply::Function
 end
 
 ##### CompoundOffset #####
@@ -230,7 +231,15 @@ end
 function apply(
     offset::CustomOffset, target::TargetType, content_end, sim_now::NowType
 )
-    return offset.apply(sim_now, target)
+    if hasmethod(offset.apply, Tuple{typeof.((sim_now, target))...})
+        Base.depwarn(string(
+            "Using a custom apply function of `apply(sim_now, target)` is deprecated; ",
+            "use `apply(target, content_end, sim_now)` instead",
+        ), :apply)
+        offset.apply(sim_now, target)
+    else
+        offset.apply(target, content_end, sim_now)
+    end
 end
 
 function apply(
