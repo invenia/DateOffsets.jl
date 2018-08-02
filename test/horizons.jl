@@ -17,7 +17,9 @@ winnipeg = tz"America/Winnipeg"
             HourEnding(ZonedDateTime(2016, 1, 3, winnipeg))
         )
 
-        horizon = Horizon(; step=Hour(2), span=Day(2), start_fn=s -> ceil(s, Week) - Day(4))
+        horizon = Horizon(; step=Hour(2), span=Day(2)) do s
+            ceil(s, Week) - Day(4)
+        end
         results = targets(horizon, sim_now)
         @test collect(results) == collect(
             AnchoredInterval{Hour(-2)}(ZonedDateTime(2015, 12, 31, 2, winnipeg)):
@@ -65,9 +67,9 @@ winnipeg = tz"America/Winnipeg"
         ]
 
         sim_now = ZonedDateTime(2016, 3, 13, 0, 59, winnipeg)
-        horizon = Horizon(;
-            step=Minute(15), span=Minute(120), start_fn=s -> ceil(s, Minute(15))
-        )
+        horizon = Horizon(; step=Minute(15), span=Minute(120)) do s
+             ceil(s, Minute(15))
+        end
         results = targets(horizon, sim_now)
         @test collect(results) == [
             AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 3, 13, 1, 15, winnipeg)),
@@ -81,7 +83,9 @@ winnipeg = tz"America/Winnipeg"
         ]
 
         sim_now = ZonedDateTime(2016, 3, 12, 1, 30, winnipeg)
-        horizon = Horizon(; step=Day(1), span=Day(3), start_fn=s -> ceil(s, Hour) - Day(1))
+        horizon = Horizon(; step=Day(1), span=Day(3)) do s
+            ceil(s, Hour) - Day(1)
+        end
         @test_throws NonExistentTimeError collect(targets(horizon, sim_now))
         # Depending on the version of Julia, the error will be thrown either by the call to
         # targets or by the collect. (The distinction isn't deemed particularly important.)
@@ -137,9 +141,9 @@ winnipeg = tz"America/Winnipeg"
         ]
 
         sim_now = ZonedDateTime(2016, 11, 6, 0, 59, winnipeg)
-        horizon = Horizon(;
-            step=Minute(15), span=Minute(120), start_fn=s -> ceil(s, Minute(15))
-        )
+        horizon = Horizon(; step=Minute(15), span=Minute(120)) do s
+            ceil(s, Minute(15))
+        end
         results = targets(horizon, sim_now)
         @test collect(results) == [
             AnchoredInterval{Minute(-15)}(ZonedDateTime(2016, 11, 6, 1, 15, winnipeg, 1)),
@@ -153,9 +157,9 @@ winnipeg = tz"America/Winnipeg"
         ]
 
         sim_now = ZonedDateTime(2016, 11, 5, 0, 30, winnipeg)
-        horizon = Horizon(;
-            step=Day(1), span=Day(3), start_fn=s -> ceil(s, Hour) - Day(1)
-        )
+        horizon = Horizon(; step=Day(1), span=Day(3)) do s
+            ceil(s, Hour) - Day(1)
+        end
         @test_throws AmbiguousTimeError collect(targets(horizon, sim_now))
         # Depending on the version of Julia, the error will be thrown either by the call to
         # targets or by the collect. (The distinction isn't deemed particularly important.)
@@ -185,9 +189,9 @@ winnipeg = tz"America/Winnipeg"
         @test string(Horizon()) == "Horizon(1 day at 1 hour resolution)"
         @test sprint(show, Horizon()) == "Horizon(1 hour, 1 day, DateOffsets._start_func)"
 
-        horizon = Horizon(;
-            step=Minute(15), span=Day(5), start_fn=s -> ceil(s, Minute(15)) + Minute(30)
-        )
+        horizon = Horizon(; step=Minute(15), span=Day(5)) do s
+            ceil(s, Minute(15)) + Minute(30)
+        end
         @test ismatch(
             r"Horizon\(5 days at 15 minutes resolution, start_fn: #\d+\)",
             string(horizon)
