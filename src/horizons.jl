@@ -24,42 +24,9 @@ you wanted to generate targets for the day **after** tomorrow, you might do this
 horizon = Horizon(; start_fn=sim_now -> ceil(sim_now, Day) + Day(1))
 ```
 """
-function Horizon(;
-    step=Hour(1),
-    span=Day(1),
-    start_fn=_start_fn,
-    start_ceil=nothing,
-    start_offset=nothing,
-    coverage=nothing,
-)
-    if coverage !== nothing
-        Base.depwarn(
-            "Horizon(; coverage=Day(1), ...) is deprecated, use " *
-            "Horizon(; span=Day(1), ...) instead.",
-            :Horizon
-        )
-        span = coverage
-    end
-
-    if start_ceil !== nothing || start_offset !== nothing
-        Base.depwarn(
-            "Horizon(; start_ceil=Day(1), start_offset=Hour(0), ...) is deprecated, use " *
-            "Horizon(; start_fn=sim_now -> ceil(sim_now, Day(1)) + Hour(0), ...) instead.",
-            :Horizon
-        )
-        start_ceil = start_ceil === nothing ? Day(1) : start_ceil
-        start_offset = start_offset === nothing ? Hour(0) : start_offset
-        start_fn = sim_now -> ceil(sim_now, start_ceil) + start_offset
-    end
-
-    return Horizon(step, span, start_fn)
-end
-
-#= POST-DEPRECATION VERSION OF THIS FUNCTION:
 function Horizon(; step=Hour(1), span=Day(1), start_fn=_start_fn)
     return Horizon(step, span, start_fn)
 end
-=#
 
 function Base.:(==)(a::Horizon, b::Horizon)
     return a.step == b.step && a.span == b.span && a.start_fn == b.start_fn
