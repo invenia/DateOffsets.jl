@@ -9,6 +9,7 @@ using Mocking
 using AutoHashEquals
 using Intervals
 using Missings
+using Compat: hasmethod
 
 abstract type DateOffset end
 

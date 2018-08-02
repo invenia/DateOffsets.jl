@@ -1,13 +1,13 @@
 struct Horizon <: DateOffset
+    start_func::Function
     step::Period
     span::Period
-    start_fn::Function
 end
 
-_start_fn(sim_now) = ceil(sim_now, Day)
+_start_func(sim_now) = ceil(sim_now, Day)
 
 """
-    Horizon(; step=Hour(1), span=Day(1), start_fn=sim_now -> ceil(sim_now, Day)) -> Horizon
+    Horizon(start_func=sim_now -> ceil(sim_now, Day); step=Hour(1), span=Day(1)) -> Horizon
 
 Constructs a `Horizon`, which allows a `sim_now` to be translated into a series of
 `AnchoredInterval`s representing forecast targets.
@@ -24,45 +24,29 @@ you wanted to generate targets for the day **after** tomorrow, you might do this
 horizon = Horizon(; start_fn=sim_now -> ceil(sim_now, Day) + Day(1))
 ```
 """
-function Horizon(;
-    step=Hour(1),
-    span=Day(1),
-    start_fn=_start_fn,
-    start_ceil=nothing,
-    start_offset=nothing,
-    coverage=nothing,
-)
-    if coverage !== nothing
-        Base.depwarn(
-            "Horizon(; coverage=Day(1), ...) is deprecated, use " *
-            "Horizon(; span=Day(1), ...) instead.",
-            :Horizon
-        )
-        span = coverage
-    end
-
-    if start_ceil !== nothing || start_offset !== nothing
-        Base.depwarn(
-            "Horizon(; start_ceil=Day(1), start_offset=Hour(0), ...) is deprecated, use " *
-            "Horizon(; start_fn=sim_now -> ceil(sim_now, Day(1)) + Hour(0), ...) instead.",
-            :Horizon
-        )
-        start_ceil = start_ceil === nothing ? Day(1) : start_ceil
-        start_offset = start_offset === nothing ? Hour(0) : start_offset
-        start_fn = sim_now -> ceil(sim_now, start_ceil) + start_offset
-    end
-
-    return Horizon(step, span, start_fn)
+function Horizon(start_func::Function; step=Hour(1), span=Day(1))
+    return Horizon(start_func, step, span)
 end
 
-#= POST-DEPRECATION VERSION OF THIS FUNCTION:
-function Horizon(; step=Hour(1), span=Day(1), start_fn=_start_fn)
-    return Horizon(step, span, start_fn)
+function Horizon(; step=Hour(1), span=Day(1), start_fn=_start_func)
+    if start_fn !== _start_func
+        Base.depwarn(string(
+            "`Horizon(; start_fn=func, kwargs...)` is deprecated; use ",
+            "`Horizon(func; kwargs...)` instead.",
+        ), :Horizon)
+    end
+
+    return Horizon(start_fn, step, span)
+end
+
+#= POST-DEPRECATION
+function Horizon(start_func::Function=_start_func; step=Hour(1), span=Day(1))
+    return Horizon(start_func, step, span)
 end
 =#
 
 function Base.:(==)(a::Horizon, b::Horizon)
-    return a.step == b.step && a.span == b.span && a.start_fn == b.start_fn
+    return a.step == b.step && a.span == b.span && a.start_func == b.start_func
 end
 
 function Base.print(io::IO, h::Horizon)
@@ -71,12 +55,12 @@ function Base.print(io::IO, h::Horizon)
         io = IOContext(io, :limit=>true)
     end
 
-    start_txt = h.start_fn == _start_fn ? "" : ", start_fn: $(h.start_fn)"
+    start_txt = h.start_func === _start_func ? "" : ", start_fn: $(h.start_func)"
     print(io, "Horizon($(h.span) at $(h.step) resolution$start_txt)")
 end
 
 function Base.show(io::IO, h::Horizon)
-    print(io, "Horizon($(h.step), $(h.span), $(h.start_fn))")
+    print(io, "Horizon($(h.step), $(h.span), $(h.start_func))")
 end
 
 """
@@ -90,7 +74,11 @@ no target dates will be produced for hours that don't exist in the time zone and
 are "duplicated" will appear twice (with each being zoned correctly).
 """
 function targets(horizon::Horizon, sim_now::NowType)
-    base = horizon.start_fn(sim_now)
+    base = horizon.start_func(sim_now)
     T = AnchoredInterval{-horizon.step}
-    return T(base + horizon.step):horizon.step:T(base + horizon.span)
+
+    start = T(base + horizon.step)
+    stop = T(base + horizon.span)
+
+    return start:horizon.step:stop
 end

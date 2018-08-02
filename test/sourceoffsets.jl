@@ -431,7 +431,7 @@ end
 @testset "CustomOffset" begin
     @testset "basic" begin
         @testset "ZonedDateTime" begin
-            offset_fn(sim_now, target) = (hour(sim_now) ≥ 18) ? sim_now : target
+            offset_fn(target, content_end, sim_now) = (hour(sim_now) ≥ 18) ? sim_now : target
             offset = CustomOffset(offset_fn)
 
             sim_now_base = ZonedDateTime(2016, 8, 10, 0, 31, 12, winnipeg)
@@ -447,7 +447,7 @@ end
         end
 
         @testset "HourEnding" begin
-            offset_fn(sim_now, target) = (hour(sim_now) ≥ 18) ? HE(sim_now) : target
+            offset_fn(target, content_end, sim_now) = (hour(sim_now) ≥ 18) ? HE(sim_now) : target
             offset = CustomOffset(offset_fn)
 
             sim_now_base = ZonedDateTime(2016, 8, 10, 0, 31, 12, winnipeg)
@@ -464,20 +464,20 @@ end
     end
 
     @testset "addition" begin
-        offset = CustomOffset((x, y) -> x)
+        offset = CustomOffset((target, content_end, sim_now) -> sim_now)
         @test_throws ArgumentError offset + ZonedDateTime(2016, winnipeg)
         @test_throws ArgumentError ZonedDateTime(2016, winnipeg) + offset
     end
 
     @testset "equality" begin
-        match(x, y) = x != y
+        match(target, content_end, sim_now) = target != sim_now
         @test CustomOffset(match) == CustomOffset(match)
         @test isequal(CustomOffset(match), CustomOffset(match))
         @test hash(CustomOffset(match)) == hash(CustomOffset(match))
     end
 
     @testset "show" begin
-        custom_function(x, y) = x
+        custom_function(target, content_end, sim_now) = nothing
         @test sprint(show, CustomOffset(custom_function)) == "CustomOffset(custom_function)"
     end
 end
