@@ -2,9 +2,9 @@ winnipeg = tz"America/Winnipeg"
 
 @testset "Horizon" begin
     @testset "constructor" begin
-        @test Horizon() == Horizon(Hour(1), Day(1), DateOffsets._start_fn)
+        @test Horizon() == Horizon(DateOffsets._start_func, Hour(1), Day(1))
         @test Horizon(; step=Hour(5), span=Day(4)) ==
-            Horizon(Hour(5), Day(4), DateOffsets._start_fn)
+            Horizon(DateOffsets._start_func, Hour(5), Day(4))
     end
 
     @testset "basic" begin
@@ -169,9 +169,21 @@ winnipeg = tz"America/Winnipeg"
         ]
     end
 
+    @testset "last hour of day" begin
+        sim_now = ZonedDateTime(2018, 8, 2, 14, winnipeg)
+        horizon = Horizon(step=Hour(1), span=Hour(1)) do sim_now
+            ceil(sim_now, Day) + Day(1) - Hour(1)
+        end
+
+        results = targets(horizon, sim_now)
+        @test collect(results) == [
+            AnchoredInterval{Hour(-1)}(ZonedDateTime(DateTime(2018, 8, 4), winnipeg)),
+        ]
+    end
+
     @testset "show" begin
         @test string(Horizon()) == "Horizon(1 day at 1 hour resolution)"
-        @test sprint(show, Horizon()) == "Horizon(1 hour, 1 day, DateOffsets._start_fn)"
+        @test sprint(show, Horizon()) == "Horizon(1 hour, 1 day, DateOffsets._start_func)"
 
         horizon = Horizon(;
             step=Minute(15), span=Day(5), start_fn=s -> ceil(s, Minute(15)) + Minute(30)
