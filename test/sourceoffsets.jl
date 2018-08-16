@@ -168,12 +168,10 @@ winnipeg = tz"America/Winnipeg"
             he = HourEnding(ZonedDateTime(2016, 3, 12, 2, winnipeg))
             @test_throws NonExistentTimeError apply(StaticOffset(Day(1)), he)       # DNE
 
+            # DNE LaxZonedDateTime where one of the endpoints is INVALID
             he = HourEnding(LaxZonedDateTime(ZonedDateTime(2016, 3, 12, 2, winnipeg)))
             result = apply(StaticOffset(Day(1)), he)
-
-            # DNE LaxZonedDateTime has an INVALID endpoint (Interval will always return false on == comparison)
-            @test result != HourEnding(LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg))
-            @test result === HourEnding(LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg))
+            @test result == HourEnding(LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg))
         end
     end
 
@@ -249,12 +247,10 @@ winnipeg = tz"America/Winnipeg"
             he = HourEnding(ZonedDateTime(2016, 11, 5, 1, winnipeg))
             @test_throws AmbiguousTimeError apply(StaticOffset(Day(1)), he)         # AMB
 
+            # AMB LaxZonedDateTime where one of the endpoints is INVALID
             he = HourEnding(LaxZonedDateTime(ZonedDateTime(2016, 11, 5, 1, winnipeg)))
             result = apply(StaticOffset(Day(1)), he)
-
-            # AMB LaxZonedDateTime has an INVALID endpoint (Interval will always return false on == comparison)
-            @test result != HourEnding(LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg))
-            @test result === HourEnding(LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg))
+            @test result == HourEnding(LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg))
         end
     end
 
@@ -375,12 +371,10 @@ end
             target = HourEnding(ZonedDateTime(2016, 3, 14, 2, winnipeg))
             @test_throws NonExistentTimeError apply(match_hod, target, content_end, sim_now)
 
+            # DNE LaxZonedDateTime where one of the endpoints is INVALID
             target = HourEnding(LaxZonedDateTime(ZonedDateTime(2016, 3, 14, 2, winnipeg)))
             result = apply(match_hod, target, content_end, sim_now)
-
-            # DNE LaxZonedDateTimes Intervals return false on == comparison
-            @test result != HourEnding(LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg))
-            @test result === HourEnding(LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg))
+            @test result == HourEnding(LaxZonedDateTime(DateTime(2016, 3, 13, 2), winnipeg))
         end
     end
 
@@ -402,12 +396,10 @@ end
             target = HourEnding(ZonedDateTime(2016, 11, 7, 1, winnipeg))
             @test_throws AmbiguousTimeError apply(match_hod, target, content_end, sim_now)
 
+            # AMB LaxZonedDateTime where one of the endpoints is INVALID
             target = HourEnding(LaxZonedDateTime(ZonedDateTime(2016, 11, 7, 1, winnipeg)))
             result = apply(match_hod, target, content_end, sim_now)
-
-            # AMB LaxZonedDateTimes Intervals return false on == comparison
-            @test result != HourEnding(LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg))
-            @test result === HourEnding(LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg))
+            @test result == HourEnding(LaxZonedDateTime(DateTime(2016, 11, 6, 1), winnipeg))
         end
     end
 
