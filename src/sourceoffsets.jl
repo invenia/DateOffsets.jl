@@ -9,7 +9,11 @@ Constructs a `StaticOffset`. When a `StaticOffset` is applied to a target interv
 """
 struct StaticOffset <: ScalarOffset
     period::Period
-    StaticOffset(p::Period) = new(p)
+
+    # Avoid a stack overflow issue with `StaticOffset(0)`
+    if VERSION < v"0.7"
+        StaticOffset(p::Period) = new(p)
+    end
 end
 
 Base.isless(a::StaticOffset, b::StaticOffset) = isless(a.period, b.period)
