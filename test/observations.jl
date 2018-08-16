@@ -317,8 +317,7 @@ winnipeg = tz"America/Winnipeg"
         @test t == target_dates
 
         # DNE Interval at [2,3]
-        @test o != [target_dates .+ Hour(2) target_dates .+ Hour(24) target_dates .+ Day(1)]
-        @test all(o .=== [target_dates .+ Hour(2) target_dates .+ Hour(24) target_dates .+ Day(1)])
+        @test o == [target_dates .+ Hour(2) target_dates .+ Hour(24) target_dates .+ Day(1)]
     end
 
     @testset "fall back" begin
@@ -367,7 +366,6 @@ winnipeg = tz"America/Winnipeg"
         @test t == target_dates
 
         # AMB Interval at [1,3]
-        @test o != [target_dates .+ Hour(2) target_dates .+ Hour(24) target_dates .+ Day(1)]
-        @test all(o .=== [target_dates .+ Hour(2) target_dates .+ Hour(24) target_dates .+ Day(1)])
+        @test o == [target_dates .+ Hour(2) target_dates .+ Hour(24) target_dates .+ Day(1)]
     end
 end
