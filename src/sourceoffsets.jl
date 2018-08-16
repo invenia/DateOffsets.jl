@@ -9,6 +9,7 @@ Constructs a `StaticOffset`. When a `StaticOffset` is applied to a target interv
 """
 struct StaticOffset <: ScalarOffset
     period::Period
+    StaticOffset(p::Period) = new(p)
 end
 
 Base.isless(a::StaticOffset, b::StaticOffset) = isless(a.period, b.period)
@@ -172,6 +173,27 @@ Base.:+(x::ScalarOffset, y::CompoundOffset) = CompoundOffset(vcat(x, y.offsets))
 Base.:+(x::CompoundOffset, y::CompoundOffset) = CompoundOffset(vcat(x.offsets, y.offsets))
 Base.:-(x::ScalarOffset, y::StaticOffset) = CompoundOffset(ScalarOffset[x, -y])
 Base.:-(x::CompoundOffset, y::StaticOffset) = CompoundOffset(vcat(x.offsets, -y))
+
+# Note: computing `isless` for CompoundOffset properly is rather difficult due to strange
+# combinations:
+# * `LatestOffset() - Day(30) + LatestOffset()`
+# * `StaticOffset(Day(1)) - Hour(1)` vs. `StaticOffset(Hour(-1)) + Day(1))`
+#
+# What we've done here is a simplistic comparison which should work fairly well for the
+# typical usage.
+function Base.isless(x::CompoundOffset, y::CompoundOffset)
+    len = max(length(x.offsets), length(y.offsets))
+
+    for i in 1:(len - 1)
+        a = get(x.offsets, i, StaticOffset(Hour(0)))
+        b = get(y.offsets, i, StaticOffset(Hour(0)))
+        a == b || return false
+    end
+
+    a = get(x.offsets, len, StaticOffset(Hour(0)))
+    b = get(y.offsets, len, StaticOffset(Hour(0)))
+    return isless(a, b)
+end
 
 if VERSION < v"0.7-"
     Base.show(io::IO, ::Type{LatestOffset}) = print(io, "LatestOffset")

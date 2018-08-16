@@ -3,6 +3,10 @@ using Missings
 winnipeg = tz"America/Winnipeg"
 
 @testset "StaticOffset" begin
+    @testset "constructor" begin
+        @test_throws MethodError StaticOffset(0)
+    end
+
     @testset "basic" begin
         dt = ZonedDateTime(2016, 1, 2, 1, winnipeg)
 
@@ -558,6 +562,34 @@ end
         @test o1 != o3
         @test !isequal(o1, o3)
         @test hash(o1) != hash(o3)
+    end
+
+    @testset "isless" begin
+        @test isless(LatestOffset() + Hour(1), LatestOffset() + Hour(3))
+        @test !isless(LatestOffset() + Hour(3), LatestOffset() + Hour(1))
+        @test_broken isless(LatestOffset() + Hour(1) + Hour(1), LatestOffset() + Hour(3))
+
+        # Note: zero is a special case as the CompoundOffset offset may just throw it away
+        @test isless(LatestOffset() + Hour(0), LatestOffset() + Hour(3))
+        @test isless(LatestOffset() + Day(0), LatestOffset() + Hour(3))
+
+        # Multiple static offsets
+        @test isless(StaticOffset(Day(-1)) + Hour(4), StaticOffset(Day(-1)) + Hour(6))
+        @test !isless(StaticOffset(Day(-1)) + Hour(6), StaticOffset(Day(-1)) + Hour(4))
+        @test_broken isless(StaticOffset(Day(-2)) + Hour(4), StaticOffset(Day(-1)) + Hour(6))
+        @test_broken isless(StaticOffset(Day(-2)) + Hour(6), StaticOffset(Day(-1)) + Hour(4))
+
+        # Number of offsets differ
+        @test_broken isless(LatestOffset() + Hour(2) + Hour(2), LatestOffset() + Hour(5))
+        @test_broken isless(LatestOffset() + Hour(2) + Hour(2), LatestOffset() + Hour(5))
+
+        # Ambiguous which is less than which without applying a time instant. Note that for
+        # most instances these are equal but the behaviour of these can flip around
+        # spring/fall DST transitions
+        a = LatestOffset() + Day(1) + Hour(-24)
+        b = LatestOffset() + Hour(-24) + Day(1)
+        @test !isless(a, b)
+        @test !isless(b, a)
     end
 
     @testset "show" begin
