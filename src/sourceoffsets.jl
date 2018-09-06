@@ -43,6 +43,12 @@ See also: [`DynamicOffset`](@ref)
 """
 struct LatestOffset <: ScalarOffset end
 
+# singleton instance
+const latest = LatestOffset()
+
+Base.show(io::IO, o::LatestOffset) = print(io, "LatestOffset()")
+Base.print(io::IO, o::LatestOffset) = print(io, "latest")
+
 struct DynamicOffset <: ScalarOffset
     fallback::Period
     match::Function

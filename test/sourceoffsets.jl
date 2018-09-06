@@ -303,7 +303,7 @@ end
     end
 
     @testset "show" begin
-        @test sprint(show, LatestOffset()) == "LatestOffset()"
+        @test sprint(show, LatestOffset()) == "latest"
     end
 end
 
@@ -586,13 +586,13 @@ end
 
     @testset "show" begin
         offset = StaticOffset(Day(1)) + LatestOffset()
-        @test sprint(show, offset) == "CompoundOffset(StaticOffset(1 day), LatestOffset())"
+        @test sprint(show, offset) == "CompoundOffset(StaticOffset(1 day), latest)"
 
         offset = LatestOffset() + StaticOffset(Day(1))
-        @test sprint(show, offset) == "CompoundOffset(LatestOffset(), StaticOffset(1 day))"
+        @test sprint(show, offset) == "CompoundOffset(latest, StaticOffset(1 day))"
 
         offset = LatestOffset() + StaticOffset(Day(0))
-        @test sprint(show, offset) == "CompoundOffset(LatestOffset())"
+        @test sprint(show, offset) == "CompoundOffset(latest)"
     end
 
     @testset "convenience" begin
