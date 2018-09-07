@@ -3,6 +3,7 @@ __precompile__()
 module DateOffsets
 
 using Base.Dates
+using Compat: nameof
 using TimeZones
 using LaxZonedDateTimes
 using Mocking
@@ -16,6 +17,7 @@ abstract type DateOffset end
 const NowType = Union{ZonedDateTime, LaxZonedDateTime}
 const TargetType = Union{AbstractInterval{<:NowType}, NowType}
 
+include("utils.jl")
 include("horizons.jl")
 include("sourceoffsets.jl")
 include("observations.jl")

@@ -19,6 +19,13 @@ end
 Base.isless(a::StaticOffset, b::StaticOffset) = isless(a.period, b.period)
 Base.:-(a::StaticOffset) = (StaticOffset(-a.period))
 
+function Base.show(io::IO, o::StaticOffset)
+    print(io, "StaticOffset(")
+    repr_period(io, o.period)
+    print(io, ')')
+end
+Base.print(io::IO, o::StaticOffset) = print(io, o.period)
+
 Base.:+(x::DateOffset, y::Period) = x + StaticOffset(y)
 Base.:+(x::Period, y::DateOffset) = StaticOffset(x) + y
 Base.:-(x::DateOffset, y::Period) = x - StaticOffset(y)
@@ -46,8 +53,8 @@ struct LatestOffset <: ScalarOffset end
 # singleton instance
 const latest = LatestOffset()
 
-Base.show(io::IO, o::LatestOffset) = print(io, "LatestOffset()")
-Base.print(io::IO, o::LatestOffset) = print(io, "latest")
+Base.show(io::IO, ::LatestOffset) = print(io, "LatestOffset()")
+Base.print(io::IO, ::LatestOffset) = print(io, "latest")
 
 struct DynamicOffset <: ScalarOffset
     fallback::Period
@@ -101,7 +108,19 @@ standard date functions to interact with this value, you can convert it to a `Ti
 
 See also: [`LatestOffset`](@ref)
 """
-DynamicOffset(; fallback=Day(-1), match=t -> true) = DynamicOffset(fallback, match)
+DynamicOffset(; fallback=Day(-1), match=always) = DynamicOffset(fallback, match)
+
+function Base.show(io::IO, o::DynamicOffset)
+    print(io, "DynamicOffset(fallback=")
+    repr_period(io, o.fallback)
+    print(io, ", match=")
+    show(io, o.match)
+    print(io, ')')
+end
+
+function Base.print(io::IO, o::DynamicOffset)
+    print(io, "DynamicOffset(", o.fallback, ", ", o.match, ')')
+end
 
 """
     CustomOffset(apply::Function) -> CustomOffset
@@ -160,13 +179,16 @@ Note that subtraction is only available for `StaticOffset`s.
     offsets::Vector{ScalarOffset}
 
     function CompoundOffset(o::Vector{ScalarOffset})
-        if isempty(o)
-            # CompoundOffsets must contain at least one ScalarOffset.
-            push!(o, StaticOffset(Day(0)))
-        elseif length(o) > 1
+        if length(o) > 1
             # Remove extraneous StaticOffsets of zero.
             filter!(x -> !isa(x, StaticOffset) || x.period != zero(x.period), o)
         end
+
+        if isempty(o)
+            # CompoundOffsets must contain at least one ScalarOffset.
+            push!(o, StaticOffset(Day(0)))
+        end
+
         return new(o)
     end
 end
@@ -205,16 +227,34 @@ function Base.isless(x::CompoundOffset, y::CompoundOffset)
     return isless(a, b)
 end
 
+function Base.show(io::IO, o::CompoundOffset)
+    print(io, "CompoundOffset(")
+    join(io, (sprint(show, offset) for offset in o.offsets), ", ")
+    print(io, ')')
+end
+
+function Base.print(io::IO, o::CompoundOffset)
+    print(io, o.offsets[1])
+
+    for offset in o.offsets[2:end]
+        if offset isa StaticOffset
+            period = offset.period
+            if sign(Dates.value(period)) < 0
+                print(io, " - ", abs(period))
+                continue
+            end
+        end
+
+        print(io, " + ", offset)
+    end
+end
+
 if VERSION < v"0.7-"
     Base.show(io::IO, ::Type{LatestOffset}) = print(io, "LatestOffset")
     Base.show(io::IO, ::Type{StaticOffset}) = print(io, "StaticOffset")
     Base.show(io::IO, ::Type{DynamicOffset}) = print(io, "DynamicOffset")
     Base.show(io::IO, ::Type{CustomOffset}) = print(io, "CustomOffset")
     Base.show(io::IO, ::Type{CompoundOffset}) = print(io, "CompoundOffset")
-end
-
-function Base.show(io::IO, o::CompoundOffset)
-    print(io, "CompoundOffset($(join([string(offset) for offset in o.offsets], ", ")))")
 end
 
 function apply(offset::StaticOffset, target::TargetType, args...)

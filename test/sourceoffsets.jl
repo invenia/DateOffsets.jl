@@ -260,9 +260,16 @@ winnipeg = tz"America/Winnipeg"
         @test hash(StaticOffset(Day(1))) == hash(StaticOffset(Day(1)))
     end
 
-    @testset "show" begin
-        @test sprint(show, StaticOffset(Day(-1))) == "StaticOffset(-1 day)"
-        @test sprint(show, StaticOffset(Week(2))) == "StaticOffset(2 weeks)"
+    @testset "output" begin
+        @testset "show" begin
+            @test sprint(show, StaticOffset(Day(-1))) == "StaticOffset(Day(-1))"
+            @test sprint(show, StaticOffset(Week(2))) == "StaticOffset(Week(2))"
+        end
+
+        @testset "print" begin
+            @test sprint(print, StaticOffset(Day(-1))) == "-1 day"
+            @test sprint(print, StaticOffset(Week(2))) == "2 weeks"
+        end
     end
 end
 
@@ -302,8 +309,9 @@ end
         @test_throws ArgumentError ZonedDateTime(2016, winnipeg) + LatestOffset()
     end
 
-    @testset "show" begin
-        @test sprint(show, LatestOffset()) == "latest"
+    @testset "output" begin
+        @test sprint(show, LatestOffset()) == "LatestOffset()"
+        @test sprint(print, LatestOffset()) == "latest"
     end
 end
 
@@ -414,13 +422,19 @@ end
         @test hash(DynamicOffset(; match=match)) == hash(DynamicOffset(; match=match))
     end
 
-    @testset "show" begin
-        offset = DynamicOffset()
-        @test ismatch(r"DynamicOffset\(-1 day, DateOffsets.+\)", sprint(show, offset))
-
+    @testset "output" begin
         match_function(x) = true
-        offset = DynamicOffset(; fallback=Week(-1), match=match_function)
-        @test sprint(show, offset) == "DynamicOffset(-1 week, match_function)"
+        offset = DynamicOffset(; fallback=Week(-2), match=match_function)
+
+        @testset "show" begin
+            @test sprint(show, DynamicOffset()) == "DynamicOffset(fallback=Day(-1), match=DateOffsets.always)"
+            @test sprint(show, offset) == "DynamicOffset(fallback=Week(-2), match=match_function)"
+        end
+
+        @testset "print" begin
+            @test sprint(print, DynamicOffset()) == "DynamicOffset(-1 day, always)"
+            @test sprint(print, offset) == "DynamicOffset(-2 weeks, match_function)"
+        end
     end
 end
 
@@ -492,6 +506,7 @@ end
         @test CompoundOffset([StaticOffset(Minute(0)),dynamic]) == CompoundOffset([dynamic])
         @test CompoundOffset([static, dynamic]) == CompoundOffset([static, dynamic])
         @test CompoundOffset([static, dynamic]) != CompoundOffset([static, recent])
+        @test CompoundOffset([StaticOffset(Minute(0)), StaticOffset(Hour(0))]) == CompoundOffset([StaticOffset(Day(0))])
 
         # + operator
         @test static + dynamic == CompoundOffset([static, dynamic])
@@ -585,14 +600,24 @@ end
     end
 
     @testset "show" begin
-        offset = StaticOffset(Day(1)) + LatestOffset()
-        @test sprint(show, offset) == "CompoundOffset(StaticOffset(1 day), latest)"
+        offset1 = StaticOffset(Day(1)) + LatestOffset()
+        offset2 = LatestOffset() + StaticOffset(Day(1))
+        offset3 = LatestOffset() + StaticOffset(Day(0))
+        offset4 = LatestOffset() + StaticOffset(Hour(-1))
 
-        offset = LatestOffset() + StaticOffset(Day(1))
-        @test sprint(show, offset) == "CompoundOffset(latest, StaticOffset(1 day))"
+        @testset "show" begin
+            @test sprint(show, offset1) == "CompoundOffset(StaticOffset(Day(1)), LatestOffset())"
+            @test sprint(show, offset2) == "CompoundOffset(LatestOffset(), StaticOffset(Day(1)))"
+            @test sprint(show, offset3) == "CompoundOffset(LatestOffset())"
+            @test sprint(show, offset4) == "CompoundOffset(LatestOffset(), StaticOffset(Hour(-1)))"
+        end
 
-        offset = LatestOffset() + StaticOffset(Day(0))
-        @test sprint(show, offset) == "CompoundOffset(latest)"
+        @testset "print" begin
+            @test sprint(print, offset1) == "1 day + latest"
+            @test sprint(print, offset2) == "latest + 1 day"
+            @test sprint(print, offset3) == "latest"
+            @test sprint(print, offset4) == "latest - 1 hour"
+        end
     end
 
     @testset "convenience" begin
