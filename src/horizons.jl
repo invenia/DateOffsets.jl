@@ -60,7 +60,13 @@ function Base.print(io::IO, h::Horizon)
 end
 
 function Base.show(io::IO, h::Horizon)
-    print(io, "Horizon($(h.step), $(h.span), $(h.start_func))")
+    print(io, "Horizon(")
+    h.start_func === _start_func || print(io, h.start_func, ", ")
+    print(io, "step=")
+    repr_period(io, h.step)
+    print(io, ", span=")
+    repr_period(io, h.span)
+    print(io, ')')
 end
 
 """

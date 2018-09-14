@@ -185,17 +185,21 @@ winnipeg = tz"America/Winnipeg"
         ]
     end
 
-    @testset "show" begin
-        @test string(Horizon()) == "Horizon(1 day at 1 hour resolution)"
-        @test sprint(show, Horizon()) == "Horizon(1 hour, 1 day, DateOffsets._start_func)"
+    @testset "output" begin
+        start_function(s) = ceil(s, Minute(15)) + Minute(30)
+        horizon = Horizon(start_function, step=Minute(15), span=Day(5))
 
-        horizon = Horizon(; step=Minute(15), span=Day(5)) do s
-            ceil(s, Minute(15)) + Minute(30)
+        @testset "show" begin
+            @test sprint(show, Horizon()) == "Horizon(step=Hour(1), span=Day(1))"
+            @test sprint(show, horizon) == "Horizon(start_function, step=Minute(15), span=Day(5))"
         end
-        @test ismatch(
-            r"Horizon\(5 days at 15 minutes resolution, start_fn: #\d+\)",
-            string(horizon)
-        )
-        @test ismatch(r"Horizon\(15 minutes, 5 days, #\d+\)", sprint(show, horizon))
+
+        @testset "print" begin
+            @test sprint(print, Horizon()) == "Horizon(1 day at 1 hour resolution)"
+            @test sprint(print, horizon) == (
+                "Horizon(5 days at 15 minutes resolution, " *
+                "start_fn: start_function)"
+            )
+        end
     end
 end
