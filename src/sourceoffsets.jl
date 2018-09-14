@@ -11,7 +11,7 @@ struct StaticOffset <: ScalarOffset
     period::Period
 
     # Avoid a stack overflow issue with `StaticOffset(0)`
-    if VERSION < v"0.7"
+    @static if VERSION < v"0.7"
         StaticOffset(p::Period) = new(p)
     end
 end
@@ -33,6 +33,9 @@ Base.:-(x::Period, y::DateOffset) = StaticOffset(x) - y
 
 Base.isless(::SourceOffset, ::SourceOffset) = false
 
+if VERSION >= v"0.7"
+    Base.broadcastable(a::StaticOffset) = Ref(a)
+end
 """
     LatestOffset() -> LatestOffset
 
@@ -64,6 +67,10 @@ struct DynamicOffset <: ScalarOffset
         fallback < zero(fallback) || throw(ArgumentError("fallback must be negative"))
         return new(fallback, match)
     end
+end
+
+if VERSION >= v"0.7"
+    Base.broadcastable(a::LatestOffset) = Ref(a)
 end
 
 """
@@ -318,7 +325,11 @@ function apply(
     offset::CompoundOffset, target::TargetType, content_end::ZonedDateTime, sim_now::NowType
 )
     apply_binary_op(dt, offset) = apply(offset, dt, content_end, sim_now)
-    return foldl(apply_binary_op, target, offset.offsets)
+    if VERSION < v"0.7"
+        return foldl(apply_binary_op, target, offset.offsets)
+    else
+        return foldl(apply_binary_op, offset.offsets; init=target)
+    end
 end
 
 function apply(offset::SourceOffset, target::Union{Missing, TargetType}, args...)

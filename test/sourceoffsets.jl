@@ -428,12 +428,18 @@ end
 
         @testset "show" begin
             @test sprint(show, DynamicOffset()) == "DynamicOffset(fallback=Day(-1), match=DateOffsets.always)"
-            @test sprint(show, offset) == "DynamicOffset(fallback=Week(-2), match=match_function)"
+            @test occursin(
+                r"DynamicOffset\(fallback=Week\(-2\), match=.*match_function.*\)",
+                sprint(show, offset)
+            )
         end
 
         @testset "print" begin
             @test sprint(print, DynamicOffset()) == "DynamicOffset(-1 day, always)"
-            @test sprint(print, offset) == "DynamicOffset(-2 weeks, match_function)"
+            @test occursin(
+                r"DynamicOffset\(-2 weeks, .*match_function.*\)",
+                sprint(print, offset)
+            )
         end
     end
 end
@@ -488,7 +494,10 @@ end
 
     @testset "show" begin
         custom_function(target, content_end, sim_now) = nothing
-        @test sprint(show, CustomOffset(custom_function)) == "CustomOffset(custom_function)"
+        @test occursin(
+            r"CustomOffset\(.*custom_function.*\)",
+            sprint(show, CustomOffset(custom_function))
+        )
     end
 end
 
