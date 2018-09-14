@@ -191,14 +191,17 @@ winnipeg = tz"America/Winnipeg"
 
         @testset "show" begin
             @test sprint(show, Horizon()) == "Horizon(step=Hour(1), span=Day(1))"
-            @test sprint(show, horizon) == "Horizon(start_function, step=Minute(15), span=Day(5))"
+            @test occursin(
+                r"Horizon\(.*start_function.*, step=Minute\(15\), span=Day\(5\)\)",
+                sprint(show, horizon)
+            )
         end
 
         @testset "print" begin
             @test sprint(print, Horizon()) == "Horizon(1 day at 1 hour resolution)"
-            @test sprint(print, horizon) == (
-                "Horizon(5 days at 15 minutes resolution, " *
-                "start_fn: start_function)"
+            @test occursin(
+                r"Horizon\(5 days at 15 minutes resolution, start_fn: .*start_function.*\)",
+                sprint(print, horizon)
             )
         end
     end

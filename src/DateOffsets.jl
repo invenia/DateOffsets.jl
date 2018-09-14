@@ -2,15 +2,13 @@ __precompile__()
 
 module DateOffsets
 
-using Base.Dates
-using Compat: nameof
-using TimeZones
-using LaxZonedDateTimes
-using Mocking
 using AutoHashEquals
+using Compat.Dates
+using Compat: hasmethod, nameof
 using Intervals
+using LaxZonedDateTimes
 using Missings
-using Compat: hasmethod
+using TimeZones
 
 abstract type DateOffset end
 
