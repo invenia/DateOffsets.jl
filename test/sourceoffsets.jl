@@ -315,6 +315,63 @@ end
     end
 end
 
+@testset "SimNowOffset" begin
+    @testset "basic" begin
+        offset = SimNowOffset()
+        sim_now = ZonedDateTime(2016, 8, 11, 3, winnipeg)
+        content_end = ZonedDateTime(2016, 8, 11, 11,  winnipeg)
+
+        @testset "ZonedDateTime" begin
+            target = ZonedDateTime(2016, 8, 11, 5, winnipeg)
+            @test apply(offset, target, content_end, sim_now) isa DateOffsets.NowType
+            @test apply(offset, target, content_end, sim_now) == sim_now
+
+            target = ZonedDateTime(2016, 8, 10, 1, winnipeg)
+            @test apply(offset, target, content_end, sim_now) == sim_now
+        end
+
+        @testset "HourEnding" begin
+            content_end = ZonedDateTime(2016, 8, 11, 1, 15, winnipeg)
+
+            target = HourEnding(ZonedDateTime(2016, 8, 11, 8, winnipeg))
+            @test apply(offset, target, content_end, sim_now) isa AnchoredInterval
+
+            @test apply(offset, target, content_end, sim_now) == HourEnding(sim_now)
+
+            target = HourEnding(ZonedDateTime(2016, 8, 11, 1, winnipeg))
+            @test apply(offset, target, content_end, sim_now) == HourEnding(sim_now)
+        end
+    end
+
+    @testset "equality" begin
+        @test SimNowOffset() == SimNowOffset()
+        @test isequal(SimNowOffset(), SimNowOffset())
+        @test hash(SimNowOffset()) == hash(SimNowOffset())
+    end
+
+    @testset "addition" begin
+        @test_throws ArgumentError SimNowOffset() + ZonedDateTime(2016, winnipeg)
+        @test_throws ArgumentError ZonedDateTime(2016, winnipeg) + SimNowOffset()
+    end
+
+    @testset "output" begin
+        @test sprint(show, SimNowOffset()) == "SimNowOffset()"
+        @test sprint(print, SimNowOffset()) == "sim_now"
+    end
+
+    @testset "CompoundOffset" begin
+        content_end = ZonedDateTime(2016, 8, 11, 11,  winnipeg)
+        sim_now = ZonedDateTime(2016, 8, 11, 3, winnipeg)
+        offset = SimNowOffset() + StaticOffset(Hour(2))
+
+        target = ZonedDateTime(2016, 8, 11, 5, winnipeg)
+        @test apply(offset, target, content_end, sim_now) == sim_now + Hour(2)
+
+        target = ZonedDateTime(2016, 8, 10, 1, winnipeg)
+        @test apply(offset, target, content_end, sim_now) == sim_now + Hour(2)
+    end
+end
+
 @testset "DynamicOffset" begin
     @testset "basic" begin
         default = DynamicOffset()
