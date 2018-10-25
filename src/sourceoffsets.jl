@@ -147,6 +147,22 @@ struct CustomOffset <: ScalarOffset
     apply::Function
 end
 
+"""
+    SimNowOffset() -> SimNowOffset
+
+Constructs a `SimNowOffset`. When a `SimNowOffset` is applied to a target interval, it
+will return `sim_now`.
+
+See also: [`DynamicOffset`](@ref)
+"""
+struct SimNowOffset <: ScalarOffset end
+
+Base.print(io::IO, ::SimNowOffset) = print(io, "sim_now")
+
+if VERSION >= v"0.7"
+    Base.broadcastable(a::SimNowOffset) = Ref(a)
+end
+
 ##### CompoundOffset #####
 
 """
@@ -257,6 +273,7 @@ function Base.print(io::IO, o::CompoundOffset)
 end
 
 if VERSION < v"0.7-"
+    Base.show(io::IO, ::Type{SimNowOffset}) = print(io, "SimNowOffset")
     Base.show(io::IO, ::Type{LatestOffset}) = print(io, "LatestOffset")
     Base.show(io::IO, ::Type{StaticOffset}) = print(io, "StaticOffset")
     Base.show(io::IO, ::Type{DynamicOffset}) = print(io, "DynamicOffset")
@@ -291,6 +308,15 @@ end
 function apply(::LatestOffset, target::T, content_end::ZonedDateTime, args...) where
         T <: AnchoredInterval
     return min(target, T(content_end, inclusivity(target)))
+end
+
+function apply(::SimNowOffset, target::TargetType, content_end, sim_now::NowType)::NowType
+    return sim_now
+end
+
+function apply(::SimNowOffset, target::T, content_end, sim_now::NowType) where
+        T <: AnchoredInterval
+    return T(sim_now, inclusivity(target))
 end
 
 function apply(
