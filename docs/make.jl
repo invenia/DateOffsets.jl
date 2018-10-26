@@ -14,4 +14,6 @@ makedocs(
     sitename="DateOffsets.jl",
     authors="Curtis Vogt, Gem Newman",
     assets=["assets/invenia.css"],
+    strict = true,
+    checkdocs = :none,
 )
