@@ -35,16 +35,16 @@ for more information.
 The relationship between `sim_now` and the targets is one-to-many.
 
 ```jldoctest
-julia> using DateOffsets, Intervals, TimeZones, Base.Dates
+julia> using DateOffsets, Intervals, TimeZones, Compat.Dates
 
 julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
 julia> horizon = Horizon(; step=Hour(1), span=Day(1))
-Horizon(1 hour, 1 day, 1 day, 0 hours)
+Horizon(step=Hour(1), span=Day(1))
 
 julia> collect(targets(horizon, sim_now))
-24-element Array{HourEnding{TimeZones.ZonedDateTime},1}:
+24-element Array{Intervals.AnchoredInterval{-1 hour,TimeZones.ZonedDateTime},1}:
  (2016-08-12 HE01-05:00]
  (2016-08-12 HE02-05:00]
  (2016-08-12 HE03-05:00]
@@ -77,16 +77,16 @@ The relationship between a target date and an observation interval is one-to-one
 a single offset to a single target interval will return a single observation interval).
 
 ```jldoctest
-julia> using DateOffsets, Intervals, TimeZones, Base.Dates
+julia> using DateOffsets, Intervals, TimeZones, Compat.Dates
 
 julia> target = HE(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
-HourEnding{TimeZones.ZonedDateTime}(2016-08-12T01:00:00-05:00, Inclusivity(false, true))
+Intervals.AnchoredInterval{-1 hour,TimeZones.ZonedDateTime}(2016-08-12T01:00:00-05:00, Inclusivity(false, true))
 
 julia> static_offset = StaticOffset(Day(-1))
-StaticOffset(-1 day)
+StaticOffset(Day(-1))
 
 julia> apply(static_offset, target)
-HourEnding{TimeZones.ZonedDateTime}(2016-08-11T01:00:00-05:00, Inclusivity(false, true))
+Intervals.AnchoredInterval{-1 hour,TimeZones.ZonedDateTime}(2016-08-11T01:00:00-05:00, Inclusivity(false, true))
 ```
 
 One or more `SourceOffset`s must be defined for each `DataFeature`, but the user will

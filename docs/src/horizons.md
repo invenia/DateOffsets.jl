@@ -30,10 +30,10 @@ julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
 julia> horizon = Horizon(; step=Hour(1), span=Day(1))
-Horizon(1 hour, 1 day, 1 day, 0 hours)
+Horizon(step=Hour(1), span=Day(1))
 
 julia> collect(targets(horizon, sim_now))
-24-element Array{HourEnding{TimeZones.ZonedDateTime},1}:
+24-element Array{Intervals.AnchoredInterval{-1 hour,TimeZones.ZonedDateTime},1}:
  (2016-08-12 HE01-05:00]
  (2016-08-12 HE02-05:00]
  (2016-08-12 HE03-05:00]
@@ -82,10 +82,10 @@ julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
 julia> horizon = Horizon(; step=Minute(15), span=Hour(4))
-Horizon(15 minutes, 4 hours, 1 day, 0 hours)
+Horizon(step=Minute(15), span=Hour(4))
 
 julia> collect(targets(horizon, sim_now))
-16-element Array{AnchoredInterval{-15 minutes, TimeZones.ZonedDateTime},1}:
+16-element Array{Intervals.AnchoredInterval{-15 minutes,TimeZones.ZonedDateTime},1}:
  (2016-08-12 15ME00:15-05:00]
  (2016-08-12 15ME00:30-05:00]
  (2016-08-12 15ME00:45-05:00]
