@@ -136,16 +136,10 @@ stages:
   after_script:
     - ./julia-ci clean
 
-"Documentation":
+pages:
   stage: documentation
-  tags:
-    - docs
-    - shell-ci
   only:
     - master
-    - develop
-    - docs
-    - tags  # special keyword for all tags
   variables:
     JULIA_VERSION: "0.6"
   before_script:
@@ -155,6 +149,9 @@ stages:
   script:
     - source julia-ci export
     - export PYTHON=""  # Configure PyCall to use the Conda.jl package's Python
-    - ./julia-ci docs
+    - ./julia-ci publish-docs public
   after_script:
     - ./julia-ci clean
+  artifacts:
+    paths:
+      - public/
