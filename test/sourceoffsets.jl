@@ -372,6 +372,81 @@ end
     end
 end
 
+@testset "LATEST_OFFSET" begin
+    @testset "basic" begin
+        sim_now = ZonedDateTime(2016, 8, 11, 1, winnipeg)
+
+        @testset "ZonedDateTime" begin
+            target = ZonedDateTime(2016, 8, 11, 2, winnipeg)
+
+            content_end = ZonedDateTime(2016, 8, 11, 1, 15, winnipeg)
+            @test apply(LATEST_OFFSET, target, content_end, sim_now) != content_end
+
+            content_end = ZonedDateTime(2016, 8, 11, 1, winnipeg)
+            @test apply(LATEST_OFFSET, target, content_end, sim_now) == content_end
+
+            content_end = ZonedDateTime(2016, 8, 11, 8, winnipeg)
+            @test apply(LATEST_OFFSET, target, content_end, sim_now) == target
+        end
+
+        @testset "HourEnding" begin
+            target = HourEnding(ZonedDateTime(2016, 8, 11, 2, winnipeg))
+
+            content_end = ZonedDateTime(2016, 8, 11, 1, 15, winnipeg)
+            @test apply(LATEST_OFFSET, target, content_end, sim_now) != HourEnding(content_end)
+
+            content_end = ZonedDateTime(2016, 8, 11, 1, winnipeg)
+            @test apply(LATEST_OFFSET, target, content_end, sim_now) == HourEnding(content_end)
+
+            content_end = ZonedDateTime(2016, 8, 11, 8, winnipeg)
+            @test apply(LATEST_OFFSET, target, content_end, sim_now) == target
+        end
+    end
+end
+
+@testset "SIM_NOW_OFFSET" begin
+    @testset "basic" begin
+        sim_now = ZonedDateTime(2016, 8, 11, 3, winnipeg)
+        content_end = ZonedDateTime(2016, 8, 11, 11,  winnipeg)
+
+        @testset "ZonedDateTime" begin
+            target = ZonedDateTime(2016, 8, 11, 5, 15, winnipeg)
+            @test apply(SIM_NOW_OFFSET, target, content_end, sim_now) isa DateOffsets.NowType
+            @test apply(SIM_NOW_OFFSET, target, content_end, sim_now) == sim_now
+
+            target = ZonedDateTime(2016, 8, 10, 1, winnipeg)
+            @test apply(SIM_NOW_OFFSET, target, content_end, sim_now) == sim_now
+
+            unrounded_sim_now = ZonedDateTime(2016, 8, 11, 3, 15, winnipeg)
+            @test apply(SIM_NOW_OFFSET, target, content_end, unrounded_sim_now) != unrounded_sim_now
+        end
+
+        @testset "HourEnding" begin
+            content_end = ZonedDateTime(2016, 8, 11, 1, 15, winnipeg)
+
+            target = HourEnding(ZonedDateTime(2016, 8, 11, 8, winnipeg))
+            @test apply(SIM_NOW_OFFSET, target, content_end, sim_now) isa AnchoredInterval
+
+            @test apply(SIM_NOW_OFFSET, target, content_end, sim_now) == HourEnding(sim_now)
+
+            target = HourEnding(ZonedDateTime(2016, 8, 11, 1, winnipeg))
+            @test apply(SIM_NOW_OFFSET, target, content_end, sim_now) == HourEnding(sim_now)
+        end
+    end
+
+    @testset "CompoundOffset" begin
+        content_end = ZonedDateTime(2016, 8, 11, 11,  winnipeg)
+        sim_now = ZonedDateTime(2016, 8, 11, 3, winnipeg)
+        offset = SIM_NOW_OFFSET + StaticOffset(Hour(2))
+
+        target = ZonedDateTime(2016, 8, 11, 5, winnipeg)
+        @test apply(offset, target, content_end, sim_now) == sim_now + Hour(2)
+
+        target = ZonedDateTime(2016, 8, 10, 1, winnipeg)
+        @test apply(offset, target, content_end, sim_now) == sim_now + Hour(2)
+    end
+end
+
 @testset "DynamicOffset" begin
     @testset "basic" begin
         default = DynamicOffset()
@@ -497,6 +572,46 @@ end
                 r"DynamicOffset\(-2 weeks, .*match_function.*\)",
                 sprint(print, offset)
             )
+        end
+    end
+end
+
+@testset "AnchoredOffset" begin
+    @testset "fall back" begin
+        match_hod = DynamicOffset(; fallback=Day(-1))
+        sim_now = ZonedDateTime(2016, 12, 7, 0, 30, winnipeg)
+        content_end = ZonedDateTime(2016, 12, 7, winnipeg)
+
+        @testset "ZonedDateTime" begin
+            target = LaxZonedDateTime(ZonedDateTime(2016, 12, 7, 1, winnipeg))
+
+            # :content_end should be the same as just using match_hod
+            result = apply(AnchoredOffset(match_hod, :content_end), target, content_end, sim_now)
+            @test result == LaxZonedDateTime(DateTime(2016, 12, 6, 1), winnipeg)
+
+            # :sim_now should fallback from the sim_now
+            result = apply(AnchoredOffset(match_hod, :sim_now), target, content_end, sim_now)
+            @test result == LaxZonedDateTime(DateTime(2016, 12, 6, 1), winnipeg)
+
+            # :target should fallback from the target
+            result = apply(AnchoredOffset(match_hod, :target), target, content_end, sim_now)
+            @test result == LaxZonedDateTime(DateTime(2016, 12, 7, 1), winnipeg)
+        end
+
+        @testset "HourEnding" begin
+            target = HourEnding(LaxZonedDateTime(ZonedDateTime(2016, 12, 7, 1, winnipeg)))
+
+            # :content_end should be the same as just using match_hod
+            result = apply(AnchoredOffset(match_hod, :content_end), target, content_end, sim_now)
+            @test result == HourEnding(LaxZonedDateTime(DateTime(2016, 12, 6, 1), winnipeg))
+
+            # :sim_now should be the same as just using match_hod
+            result = apply(AnchoredOffset(match_hod, :sim_now), target, content_end, sim_now)
+            @test result == HourEnding(LaxZonedDateTime(DateTime(2016, 12, 6, 1), winnipeg))
+
+            # :target should be the same as just using match_hod
+            result = apply(AnchoredOffset(match_hod, :target), target, content_end, sim_now)
+            @test result == HourEnding(LaxZonedDateTime(DateTime(2016, 12, 7, 1), winnipeg))
         end
     end
 end
