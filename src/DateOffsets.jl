@@ -30,8 +30,11 @@ export DateOffset,
        DynamicOffset,
        CustomOffset,
        CompoundOffset,
+       AnchoredOffset,
        targets,
        apply,
-       observations
+       observations,
+       LATEST_OFFSET,
+       SIM_NOW_OFFSET
 
 end

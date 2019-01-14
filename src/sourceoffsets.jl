@@ -358,9 +358,7 @@ function apply(
     end
 end
 
-function apply(offset::SourceOffset, target::Union{Missing, TargetType}, args...)
-    return ismissing(target) ? missing : apply(offset, get(target), args...)
-end
+apply(offset::SourceOffset, target::Missing, args...) = missing
 
 """
     apply(offset::SourceOffset, target::Union{AbstractInterval, ZonedDateTime, LaxZonedDateTime}, content_end::ZonedDateTime, sim_now::ZonedDateTime) -> ZonedDateTime
@@ -374,3 +372,52 @@ If `offset` is a `StaticOffset`, you can use `offset + target` syntax, as neithe
 `content_end` nor `sim_now` information is required.
 """
 apply(::SourceOffset, ::NowType, ::ZonedDateTime, ::ZonedDateTime)
+
+#=
+Specific types of `CustomOffset`s used in Simulation.jl
+
+- The LATEST_OFFSET and SIM_NOW_OFFSET adds round to the nearest hour
+- The AnchoredOffset allows you to specify whether you want to use the target, sim_now
+  or computed content as the content end for the internal offset.
+  Useful if you're want to fallback from the sim_now rather than the content end when work with
+  DynamicOffsets
+=#
+
+# NOTE (2018-11-28): The initial version of this also wasn't correct because we want to
+# define a DynamicOffset with a fallback that uses just uses sim_now as the content_end to
+# avoid a :validity mismatch between rt and da.
+# Related issue: https://gitlab.invenia.ca/invenia/Simulation.jl/issues/85
+function AnchoredOffset(offset, a::Symbol)
+    return CustomOffset() do target, content, sim_now
+        # Extract the appropriate `content_end`, but convert target or sim_now
+        # to ZonedDateTime
+        f = if a === :target
+            convert(ZonedDateTime, isa(target, AnchoredInterval) ? anchor(target) : target)
+        elseif a === :sim_now
+            convert(ZonedDateTime, sim_now)
+        elseif a === :content_end
+            content
+        else
+            throw(ArgumentError(
+                "AnchoredOffset only support 3 anchors :target, :sim_now or :content_end"
+            ))
+        end
+
+        t = DateOffsets.apply(offset, target, f::ZonedDateTime, sim_now)
+        T = typeof(t)
+
+        x = if isa(t, AnchoredInterval)
+            T(floor(anchor(t), Hour), inclusivity(t))
+        else
+            convert(T, floor(t, Hour))
+        end
+
+        return x
+    end
+end
+
+const LATEST_OFFSET = AnchoredOffset(LatestOffset(), :content_end)
+
+# NOTE (initial): For the reasons behind this Offset, please see
+# https://gitlab.invenia.ca/invenia/DateOffsets.jl/issues/11 and linked discussion.
+const SIM_NOW_OFFSET = AnchoredOffset(SimNowOffset(), :content_end)
