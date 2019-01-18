@@ -70,6 +70,7 @@ struct DynamicOffset <: ScalarOffset
 end
 
 if VERSION >= v"0.7"
+    Base.broadcastable(a::DynamicOffset) = Ref(a)
     Base.broadcastable(a::LatestOffset) = Ref(a)
 end
 
@@ -147,6 +148,9 @@ struct CustomOffset <: ScalarOffset
     apply::Function
 end
 
+if VERSION >= v"0.7"
+    Base.broadcastable(a::CustomOffset) = Ref(a)
+end
 """
     SimNowOffset() -> SimNowOffset
 
