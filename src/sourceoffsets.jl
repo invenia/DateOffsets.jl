@@ -9,11 +9,6 @@ Constructs a `StaticOffset`. When a `StaticOffset` is applied to a target interv
 """
 struct StaticOffset <: ScalarOffset
     period::Period
-
-    # Avoid a stack overflow issue with `StaticOffset(0)`
-    @static if VERSION < v"0.7"
-        StaticOffset(p::Period) = new(p)
-    end
 end
 
 Base.isless(a::StaticOffset, b::StaticOffset) = isless(a.period, b.period)
@@ -33,9 +28,8 @@ Base.:-(x::Period, y::DateOffset) = StaticOffset(x) - y
 
 Base.isless(::SourceOffset, ::SourceOffset) = false
 
-if VERSION >= v"0.7"
-    Base.broadcastable(a::StaticOffset) = Ref(a)
-end
+Base.broadcastable(a::StaticOffset) = Ref(a)
+
 """
     LatestOffset() -> LatestOffset
 
@@ -69,10 +63,8 @@ struct DynamicOffset <: ScalarOffset
     end
 end
 
-if VERSION >= v"0.7"
-    Base.broadcastable(a::DynamicOffset) = Ref(a)
-    Base.broadcastable(a::LatestOffset) = Ref(a)
-end
+Base.broadcastable(a::DynamicOffset) = Ref(a)
+Base.broadcastable(a::LatestOffset) = Ref(a)
 
 """
     DynamicOffset(; fallback=Day(-1), match=t -> true) -> DynamicOffset
@@ -148,9 +140,8 @@ struct CustomOffset <: ScalarOffset
     apply::Function
 end
 
-if VERSION >= v"0.7"
-    Base.broadcastable(a::CustomOffset) = Ref(a)
-end
+Base.broadcastable(a::CustomOffset) = Ref(a)
+
 """
     SimNowOffset() -> SimNowOffset
 
@@ -162,10 +153,7 @@ See also: [`DynamicOffset`](@ref)
 struct SimNowOffset <: ScalarOffset end
 
 Base.print(io::IO, ::SimNowOffset) = print(io, "sim_now")
-
-if VERSION >= v"0.7"
-    Base.broadcastable(a::SimNowOffset) = Ref(a)
-end
+Base.broadcastable(a::SimNowOffset) = Ref(a)
 
 ##### CompoundOffset #####
 
@@ -276,15 +264,6 @@ function Base.print(io::IO, o::CompoundOffset)
     end
 end
 
-if VERSION < v"0.7-"
-    Base.show(io::IO, ::Type{SimNowOffset}) = print(io, "SimNowOffset")
-    Base.show(io::IO, ::Type{LatestOffset}) = print(io, "LatestOffset")
-    Base.show(io::IO, ::Type{StaticOffset}) = print(io, "StaticOffset")
-    Base.show(io::IO, ::Type{DynamicOffset}) = print(io, "DynamicOffset")
-    Base.show(io::IO, ::Type{CustomOffset}) = print(io, "CustomOffset")
-    Base.show(io::IO, ::Type{CompoundOffset}) = print(io, "CompoundOffset")
-end
-
 function apply(offset::StaticOffset, target::TargetType, args...)
     return target + offset.period
 end
@@ -355,11 +334,7 @@ function apply(
     offset::CompoundOffset, target::TargetType, content_end::ZonedDateTime, sim_now::NowType
 )
     apply_binary_op(dt, offset) = apply(offset, dt, content_end, sim_now)
-    if VERSION < v"0.7"
-        return foldl(apply_binary_op, target, offset.offsets)
-    else
-        return foldl(apply_binary_op, offset.offsets; init=target)
-    end
+    return foldl(apply_binary_op, offset.offsets; init=target)
 end
 
 apply(offset::SourceOffset, target::Missing, args...) = missing
