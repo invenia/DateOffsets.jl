@@ -2,7 +2,6 @@ using Documenter, DateOffsets
 
 makedocs(
     modules=[DateOffsets],
-    format=:html,
     pages=[
         "Home"=>"index.md",
         "Horizons"=>"horizons.md",

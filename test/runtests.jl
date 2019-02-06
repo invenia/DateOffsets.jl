@@ -2,9 +2,8 @@ using DateOffsets
 using TimeZones
 using LaxZonedDateTimes
 using Intervals
-using Compat.Dates
-using Compat.Test
-using Compat: occursin
+using Dates
+using Test
 
 @testset "DateOffsets" begin
     include("horizons.jl")

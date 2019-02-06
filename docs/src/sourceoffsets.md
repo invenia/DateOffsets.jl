@@ -34,7 +34,14 @@ signature.
 
 ```@meta
 DocTestSetup = quote
-    using DateOffsets, TimeZones, Intervals, Base.Dates
+    using DateOffsets, TimeZones, Intervals, Dates
+
+    # This is a hack to have nice printing that doesn't include module names.
+    # https://github.com/JuliaDocs/Documenter.jl/issues/944
+    @eval Main begin
+        using DateOffsets, Intervals, TimeZones, Dates
+    end
+
     sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
     content_end = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
     target = HE(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
@@ -49,7 +56,7 @@ julia> content_end = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
 2016-08-11T02:00:00-05:00
 
 julia> target = HE(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
-Intervals.AnchoredInterval{-1 hour,TimeZones.ZonedDateTime}(2016-08-12T01:00:00-05:00, Inclusivity(false, true))
+AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T01:00:00-05:00, Inclusivity(false, true))
 ```
 
 ### StaticOffset
@@ -59,7 +66,7 @@ julia> static_offset = StaticOffset(Hour(-1))
 StaticOffset(Hour(-1))
 
 julia> apply(static_offset, target)
-Intervals.AnchoredInterval{-1 hour,TimeZones.ZonedDateTime}(2016-08-12T00:00:00-05:00, Inclusivity(false, true))
+AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T00:00:00-05:00, Inclusivity(false, true))
 ```
 
 ### LatestOffset
@@ -69,7 +76,7 @@ julia> latest_offset = LatestOffset()
 LatestOffset()
 
 julia> apply(latest_offset, target, content_end, sim_now)
-Intervals.AnchoredInterval{-1 hour,TimeZones.ZonedDateTime}(2016-08-11T02:00:00-05:00, Inclusivity(false, true))
+AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-11T02:00:00-05:00, Inclusivity(false, true))
 ```
 
 ### DynamicOffset
@@ -79,7 +86,7 @@ julia> match_hourofweek = DynamicOffset(; fallback=Week(-1))
 DynamicOffset(fallback=Week(-1), match=DateOffsets.always)
 
 julia> apply(match_hourofweek, target, content_end, sim_now)
-Intervals.AnchoredInterval{-1 hour,TimeZones.ZonedDateTime}(2016-08-05T01:00:00-05:00, Inclusivity(false, true))
+AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-05T01:00:00-05:00, Inclusivity(false, true))
 ```
 
 ### CustomOffset
@@ -92,7 +99,7 @@ julia> custom_offset = CustomOffset(offset_fn)
 CustomOffset(offset_fn)
 
 julia> apply(custom_offset, target, content_end, sim_now)
-Intervals.AnchoredInterval{-1 hour,TimeZones.ZonedDateTime}(2016-08-12T01:00:00-05:00, Inclusivity(false, true))
+AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T01:00:00-05:00, Inclusivity(false, true))
 ```
 
 ### CompoundOffset
@@ -102,7 +109,7 @@ julia> compound_offset = DynamicOffset(; fallback=Week(-1)) + StaticOffset(Hour(
 CompoundOffset(DynamicOffset(fallback=Week(-1), match=DateOffsets.always), StaticOffset(Hour(-1)))
 
 julia> apply(compound_offset, target, content_end, sim_now)
-Intervals.AnchoredInterval{-1 hour,TimeZones.ZonedDateTime}(2016-08-05T00:00:00-05:00, Inclusivity(false, true))
+AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-05T00:00:00-05:00, Inclusivity(false, true))
 ```
 
 ```@meta

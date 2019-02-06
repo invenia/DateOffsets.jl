@@ -19,13 +19,21 @@ targets
 
 ```@meta
 DocTestSetup = quote
-    using DateOffsets, Intervals, TimeZones, Base.Dates
+    using DateOffsets, Intervals, TimeZones, Dates
+
+    # This is a hack to have nice printing that doesn't include module names.
+    # https://github.com/JuliaDocs/Documenter.jl/issues/944
+    @eval Main begin
+        using DateOffsets, Intervals, TimeZones, Dates
+    end
 end
 ```
 
 ### Basic Constructor
 
 ```jldoctest
+julia> using DateOffsets, Intervals, TimeZones, Dates
+
 julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
@@ -33,27 +41,27 @@ julia> horizon = Horizon(; step=Hour(1), span=Day(1))
 Horizon(step=Hour(1), span=Day(1))
 
 julia> collect(targets(horizon, sim_now))
-24-element Array{Intervals.AnchoredInterval{-1 hour,TimeZones.ZonedDateTime},1}:
- (2016-08-12 HE01-05:00]
- (2016-08-12 HE02-05:00]
- (2016-08-12 HE03-05:00]
- (2016-08-12 HE04-05:00]
- (2016-08-12 HE05-05:00]
- (2016-08-12 HE06-05:00]
- (2016-08-12 HE07-05:00]
- (2016-08-12 HE08-05:00]
- (2016-08-12 HE09-05:00]
- (2016-08-12 HE10-05:00]
+24-element Array{AnchoredInterval{-1 hour,ZonedDateTime},1}:
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T01:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T02:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T03:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T04:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T05:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T06:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T07:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T08:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T09:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T10:00:00-05:00, Inclusivity(false, true))
  ⋮
- (2016-08-12 HE16-05:00]
- (2016-08-12 HE17-05:00]
- (2016-08-12 HE18-05:00]
- (2016-08-12 HE19-05:00]
- (2016-08-12 HE20-05:00]
- (2016-08-12 HE21-05:00]
- (2016-08-12 HE22-05:00]
- (2016-08-12 HE23-05:00]
- (2016-08-12 HE24-05:00]
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T16:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T17:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T18:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T19:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T20:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T21:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T22:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T23:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-13T00:00:00-05:00, Inclusivity(false, true))
 ```
 
 ## FAQ
@@ -85,23 +93,23 @@ julia> horizon = Horizon(; step=Minute(15), span=Hour(4))
 Horizon(step=Minute(15), span=Hour(4))
 
 julia> collect(targets(horizon, sim_now))
-16-element Array{Intervals.AnchoredInterval{-15 minutes,TimeZones.ZonedDateTime},1}:
- (2016-08-12 15ME00:15-05:00]
- (2016-08-12 15ME00:30-05:00]
- (2016-08-12 15ME00:45-05:00]
- (2016-08-12 15ME01:00-05:00]
- (2016-08-12 15ME01:15-05:00]
- (2016-08-12 15ME01:30-05:00]
- (2016-08-12 15ME01:45-05:00]
- (2016-08-12 15ME02:00-05:00]
- (2016-08-12 15ME02:15-05:00]
- (2016-08-12 15ME02:30-05:00]
- (2016-08-12 15ME02:45-05:00]
- (2016-08-12 15ME03:00-05:00]
- (2016-08-12 15ME03:15-05:00]
- (2016-08-12 15ME03:30-05:00]
- (2016-08-12 15ME03:45-05:00]
- (2016-08-12 15ME04:00-05:00]
+16-element Array{AnchoredInterval{-15 minutes,ZonedDateTime},1}:
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T00:15:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T00:30:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T00:45:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T01:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T01:15:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T01:30:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T01:45:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T02:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T02:15:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T02:30:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T02:45:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T03:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T03:15:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T03:30:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T03:45:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-15 minutes,ZonedDateTime}(2016-08-12T04:00:00-05:00, Inclusivity(false, true))
 ```
 
 ```@meta
