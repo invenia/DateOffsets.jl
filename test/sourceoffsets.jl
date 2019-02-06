@@ -302,6 +302,9 @@ end
         @test LatestOffset() == LatestOffset()
         @test isequal(LatestOffset(), LatestOffset())
         @test hash(LatestOffset()) == hash(LatestOffset())
+
+        # Verify that LatestOffset is treated as a scalar during broadcast
+        @test size(LatestOffset() .== LatestOffset()) == ()
     end
 
     @testset "addition" begin
@@ -347,6 +350,9 @@ end
         @test SimNowOffset() == SimNowOffset()
         @test isequal(SimNowOffset(), SimNowOffset())
         @test hash(SimNowOffset()) == hash(SimNowOffset())
+
+        # Verify that SimNowOffset is treated as a scalar during broadcast
+        @test size(SimNowOffset() .== SimNowOffset()) == ()
     end
 
     @testset "addition" begin
@@ -554,7 +560,7 @@ end
         @test hash(DynamicOffset(; match=match)) == hash(DynamicOffset(; match=match))
 
         # Verify that DynamicOffset is treated as a scalar during broadcast
-        @test DynamicOffset() .== DynamicOffset()
+        @test size(DynamicOffset() .== DynamicOffset()) == ()
     end
 
     @testset "output" begin
@@ -667,7 +673,7 @@ end
         @test hash(CustomOffset(match)) == hash(CustomOffset(match))
 
         # Verify that CustomOffset is treated as a scalar during broadcast
-        @test CustomOffset(match) .== CustomOffset(match)
+        @test size(CustomOffset(match) .== CustomOffset(match)) == ()
     end
 
     @testset "show" begin
