@@ -34,7 +34,7 @@ signature.
 
 ```@meta
 DocTestSetup = quote
-    using DateOffsets, TimeZones, Intervals, Base.Dates
+    using DateOffsets, TimeZones, Intervals, Dates
     sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
     content_end = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
     target = HE(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))

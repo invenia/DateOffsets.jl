@@ -34,7 +34,7 @@ for more information.
 The relationship between `sim_now` and the targets is one-to-many.
 
 ```jldoctest
-julia> using DateOffsets, Intervals, TimeZones, Compat.Dates
+julia> using DateOffsets, Intervals, TimeZones, Dates
 
 julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
@@ -76,7 +76,7 @@ The relationship between a target date and an observation interval is one-to-one
 a single offset to a single target interval will return a single observation interval).
 
 ```jldoctest
-julia> using DateOffsets, Intervals, TimeZones, Compat.Dates
+julia> using DateOffsets, Intervals, TimeZones, Dates
 
 julia> target = HE(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
 Intervals.AnchoredInterval{-1 hour,TimeZones.ZonedDateTime}(2016-08-12T01:00:00-05:00, Inclusivity(false, true))

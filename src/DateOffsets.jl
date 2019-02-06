@@ -3,8 +3,7 @@ __precompile__()
 module DateOffsets
 
 using AutoHashEquals
-using Compat.Dates
-using Compat: hasmethod, nameof
+using Dates
 using Intervals
 using LaxZonedDateTimes
 using Missings

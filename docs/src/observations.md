@@ -23,7 +23,7 @@ observations
 ## Example
 
 ```@repl
-using DateOffsets, TimeZones, Base.Dates
+using DateOffsets, TimeZones, Dates
 sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 content_end = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
 offsets = [LatestOffset(), StaticOffset(Day(1))]

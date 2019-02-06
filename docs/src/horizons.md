@@ -19,7 +19,7 @@ targets
 
 ```@meta
 DocTestSetup = quote
-    using DateOffsets, Intervals, TimeZones, Base.Dates
+    using DateOffsets, Intervals, TimeZones, Dates
 end
 ```
 
