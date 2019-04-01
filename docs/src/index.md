@@ -54,26 +54,26 @@ Horizon(step=Hour(1), span=Day(1))
 
 julia> collect(targets(horizon, sim_now))
 24-element Array{AnchoredInterval{-1 hour,ZonedDateTime},1}:
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T01:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T02:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T03:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T04:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T05:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T06:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T07:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T08:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T09:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T10:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 2, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 3, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 4, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 5, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 6, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 7, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 8, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 9, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 10, tz"America/Winnipeg"), Inclusivity(false, true))
  ⋮
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T16:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T17:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T18:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T19:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T20:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T21:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T22:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T23:00:00-05:00, Inclusivity(false, true))
- AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-13T00:00:00-05:00, Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 16, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 17, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 18, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 19, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 20, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 21, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 22, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 23, tz"America/Winnipeg"), Inclusivity(false, true))
+ AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 13, tz"America/Winnipeg"), Inclusivity(false, true))
 ```
 
 ### SourceOffset Type
@@ -89,13 +89,13 @@ a single offset to a single target interval will return a single observation int
 julia> using DateOffsets, Intervals, TimeZones, Dates
 
 julia> target = HE(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
-AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-12T01:00:00-05:00, Inclusivity(false, true))
+AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"), Inclusivity(false, true))
 
 julia> static_offset = StaticOffset(Day(-1))
 StaticOffset(Day(-1))
 
 julia> apply(static_offset, target)
-AnchoredInterval{-1 hour,ZonedDateTime}(2016-08-11T01:00:00-05:00, Inclusivity(false, true))
+AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 11, 1, tz"America/Winnipeg"), Inclusivity(false, true))
 ```
 
 One or more `SourceOffset`s must be defined for each `DataFeature`, but the user will
