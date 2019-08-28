@@ -1,13 +1,28 @@
-__precompile__()
-
 module DateOffsets
 
 using AutoHashEquals
 using Dates
 using Intervals
 using LaxZonedDateTimes
-using Missings
 using TimeZones
+
+export 
+    DateOffset,
+    Horizon,
+    SourceOffset,
+    ScalarOffset,
+    StaticOffset,
+    LatestOffset,
+    SimNowOffset,
+    DynamicOffset,
+    CustomOffset,
+    CompoundOffset,
+    AnchoredOffset,
+    targets,
+    apply,
+    observations,
+    LATEST_OFFSET,
+    SIM_NOW_OFFSET
 
 abstract type DateOffset end
 
@@ -19,21 +34,4 @@ include("horizons.jl")
 include("sourceoffsets.jl")
 include("observations.jl")
 
-export DateOffset,
-       Horizon,
-       SourceOffset,
-       ScalarOffset,
-       StaticOffset,
-       LatestOffset,
-       SimNowOffset,
-       DynamicOffset,
-       CustomOffset,
-       CompoundOffset,
-       AnchoredOffset,
-       targets,
-       apply,
-       observations,
-       LATEST_OFFSET,
-       SIM_NOW_OFFSET
-
-end
+end #module

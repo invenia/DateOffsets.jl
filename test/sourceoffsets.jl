@@ -1,5 +1,3 @@
-using Missings
-
 winnipeg = tz"America/Winnipeg"
 
 @testset "StaticOffset" begin

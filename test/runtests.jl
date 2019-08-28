@@ -1,9 +1,9 @@
 using DateOffsets
-using TimeZones
-using LaxZonedDateTimes
-using Intervals
 using Dates
+using Intervals
+using LaxZonedDateTimes
 using Test
+using TimeZones
 
 @testset "DateOffsets" begin
     include("horizons.jl")
