@@ -11,8 +11,8 @@ winnipeg = tz"America/Winnipeg"
         s, t, o = observations([LatestOffset()], horizon, sim_now, content_end)
 
         @test s isa Vector{ZonedDateTime}
-        @test t isa Vector{HourEnding{ZonedDateTime}}
-        @test o isa Matrix{HourEnding{ZonedDateTime}}
+        @test t isa Vector{<:HourEnding{ZonedDateTime}}
+        @test o isa Matrix{<:HourEnding{ZonedDateTime}}
 
         @test s == fill(sim_now, (24))
         @test t == collect(targets(horizon, sim_now))
@@ -25,8 +25,8 @@ winnipeg = tz"America/Winnipeg"
         s, t, o = observations(offsets, horizon, sim_now, content_end)
 
         @test s isa Vector{ZonedDateTime}
-        @test t isa Vector{HourEnding{ZonedDateTime}}
-        @test o isa Matrix{HourEnding{ZonedDateTime}}
+        @test t isa Vector{<:HourEnding{ZonedDateTime}}
+        @test o isa Matrix{<:HourEnding{ZonedDateTime}}
 
         @test s == fill(sim_now, (24))
         @test t == collect(targets(horizon, sim_now))
@@ -72,8 +72,8 @@ winnipeg = tz"America/Winnipeg"
         s, t, o = observations([LatestOffset()], horizon, sim_now, content_end)
 
         @test s isa Vector{ZonedDateTime}
-        @test t isa Vector{HourEnding{ZonedDateTime}}
-        @test o isa Matrix{HourEnding{ZonedDateTime}}
+        @test t isa Vector{<:HourEnding{ZonedDateTime}}
+        @test o isa Matrix{<:HourEnding{ZonedDateTime}}
 
         @test s == fill(sim_now, (24))
         @test t == collect(targets(horizon, sim_now))
@@ -103,8 +103,8 @@ winnipeg = tz"America/Winnipeg"
         s, t, o = observations(offsets, horizon, sim_now, content_end)
 
         @test s isa Vector{ZonedDateTime}
-        @test t isa Vector{HourEnding{ZonedDateTime}}
-        @test o isa Matrix{HourEnding{ZonedDateTime}}
+        @test t isa Vector{<:HourEnding{ZonedDateTime}}
+        @test o isa Matrix{<:HourEnding{ZonedDateTime}}
 
         @test s == fill(sim_now, (24))
         @test t == collect(targets(horizon, sim_now))
@@ -172,8 +172,8 @@ winnipeg = tz"America/Winnipeg"
         s, t, o = observations([LatestOffset()], horizon, sim_now, content_end)
 
         @test s isa Vector{ZonedDateTime}
-        @test t isa Vector{HourEnding{ZonedDateTime}}
-        @test o isa Matrix{HourEnding{ZonedDateTime}}
+        @test t isa Vector{<:HourEnding{ZonedDateTime}}
+        @test o isa Matrix{<:HourEnding{ZonedDateTime}}
 
         @test s == repeat(sim_now, inner=24)
         @test t == vcat([collect(targets(horizon, s)) for s in sim_now]...)
@@ -186,8 +186,8 @@ winnipeg = tz"America/Winnipeg"
         s, t, o = observations(offsets, horizon, sim_now, content_end)
 
         @test s isa Vector{ZonedDateTime}
-        @test t isa Vector{HourEnding{ZonedDateTime}}
-        @test o isa Matrix{HourEnding{ZonedDateTime}}
+        @test t isa Vector{<:HourEnding{ZonedDateTime}}
+        @test o isa Matrix{<:HourEnding{ZonedDateTime}}
 
         @test s == repeat(sim_now, inner=24)
         @test t == vcat([collect(targets(horizon, s)) for s in sim_now]...)
@@ -284,8 +284,8 @@ winnipeg = tz"America/Winnipeg"
         s, t, o = observations(offsets, horizon, LaxZonedDateTime(sim_now), content_end)
 
         @test s isa Vector{LaxZonedDateTime}
-        @test t isa Vector{HourEnding{LaxZonedDateTime}}
-        @test o isa Matrix{HourEnding{LaxZonedDateTime}}
+        @test t isa Vector{<:HourEnding{LaxZonedDateTime}}
+        @test o isa Matrix{<:HourEnding{LaxZonedDateTime}}
 
         @test s == fill(sim_now, (24))
         target_dates = [
@@ -333,8 +333,8 @@ winnipeg = tz"America/Winnipeg"
         s, t, o = observations(offsets, horizon, LaxZonedDateTime(sim_now), content_end)
 
         @test s isa Vector{LaxZonedDateTime}
-        @test t isa Vector{HourEnding{LaxZonedDateTime}}
-        @test o isa Matrix{HourEnding{LaxZonedDateTime}}
+        @test t isa Vector{<:HourEnding{LaxZonedDateTime}}
+        @test o isa Matrix{<:HourEnding{LaxZonedDateTime}}
 
         @test s == fill(sim_now, (24))
         target_dates = [
