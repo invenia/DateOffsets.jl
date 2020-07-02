@@ -288,18 +288,18 @@ function apply(::LatestOffset, target::TargetType, content_end::ZonedDateTime, a
     return min(target, content_end)
 end
 
-function apply(::LatestOffset, target::T, content_end::ZonedDateTime, args...) where
-        T <: AnchoredInterval
-    return min(target, T(content_end, inclusivity(target)))
+function apply(::LatestOffset, target::AnchoredInterval, content_end::ZonedDateTime, args...)
+    T = typeof(target)
+    return min(target, T(content_end))
 end
 
 function apply(::SimNowOffset, target::TargetType, content_end, sim_now::NowType)::NowType
     return sim_now
 end
 
-function apply(::SimNowOffset, target::T, content_end, sim_now::NowType) where
-        T <: AnchoredInterval
-    return T(sim_now, inclusivity(target))
+function apply(::SimNowOffset, target::AnchoredInterval, content_end, sim_now::NowType)
+    T = typeof(target)
+    return T(sim_now)
 end
 
 function apply(
@@ -310,8 +310,12 @@ function apply(
 end
 
 function apply(
-    offset::DynamicOffset, target::T, content_end::ZonedDateTime, sim_now::NowType
-) where T <: AnchoredInterval
+    offset::DynamicOffset,
+    target::AnchoredInterval,
+    content_end::ZonedDateTime,
+    sim_now::NowType,
+)
+    T = typeof(target)
     criteria = t -> t <= content_end && offset.match(t)
     return T(toprev(criteria, last(target); step=offset.fallback, same=true))
 end
@@ -385,8 +389,8 @@ function AnchoredOffset(offset, a::Symbol)
         t = DateOffsets.apply(offset, target, f::ZonedDateTime, sim_now)
         T = typeof(t)
 
-        x = if isa(t, AnchoredInterval)
-            T(floor(anchor(t), Hour), inclusivity(t))
+        x = if T <: AnchoredInterval
+            T(floor(anchor(t), Hour))
         else
             convert(T, floor(t, Hour))
         end

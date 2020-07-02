@@ -44,7 +44,7 @@ DocTestSetup = quote
 
     sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
     content_end = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
-    target = HE(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
+    target = HourEnding(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
 end
 ```
 
@@ -55,8 +55,8 @@ julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 julia> content_end = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
 2016-08-11T02:00:00-05:00
 
-julia> target = HE(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
-AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"), Inclusivity(false, true))
+julia> target = HourEnding(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
+AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
 ```
 
 ### StaticOffset
@@ -66,7 +66,7 @@ julia> static_offset = StaticOffset(Hour(-1))
 StaticOffset(Hour(-1))
 
 julia> apply(static_offset, target)
-AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, tz"America/Winnipeg"), Inclusivity(false, true))
+AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, tz"America/Winnipeg"))
 ```
 
 ### LatestOffset
@@ -76,7 +76,7 @@ julia> latest_offset = LatestOffset()
 LatestOffset()
 
 julia> apply(latest_offset, target, content_end, sim_now)
-AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg"), Inclusivity(false, true))
+AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg"))
 ```
 
 ### DynamicOffset
@@ -86,20 +86,20 @@ julia> match_hourofweek = DynamicOffset(; fallback=Week(-1))
 DynamicOffset(fallback=Week(-1), match=DateOffsets.always)
 
 julia> apply(match_hourofweek, target, content_end, sim_now)
-AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 5, 1, tz"America/Winnipeg"), Inclusivity(false, true))
+AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 5, 1, tz"America/Winnipeg"))
 ```
 
 ### CustomOffset
 
 ```jldoctest
-julia> offset_fn(target, content_end, sim_now) = (hour(sim_now) ≥ 18) ? HE(sim_now) : target
+julia> offset_fn(target, content_end, sim_now) = (hour(sim_now) ≥ 18) ? HourEnding(ceil(sim_now, Hour)) : target
 offset_fn (generic function with 1 method)
 
 julia> custom_offset = CustomOffset(offset_fn)
 CustomOffset(offset_fn)
 
 julia> apply(custom_offset, target, content_end, sim_now)
-AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"), Inclusivity(false, true))
+AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
 ```
 
 ### CompoundOffset
@@ -109,7 +109,7 @@ julia> compound_offset = DynamicOffset(; fallback=Week(-1)) + StaticOffset(Hour(
 CompoundOffset(DynamicOffset(fallback=Week(-1), match=DateOffsets.always), StaticOffset(Hour(-1)))
 
 julia> apply(compound_offset, target, content_end, sim_now)
-AnchoredInterval{-1 hour,ZonedDateTime}(ZonedDateTime(2016, 8, 5, tz"America/Winnipeg"), Inclusivity(false, true))
+AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 5, tz"America/Winnipeg"))
 ```
 
 ```@meta
