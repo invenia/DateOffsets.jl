@@ -19,7 +19,7 @@ generate target intervals for the `sim_now`, duplicating the targets for each el
 `offsets`, and applying each offset to its corresponding column of targets to produce the
 observation intervals.
 
-The return value is a tuple, the first element of which is vector of `sim_now`s, the
+The return value is a tuple, the first element of which is a vector of `sim_now`s, the
 second is a vector of target intervals, and the third is the matrix of observation
 intervals. The vectors of `sim_now`s and targets are the same size (the `sim_now` that is
 passed in is duplicated) and correspond row-wise to the matrix of observation intervals
