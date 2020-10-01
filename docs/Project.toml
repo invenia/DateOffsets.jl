@@ -8,5 +8,5 @@ TimeZones = "f269a46b-ccf7-5d73-abea-4c690281aa53"
 
 [compat]
 DataFrames = ">= 0.16"
-Documenter = "~0.21"
+Documenter = "0.23, 0.24, 0.25"
 TimeZones = ">= 0.4.0"

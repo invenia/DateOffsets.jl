@@ -1,7 +1,11 @@
 using Documenter, DateOffsets
 
-makedocs(
+makedocs(;
     modules=[DateOffsets],
+    format=Documenter.HTML(
+        prettyurls=get(ENV, "CI", nothing) == "true",
+        assets=["assets/invenia.css"],
+    ),
     pages=[
         "Home"=>"index.md",
         "Horizons"=>"horizons.md",
@@ -11,8 +15,7 @@ makedocs(
     ],
     repo="https://gitlab.invenia.ca/invenia/DateOffsets.jl/blob/{commit}{path}#L{line}",
     sitename="DateOffsets.jl",
-    authors="Curtis Vogt, Gem Newman",
-    assets=["assets/invenia.css"],
+    authors="Invenia Technical Computing Corporation",
     strict = true,
     checkdocs = :none,
 )
