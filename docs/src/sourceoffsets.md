@@ -35,13 +35,6 @@ signature.
 ```@meta
 DocTestSetup = quote
     using DateOffsets, TimeZones, Intervals, Dates
-
-    # This is a hack to have nice printing that doesn't include module names.
-    # https://github.com/JuliaDocs/Documenter.jl/issues/944
-    @eval Main begin
-        using DateOffsets, Intervals, TimeZones, Dates
-    end
-
     sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
     content_end = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
     target = HourEnding(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))

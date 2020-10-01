@@ -5,6 +5,7 @@
         sim_now::T,
         content_end::ZonedDateTime
     ) where T<:Union{ZonedDateTime, LaxZonedDateTime} -> (Vector{T}, Vector{T}, Matrix{T})
+
     observations(
         offsets::Vector{<:SourceOffset},
         horizon::Horizon,
@@ -26,7 +27,14 @@ passed in is duplicated) and correspond row-wise to the matrix of observation in
 
 ## Example with a single sim_now
 
-If your call looks like this:
+Expected results for the call below:
+
+`s` and `t` would each have 24 elements (or maybe 23 or 25: one for each hour of the next
+day) and `o` would be a 24x2 matrix. Each element of `s` would be equal to `sim_now`, and
+the elements of `t` would be the target intervals returned by the call
+`targets(horizon, sim_now)`. The first column of `o` would contain the values of `t` with
+`LatestOffset` applied, while the second would contain the values of `t` with a
+`StaticOffset` of one day applied.
 
 ```@meta
 DocTestSetup = quote
@@ -122,16 +130,16 @@ julia> o
 
 ```
 
-`s` and `t` would each have 24 elements (or maybe 23 or 25: one for each hour of the next
-day) and `o` would be a 24x2 matrix. Each element of `s` would be equal to `sim_now`, and
-the elements of `t` would be the target intervals returned by the call
-`targets(horizon, sim_now)`. The first column of `o` would contain the values of `t` with
-`LatestOffset` applied, while the second would contain the values of `t` with a
-`StaticOffset` of one day applied.
-
 ## Example with multiple sim_nows
 
-If your call looked like this:
+Expected results for the call below:
+
+`s` and `t` would each have 72 elements (±1: one for each hour of each of the three day
+period) and `o` would be a 72x2 matrix. Each element of `s` would be equal to one of the
+three `sim_now`s, and the elements of `t` would be the target intervals returned by calling
+`targets(horizon, sim_now)` for each `sim_now`. The first column of `o` would contain the
+values of `t` with `LatestOffset` applied, while the second would contain the values of `t`
+with a `StaticOffset` of one day applied.
 
 ```jldoctest
 julia> content_end = [ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")] .- [Day(2), Day(1), Day(0)]
@@ -226,13 +234,6 @@ julia> o
  (2016-08-11 HE02-05:00]  (2016-08-13 HE24-05:00]
 
 ```
-
-`s` and `t` would each have 24 elements (±1: one for each hour of each of the three day
-period) and `o` would be a 72x2 matrix. Each element of `s` would be equal to one of the
-three `sim_now`s, and the elements of `t` would be the target intervals returned by calling
-`targets(horizon, sim_now)` for each `sim_now`. The first column of `o` would contain the
-values of `t` with `LatestOffset` applied, while the second would contain the values of `t`
-with a `StaticOffset` of one day applied.
 
 ```@meta
 DocTestSetup = nothing
