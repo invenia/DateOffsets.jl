@@ -6,7 +6,7 @@ using Intervals
 using LaxZonedDateTimes
 using TimeZones
 
-export 
+export
     DateOffset,
     Horizon,
     SourceOffset,

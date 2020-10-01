@@ -1,26 +1,33 @@
 """
-    observations(offsets::Vector{<:SourceOffset}, horizon::Horizon, sim_now::T, content_end::ZonedDateTime) where T<:Union{ZonedDateTime, LaxZonedDateTime} -> (Vector{T}, Vector{T}, Matrix{T})
+    observations(
+        offsets::Vector{<:SourceOffset},
+        horizon::Horizon,
+        sim_now::T,
+        content_end::ZonedDateTime
+    ) where T<:Union{ZonedDateTime, LaxZonedDateTime} -> (Vector{T}, Vector{T}, Matrix{T})
 
-Generates forecast or training observation intervals for a single `sim_now` and any number
-of `offsets`. This is accomplished by using the `horizon` to generate target intervals for
-the `sim_now`, duplicating the targets for each element in `offsets`, and applying each
-offset to its corresponding column of targets to produce the observation intervals.
+    observations(
+        offsets::Vector{<:SourceOffset},
+        horizon::Horizon,
+        sim_now::Vector{T},
+        content_end::Vector{ZonedDateTime}
+    ) where T<:Union{ZonedDateTime, LaxZonedDateTime} -> (Vector{T}, Vector{T}, Matrix{T})
 
-The return value is a tuple, the first element of which is vector of `sim_now`s, the
+Generates forecast or training observation intervals for a single `sim_now` or series of
+`sim_now`s and any number of `offsets`. This is accomplished by using the `horizon` to
+generate target intervals for the `sim_now`, duplicating the targets for each element in
+`offsets`, and applying each offset to its corresponding column of targets to produce the
+observation intervals.
+
+The return value is a tuple, the first element of which is a vector of `sim_now`s, the
 second is a vector of target intervals, and the third is the matrix of observation
 intervals. The vectors of `sim_now`s and targets are the same size (the `sim_now` that is
 passed in is duplicated) and correspond row-wise to the matrix of observation intervals
 (which will have one column for each element in the `offsets` vector).
 
-## Example
+## Example with a single sim_now
 
-If your call looks like this:
-
-```julia
-offsets = [LatestOffset(), StaticOffset(Day(1))]
-horizon = Horizon{HourEnding}(; span=Day(1))
-s, t, o = observations(offsets, horizon, sim_now, content_end)
-```
+Expected results for the call below:
 
 `s` and `t` would each have 24 elements (or maybe 23 or 25: one for each hour of the next
 day) and `o` would be a 24x2 matrix. Each element of `s` would be equal to `sim_now`, and
@@ -28,6 +35,209 @@ the elements of `t` would be the target intervals returned by the call
 `targets(horizon, sim_now)`. The first column of `o` would contain the values of `t` with
 `LatestOffset` applied, while the second would contain the values of `t` with a
 `StaticOffset` of one day applied.
+
+```@meta
+DocTestSetup = quote
+    using DateOffsets, Dates, Intervals, TimeZones
+end
+```
+
+```jldoctest
+julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
+2016-08-11T02:30:00-05:00
+
+julia> content_end = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
+2016-08-11T02:00:00-05:00
+
+julia> offsets = [LatestOffset(), StaticOffset(Day(1))]
+2-element Array{ScalarOffset,1}:
+ LatestOffset()
+ StaticOffset(Day(1))
+
+julia> horizon = Horizon(; step=Hour(1), span=Day(1))
+Horizon(step=Hour(1), span=Day(1))
+
+julia> s, t, o = observations(offsets, horizon, sim_now, content_end);
+
+julia> s
+24-element Array{ZonedDateTime,1}:
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ ⋮
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+
+julia> t
+24-element Array{AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed},1}:
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 2, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 3, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 4, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 5, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 6, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 7, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 8, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 9, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 10, tz"America/Winnipeg"))
+ ⋮
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 16, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 17, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 18, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 19, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 20, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 21, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 22, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 23, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 13, tz"America/Winnipeg"))
+
+julia> o
+24×2 Array{AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed},2}:
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE01-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE02-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE03-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE04-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE05-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE06-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE07-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE08-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE09-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE10-05:00]
+ ⋮
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE16-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE17-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE18-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE19-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE20-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE21-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE22-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE23-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE24-05:00]
+
+```
+
+## Example with multiple sim_nows
+
+Expected results for the call below:
+
+`s` and `t` would each have 72 elements (±1: one for each hour of each of the three day
+period) and `o` would be a 72x2 matrix. Each element of `s` would be equal to one of the
+three `sim_now`s, and the elements of `t` would be the target intervals returned by calling
+`targets(horizon, sim_now)` for each `sim_now`. The first column of `o` would contain the
+values of `t` with `LatestOffset` applied, while the second would contain the values of `t`
+with a `StaticOffset` of one day applied.
+
+```jldoctest
+julia> content_end = [ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")] .- [Day(2), Day(1), Day(0)]
+3-element Array{ZonedDateTime,1}:
+ 2016-08-09T02:00:00-05:00
+ 2016-08-10T02:00:00-05:00
+ 2016-08-11T02:00:00-05:00
+
+julia> offsets = [LatestOffset(), StaticOffset(Day(1))]
+2-element Array{ScalarOffset,1}:
+ LatestOffset()
+ StaticOffset(Day(1))
+
+julia> horizon = Horizon(; step=Hour(1), span=Day(1))
+Horizon(step=Hour(1), span=Day(1))
+
+julia> sim_now = [ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")] .- [Day(2), Day(1), Day(0)]
+3-element Array{ZonedDateTime,1}:
+ 2016-08-09T02:30:00-05:00
+ 2016-08-10T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+
+julia> s, t, o = observations(offsets, horizon, sim_now, content_end);
+
+julia> s
+72-element Array{ZonedDateTime,1}:
+ 2016-08-09T02:30:00-05:00
+ 2016-08-09T02:30:00-05:00
+ 2016-08-09T02:30:00-05:00
+ 2016-08-09T02:30:00-05:00
+ 2016-08-09T02:30:00-05:00
+ 2016-08-09T02:30:00-05:00
+ 2016-08-09T02:30:00-05:00
+ 2016-08-09T02:30:00-05:00
+ 2016-08-09T02:30:00-05:00
+ 2016-08-09T02:30:00-05:00
+ ⋮
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+ 2016-08-11T02:30:00-05:00
+
+julia> t
+72-element Array{AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed},1}:
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 1, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 2, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 3, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 4, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 5, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 6, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 7, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 8, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 9, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 10, tz"America/Winnipeg"))
+ ⋮
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 16, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 17, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 18, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 19, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 20, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 21, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 22, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 23, tz"America/Winnipeg"))
+ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 13, tz"America/Winnipeg"))
+
+julia> o
+72×2 Array{AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed},2}:
+ (2016-08-09 HE02-05:00]  (2016-08-11 HE01-05:00]
+ (2016-08-09 HE02-05:00]  (2016-08-11 HE02-05:00]
+ (2016-08-09 HE02-05:00]  (2016-08-11 HE03-05:00]
+ (2016-08-09 HE02-05:00]  (2016-08-11 HE04-05:00]
+ (2016-08-09 HE02-05:00]  (2016-08-11 HE05-05:00]
+ (2016-08-09 HE02-05:00]  (2016-08-11 HE06-05:00]
+ (2016-08-09 HE02-05:00]  (2016-08-11 HE07-05:00]
+ (2016-08-09 HE02-05:00]  (2016-08-11 HE08-05:00]
+ (2016-08-09 HE02-05:00]  (2016-08-11 HE09-05:00]
+ (2016-08-09 HE02-05:00]  (2016-08-11 HE10-05:00]
+ ⋮
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE16-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE17-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE18-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE19-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE20-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE21-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE22-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE23-05:00]
+ (2016-08-11 HE02-05:00]  (2016-08-13 HE24-05:00]
+
+```
+
+```@meta
+DocTestSetup = nothing
+```
 """
 function observations(
     offsets::Vector{<:SourceOffset},
@@ -44,36 +254,6 @@ function observations(
     return (fill(sim_now, length(t)), t, o)
 end
 
-"""
-    observations(offsets::Vector{<:SourceOffset}, horizon::Horizon, sim_now::Vector{T}, content_end::Vector{ZonedDateTime}) where T<:Union{ZonedDateTime, LaxZonedDateTime} -> (Vector{T}, Vector{T}, Matrix{T})
-
-Generates forecast or training observation intervals for a series of `sim_now`s and any
-number of `offsets`, in a similar manner to the method that takes a single `sim_now`.
-
-The return value is a tuple, the first element of which is vector of `sim_now`s, the
-second is a vector of target intervals, and the third is the matrix of observation
-intervals. The vectors of `sim_now`s and targets are the same size (the `sim_now` that is
-passed in is duplicated) and correspond row-wise to the matrix of observation intervals
-(which will have one column for each element in the `offsets` vector).
-
-## Example
-
-If your call looked like this:
-
-```julia
-offsets = [LatestOffset(), StaticOffset(Day(1))]
-horizon = Horizon{HourEnding}(; span=Day(1))
-sim_nows = [now(tz"America/Winnipeg")] .- [Day(2), Day(1), Day(0)]
-s, t, o = observations(offsets, horizon, sim_now, content_end)
-```
-
-`s` and `t` would each have 24 elements (±1: one for each hour of each of the three day
-period) and `o` would be a 72x2 matrix. Each element of `s` would be equal to one of the
-three `sim_now`s, and the elements of `t` would be the target intervals returned by calling
-`targets(horizon, sim_now)` for each `sim_now`. The first column of `o` would contain the
-values of `t` with `LatestOffset` applied, while the second would contain the values of `t`
-with a `StaticOffset` of one day applied.
-"""
 function observations(
     offsets::Vector{<:SourceOffset},
     horizon::Horizon,
