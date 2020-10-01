@@ -4,9 +4,11 @@ DateOffsets = "7f78979c-33b5-5b34-98a4-c64efb759df4"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Intervals = "d8418881-c3e1-53bb-8760-2df7ec849ed5"
+LaxZonedDateTimes = "e4c54217-8d3e-5504-a69c-0db1bad43e12"
 TimeZones = "f269a46b-ccf7-5d73-abea-4c690281aa53"
 
 [compat]
 DataFrames = ">= 0.16"
 Documenter = "0.23, 0.24, 0.25"
 TimeZones = ">= 0.4.0"
+LaxZonedDateTimes = "1"

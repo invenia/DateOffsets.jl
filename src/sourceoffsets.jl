@@ -129,7 +129,7 @@ Constructs a `CustomOffset` using the supplied `apply` function. The `apply` fun
 take a `target::AbstractInterval`, `content_end::ZonedDateTime`, and a
 `sim_now::ZonedDateTime` (in that order) and return a single observation interval.
 
-Whenever a `CustomOffset` is applied to a target interval, the `apply` funcion is called.
+Whenever a `CustomOffset` is applied to a target interval, the `apply` function is called.
 
 ```julia
 custom_offset = CustomOffset((td, ce, sn) -> min(HourEnding(sn), td) + Dates.Hour(1))
@@ -356,29 +356,24 @@ If `offset` is a `StaticOffset`, you can use `offset + target` syntax, as neithe
 """
 apply(::SourceOffset, ::NowType, ::ZonedDateTime, ::ZonedDateTime)
 
-#=
-Specific types of `CustomOffset`s used in Simulation.jl
+"""
+    AnchoredOffset(offset::DateOffset, anchor_point::Symbol)
 
-- The LATEST_OFFSET and SIM_NOW_OFFSET adds round to the nearest hour
-- The AnchoredOffset allows you to specify whether you want to use the target, sim_now
-  or computed content as the content end for the internal offset.
-  Useful if you're want to fallback from the sim_now rather than the content end when work with
-  DynamicOffsets
-=#
+Applies `offset` using `anchor_point` as the estimated content end then rounds down to the nearest
+`Hour`. The `anchor_point` can be `:sim_now`, `:content_end` or `:target`.
 
-# NOTE (2018-11-28): The initial version of this also wasn't correct because we want to
-# define a DynamicOffset with a fallback that uses just uses sim_now as the content_end to
-# avoid a :validity mismatch between rt and da.
-# Related issue: https://gitlab.invenia.ca/invenia/Simulation.jl/issues/85
-function AnchoredOffset(offset, a::Symbol)
+Useful if you want to fallback from the sim_now rather than the content_end when working with
+DynamicOffsets.
+"""
+function AnchoredOffset(offset, anchor_point::Symbol)
     return CustomOffset() do target, content, sim_now
         # Extract the appropriate `content_end`, but convert target or sim_now
         # to ZonedDateTime
-        f = if a === :target
+        f = if anchor_point === :target
             convert(ZonedDateTime, isa(target, AnchoredInterval) ? anchor(target) : target)
-        elseif a === :sim_now
+        elseif anchor_point === :sim_now
             convert(ZonedDateTime, sim_now)
-        elseif a === :content_end
+        elseif anchor_point === :content_end
             content
         else
             throw(ArgumentError(
@@ -399,8 +394,19 @@ function AnchoredOffset(offset, a::Symbol)
     end
 end
 
+"""
+    LATEST_OFFSET
+
+Return the [`LatestOffset`](@ref) rounded down to the nearest `Hour` when applied.
+"""
 const LATEST_OFFSET = AnchoredOffset(LatestOffset(), :content_end)
 
 # NOTE (initial): For the reasons behind this Offset, please see
 # https://gitlab.invenia.ca/invenia/DateOffsets.jl/issues/11 and linked discussion.
+"""
+    SIM_NOW_OFFSET
+
+Always returns the sim_now rounded down to the nearest `Hour` when applied.
+See also [`SimNowOffset`](@ref).
+"""
 const SIM_NOW_OFFSET = AnchoredOffset(SimNowOffset(), :content_end)
