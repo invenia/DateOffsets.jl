@@ -40,7 +40,7 @@ that target is expected to be available (for the `sim_now` provided).
 If data for the target is expected to be available on S3DB at `sim_now`, that target
 interval is returned as the observation interval; otherwise, an interval with the same span
 as the target that ends at S3DB's estimated content end is returned. (This "end of content"
-value is estimated by `DataFeatures.content_end` based upon the `sim_now` provided, using
+value is estimated by `DataFeatures.last_observation` based upon the `sim_now` provided, using
 S3DB metadata for the `DataFeature` in question.)
 
 See also: [`DynamicOffset`](@ref)
@@ -126,7 +126,7 @@ end
     CustomOffset(apply::Function) -> CustomOffset
 
 Constructs a `CustomOffset` using the supplied `apply` function. The `apply` function should
-take a `target::AbstractInterval`, `content_end::ZonedDateTime`, and a
+take a `target::AbstractInterval`, `last_observation::ZonedDateTime`, and a
 `sim_now::ZonedDateTime` (in that order) and return a single observation interval.
 
 Whenever a `CustomOffset` is applied to a target interval, the `apply` function is called.
@@ -136,7 +136,7 @@ custom_offset = CustomOffset((td, ce, sn) -> min(HourEnding(sn), td) + Dates.Hou
 ```
 """
 struct CustomOffset <: ScalarOffset
-    # Function should take (target, content_end, sim_now) and return observation interval
+    # Function should take (target, last_observation, sim_now) and return observation interval
     apply::Function
 end
 
@@ -284,75 +284,75 @@ function Base.:+(offset::SourceOffset, target::TargetType)
     )
 end
 
-function apply(::LatestOffset, target::TargetType, content_end::ZonedDateTime, args...)
-    return min(target, content_end)
+function apply(::LatestOffset, target::TargetType, last_observation::ZonedDateTime, args...)
+    return min(target, last_observation)
 end
 
-function apply(::LatestOffset, target::AnchoredInterval, content_end::ZonedDateTime, args...)
+function apply(::LatestOffset, target::AnchoredInterval, last_observation::ZonedDateTime, args...)
     T = typeof(target)
-    return min(target, T(content_end))
+    return min(target, T(last_observation))
 end
 
-function apply(::SimNowOffset, target::TargetType, content_end, sim_now::NowType)::NowType
+function apply(::SimNowOffset, target::TargetType, last_observation, sim_now::NowType)::NowType
     return sim_now
 end
 
-function apply(::SimNowOffset, target::AnchoredInterval, content_end, sim_now::NowType)
+function apply(::SimNowOffset, target::AnchoredInterval, last_observation, sim_now::NowType)
     T = typeof(target)
     return T(sim_now)
 end
 
 function apply(
-    offset::DynamicOffset, target::TargetType, content_end::ZonedDateTime, sim_now::NowType
+    offset::DynamicOffset, target::TargetType, last_observation::ZonedDateTime, sim_now::NowType
 )
-    criteria = t -> t <= content_end && offset.match(t)
+    criteria = t -> t <= last_observation && offset.match(t)
     return toprev(criteria, target; step=offset.fallback, same=true)
 end
 
 function apply(
     offset::DynamicOffset,
     target::AnchoredInterval,
-    content_end::ZonedDateTime,
+    last_observation::ZonedDateTime,
     sim_now::NowType,
 )
     T = typeof(target)
-    criteria = t -> t <= content_end && offset.match(t)
+    criteria = t -> t <= last_observation && offset.match(t)
     return T(toprev(criteria, last(target); step=offset.fallback, same=true))
 end
 
 function apply(
-    offset::CustomOffset, target::TargetType, content_end, sim_now::NowType
+    offset::CustomOffset, target::TargetType, last_observation, sim_now::NowType
 )
     if hasmethod(offset.apply, Tuple{typeof.((sim_now, target))...})
         Base.depwarn(string(
             "Using a custom apply function of `apply(sim_now, target)` is deprecated; ",
-            "use `apply(target, content_end, sim_now)` instead",
+            "use `apply(target, last_observation, sim_now)` instead",
         ), :apply)
         offset.apply(sim_now, target)
     else
-        offset.apply(target, content_end, sim_now)
+        offset.apply(target, last_observation, sim_now)
     end
 end
 
 function apply(
-    offset::CompoundOffset, target::TargetType, content_end::ZonedDateTime, sim_now::NowType
+    offset::CompoundOffset, target::TargetType, last_observation::ZonedDateTime, sim_now::NowType
 )
-    apply_binary_op(dt, offset) = apply(offset, dt, content_end, sim_now)
+    apply_binary_op(dt, offset) = apply(offset, dt, last_observation, sim_now)
     return foldl(apply_binary_op, offset.offsets; init=target)
 end
 
 apply(offset::SourceOffset, target::Missing, args...) = missing
 
 """
-    apply(offset::SourceOffset, target::Union{AbstractInterval, ZonedDateTime, LaxZonedDateTime}, content_end::ZonedDateTime, sim_now::ZonedDateTime) -> ZonedDateTime
+    apply(offset::SourceOffset, target::Union{AbstractInterval, ZonedDateTime, LaxZonedDateTime}, last_observation::ZonedDateTime, sim_now::ZonedDateTime) -> ZonedDateTime
 
 Applies `offset` to the `target`, returning the new observation date. Methods for some
-subtypes of `SourceOffset` also use `content_end` and `sim_now` in their calculations. If
+subtypes of `SourceOffset` also use `last_observation` and `sim_now` in their calculations. If
 the `offset` is a `CompoundOffset`, each of the `ScalarOffset`s is applied sequentially to
 generate the final observation date.
 
 If `offset` is a `StaticOffset`, you can use `offset + target` syntax, as neither
-`content_end` nor `sim_now` information is required.
+`last_observation` nor `sim_now` information is required.
 """
 apply(::SourceOffset, ::NowType, ::ZonedDateTime, ::ZonedDateTime)
 
@@ -360,24 +360,27 @@ apply(::SourceOffset, ::NowType, ::ZonedDateTime, ::ZonedDateTime)
     AnchoredOffset(offset::DateOffset, anchor_point::Symbol)
 
 Applies `offset` using `anchor_point` as the estimated content end then rounds down to the nearest
-`Hour`. The `anchor_point` can be `:sim_now`, `:content_end` or `:target`.
+`Hour`. The `anchor_point` can be `:sim_now`, `:last_observation` or `:target`.
 
-Useful if you want to fallback from the sim_now rather than the content_end when working with
+Useful if you want to fallback from the sim_now rather than the last_observation when working with
 DynamicOffsets.
 """
 function AnchoredOffset(offset, anchor_point::Symbol)
     return CustomOffset() do target, content, sim_now
-        # Extract the appropriate `content_end`, but convert target or sim_now
+        # Extract the appropriate `last_observation`, but convert target or sim_now
         # to ZonedDateTime
         f = if anchor_point === :target
             convert(ZonedDateTime, isa(target, AnchoredInterval) ? anchor(target) : target)
         elseif anchor_point === :sim_now
             convert(ZonedDateTime, sim_now)
-        elseif anchor_point === :content_end
+        elseif anchor_point === :content_end || anchor_point === :last_observation
+            # :content_end is deprecated
+            # No warning has been added because this function will be removed in the next few weeks
             content
         else
             throw(ArgumentError(
-                "AnchoredOffset only support 3 anchors :target, :sim_now or :content_end"
+                "AnchoredOffset only support 3 anchors :target, :sim_now or :last_observation" *
+                "Note: :content_end has been replaced with :last_observation but still works for the time being"
             ))
         end
 

@@ -6,9 +6,9 @@ winnipeg = tz"America/Winnipeg"
         # data are live actuals).
         horizon = Horizon(; step=Hour(1), span=Day(1))
         sim_now = ZonedDateTime(2016, 8, 11, 12, 31, 12, winnipeg)
-        content_end = ZonedDateTime(2016, 8, 11, 6, 15, winnipeg)
+        last_observation = ZonedDateTime(2016, 8, 11, 6, 15, winnipeg)
 
-        s, t, o = observations([LatestOffset()], horizon, sim_now, content_end)
+        s, t, o = observations([LatestOffset()], horizon, sim_now, last_observation)
 
         @test s isa Vector{ZonedDateTime}
         @test t isa Vector{<:HourEnding{ZonedDateTime}}
@@ -16,13 +16,13 @@ winnipeg = tz"America/Winnipeg"
 
         @test s == fill(sim_now, (24))
         @test t == collect(targets(horizon, sim_now))
-        @test o == fill(HourEnding(content_end), (24, 1))
+        @test o == fill(HourEnding(last_observation), (24, 1))
 
         offsets = [
             LatestOffset() + StaticOffset(Hour(-1)),
             DynamicOffset(; fallback=Day(-1))
         ]
-        s, t, o = observations(offsets, horizon, sim_now, content_end)
+        s, t, o = observations(offsets, horizon, sim_now, last_observation)
 
         @test s isa Vector{ZonedDateTime}
         @test t isa Vector{<:HourEnding{ZonedDateTime}}
@@ -31,7 +31,7 @@ winnipeg = tz"America/Winnipeg"
         @test s == fill(sim_now, (24))
         @test t == collect(targets(horizon, sim_now))
         expected = hcat(
-            fill(HourEnding(content_end), (24, 1)) .- Hour(1),
+            fill(HourEnding(last_observation), (24, 1)) .- Hour(1),
             [
                 HourEnding(ZonedDateTime(2016, 8, 11, 1, winnipeg)),
                 HourEnding(ZonedDateTime(2016, 8, 11, 2, winnipeg)),
@@ -67,9 +67,9 @@ winnipeg = tz"America/Winnipeg"
         # data are forecasts).
         horizon = Horizon(; step=Hour(1), span=Day(1))
         sim_now = ZonedDateTime(2016, 8, 11, 12, 31, 12, winnipeg)
-        content_end = ZonedDateTime(2016, 8, 12, 12, winnipeg)
+        last_observation = ZonedDateTime(2016, 8, 12, 12, winnipeg)
 
-        s, t, o = observations([LatestOffset()], horizon, sim_now, content_end)
+        s, t, o = observations([LatestOffset()], horizon, sim_now, last_observation)
 
         @test s isa Vector{ZonedDateTime}
         @test t isa Vector{<:HourEnding{ZonedDateTime}}
@@ -92,7 +92,7 @@ winnipeg = tz"America/Winnipeg"
                 HourEnding(ZonedDateTime(2016, 8, 12, 11, winnipeg)),
                 HourEnding(ZonedDateTime(2016, 8, 12, 12, winnipeg)),
             ];
-            fill(HourEnding(content_end), (12, 1))
+            fill(HourEnding(last_observation), (12, 1))
         ]
         @test o == expected
 
@@ -100,7 +100,7 @@ winnipeg = tz"America/Winnipeg"
             LatestOffset() + StaticOffset(Hour(-1)),
             DynamicOffset(; fallback=Day(-1))
         ]
-        s, t, o = observations(offsets, horizon, sim_now, content_end)
+        s, t, o = observations(offsets, horizon, sim_now, last_observation)
 
         @test s isa Vector{ZonedDateTime}
         @test t isa Vector{<:HourEnding{ZonedDateTime}}
@@ -124,7 +124,7 @@ winnipeg = tz"America/Winnipeg"
                     HourEnding(ZonedDateTime(2016, 8, 12, 11, winnipeg)),
                     HourEnding(ZonedDateTime(2016, 8, 12, 12, winnipeg)),
                 ];
-                fill(HourEnding(content_end), (12, 1))
+                fill(HourEnding(last_observation), (12, 1))
             ] .- Hour(1),
             [
                 HourEnding(ZonedDateTime(2016, 8, 12, 1, winnipeg)),
@@ -163,13 +163,13 @@ winnipeg = tz"America/Winnipeg"
             ZonedDateTime(2016, 8, 11, 11, 31, 12, winnipeg),
             ZonedDateTime(2016, 8, 11, 12, 31, 12, winnipeg)
         ]
-        content_end = [
+        last_observation = [
             ZonedDateTime(2016, 8, 9, 6, 15, winnipeg),
             ZonedDateTime(2016, 8, 10, 6, 15, winnipeg),
             ZonedDateTime(2016, 8, 11, 6, 15, winnipeg)
         ]
 
-        s, t, o = observations([LatestOffset()], horizon, sim_now, content_end)
+        s, t, o = observations([LatestOffset()], horizon, sim_now, last_observation)
 
         @test s isa Vector{ZonedDateTime}
         @test t isa Vector{<:HourEnding{ZonedDateTime}}
@@ -177,13 +177,13 @@ winnipeg = tz"America/Winnipeg"
 
         @test s == repeat(sim_now, inner=24)
         @test t == vcat([collect(targets(horizon, s)) for s in sim_now]...)
-        @test o == reshape(repeat(HourEnding.(content_end), inner=24), (72, 1))
+        @test o == reshape(repeat(HourEnding.(last_observation), inner=24), (72, 1))
 
         offsets = [
             LatestOffset() + StaticOffset(Hour(-1)),
             DynamicOffset(; fallback=Day(-1))
         ]
-        s, t, o = observations(offsets, horizon, sim_now, content_end)
+        s, t, o = observations(offsets, horizon, sim_now, last_observation)
 
         @test s isa Vector{ZonedDateTime}
         @test t isa Vector{<:HourEnding{ZonedDateTime}}
@@ -192,7 +192,7 @@ winnipeg = tz"America/Winnipeg"
         @test s == repeat(sim_now, inner=24)
         @test t == vcat([collect(targets(horizon, s)) for s in sim_now]...)
         expected = hcat(
-            repeat(HourEnding.(content_end), inner=24) .- Hour(1),
+            repeat(HourEnding.(last_observation), inner=24) .- Hour(1),
             [
                 HourEnding(ZonedDateTime(2016, 8, 9, 1, winnipeg)),
                 HourEnding(ZonedDateTime(2016, 8, 9, 2, winnipeg)),
@@ -277,11 +277,11 @@ winnipeg = tz"America/Winnipeg"
         horizon = Horizon(; step=Hour(1), span=Day(1))
         offsets = [StaticOffset(Hour(2)), StaticOffset(Hour(24)), StaticOffset(Day(1))]
         sim_now = ZonedDateTime(2016, 3, 11, 12, 31, 12, winnipeg)
-        content_end = ZonedDateTime(2016, 3, 11, 6, 15, winnipeg)
+        last_observation = ZonedDateTime(2016, 3, 11, 6, 15, winnipeg)
 
-        @test_throws NonExistentTimeError observations(offsets,horizon,sim_now,content_end)
+        @test_throws NonExistentTimeError observations(offsets,horizon,sim_now,last_observation)
 
-        s, t, o = observations(offsets, horizon, LaxZonedDateTime(sim_now), content_end)
+        s, t, o = observations(offsets, horizon, LaxZonedDateTime(sim_now), last_observation)
 
         @test s isa Vector{LaxZonedDateTime}
         @test t isa Vector{<:HourEnding{LaxZonedDateTime}}
@@ -326,11 +326,11 @@ winnipeg = tz"America/Winnipeg"
         horizon = Horizon(; step=Hour(1), span=Day(1))
         offsets = [StaticOffset(Hour(2)), StaticOffset(Hour(24)), StaticOffset(Day(1))]
         sim_now = ZonedDateTime(2016, 11, 4, 12, 31, 12, winnipeg)
-        content_end = ZonedDateTime(2016, 11, 4, 6, 15, winnipeg)
+        last_observation = ZonedDateTime(2016, 11, 4, 6, 15, winnipeg)
 
-        @test_throws AmbiguousTimeError observations(offsets, horizon, sim_now, content_end)
+        @test_throws AmbiguousTimeError observations(offsets, horizon, sim_now, last_observation)
 
-        s, t, o = observations(offsets, horizon, LaxZonedDateTime(sim_now), content_end)
+        s, t, o = observations(offsets, horizon, LaxZonedDateTime(sim_now), last_observation)
 
         @test s isa Vector{LaxZonedDateTime}
         @test t isa Vector{<:HourEnding{LaxZonedDateTime}}

@@ -49,7 +49,7 @@ DocTestSetup = quote
     end
 
     sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
-    content_end = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
+    last_observation = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
     target = HourEnding(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
 end
 ```
@@ -58,7 +58,7 @@ end
 julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
-julia> content_end = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
+julia> last_observation = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
 2016-08-11T02:00:00-05:00
 
 julia> target = HourEnding(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
@@ -81,7 +81,7 @@ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, t
 julia> latest_offset = LatestOffset()
 LatestOffset()
 
-julia> apply(latest_offset, target, content_end, sim_now)
+julia> apply(latest_offset, target, last_observation, sim_now)
 AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg"))
 ```
 
@@ -91,20 +91,20 @@ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 2
 julia> match_hourofweek = DynamicOffset(; fallback=Week(-1))
 DynamicOffset(fallback=Week(-1), match=DateOffsets.always)
 
-julia> apply(match_hourofweek, target, content_end, sim_now)
+julia> apply(match_hourofweek, target, last_observation, sim_now)
 AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 5, 1, tz"America/Winnipeg"))
 ```
 
 ### CustomOffset
 
 ```jldoctest
-julia> offset_fn(target, content_end, sim_now) = (hour(sim_now) ≥ 18) ? HourEnding(ceil(sim_now, Hour)) : target
+julia> offset_fn(target, last_observation, sim_now) = (hour(sim_now) ≥ 18) ? HourEnding(ceil(sim_now, Hour)) : target
 offset_fn (generic function with 1 method)
 
 julia> custom_offset = CustomOffset(offset_fn)
 CustomOffset(offset_fn)
 
-julia> apply(custom_offset, target, content_end, sim_now)
+julia> apply(custom_offset, target, last_observation, sim_now)
 AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
 ```
 
@@ -114,7 +114,7 @@ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1
 julia> compound_offset = DynamicOffset(; fallback=Week(-1)) + StaticOffset(Hour(-1))
 CompoundOffset(DynamicOffset(fallback=Week(-1), match=DateOffsets.always), StaticOffset(Hour(-1)))
 
-julia> apply(compound_offset, target, content_end, sim_now)
+julia> apply(compound_offset, target, last_observation, sim_now)
 AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 5, tz"America/Winnipeg"))
 ```
 
@@ -122,12 +122,12 @@ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 5, tz
 
 Below are some examples of how `DateOffsets` are used in practice in Invenia packages as of September 2020.
 
-The `target`, `content_end` and `sim_now` remain the same as the examples above.
+The `target`, `last_observation` and `sim_now` remain the same as the examples above.
 ```jldoctest
 julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
-julia> content_end = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
+julia> last_observation = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
 2016-08-11T02:00:00-05:00
 
 julia> target = HourEnding(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
@@ -142,7 +142,7 @@ Therefore we can use a `StaticOffset` to check the presently available data.
 ```jldoctest
 julia> load_offset = StaticOffset(Hour(0));
 
-julia> apply(load_offset, target, content_end, sim_now)
+julia> apply(load_offset, target, last_observation, sim_now)
 AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
 ```
 
@@ -160,7 +160,7 @@ For this we use a [`SIM_NOW_OFFSET`](@ref) combined with the required [`StaticOf
 ```jldoctest
 julia> price_offsets = SIM_NOW_OFFSET .+ StaticOffset.(Hour(0):Hour(-1):Hour(-72 * 24 - 1));
 
-julia> apply.(price_offsets, target, content_end, sim_now)
+julia> apply.(price_offsets, target, last_observation, sim_now)
 1730-element Array{AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed},1}:
  AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg"))
  AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 1, tz"America/Winnipeg"))
@@ -194,7 +194,7 @@ A way to do this is with an [`AnchoredOffset`](@ref) as follows.
 ```jldoctest pn
 julia> realtime_offset = AnchoredOffset(DynamicOffset(; fallback=Day(-1)), :sim_now);
 
-julia> apply(realtime_offset, target, content_end, sim_now)
+julia> apply(realtime_offset, target, last_observation, sim_now)
 AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 1, tz"America/Winnipeg"))
 ```
 
@@ -204,7 +204,7 @@ For example `late_target` below occurs 15 minutes after `sim_now` so we jump bac
 julia> late_target = HourEnding(ZonedDateTime(2016, 8, 12, 2, 45, tz"America/Winnipeg"))
 AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 2, 45, tz"America/Winnipeg"))
 
-julia> apply(realtime_offset, late_target, content_end, sim_now)
+julia> apply(realtime_offset, late_target, last_observation, sim_now)
 AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 2, tz"America/Winnipeg"))
 ```
 
@@ -212,11 +212,11 @@ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 2
 
 Since BidPricing only uses the `dayahead_price` and not the deltas, we have access to data for the _entire_ bid day, not just up to `sim_now`.
 For a given target hour, we want to use the dayahead price from the same hour the day before.We can easily do this with just a [`StaticOffset`](@ref).
-We combine this with a [`AnchoredOffset`](@ref) to specify the `target` as the anchor point and disregard the `content_end`.
+We combine this with a [`AnchoredOffset`](@ref) to specify the `target` as the anchor point and disregard the `last_observation`.
 ```jldoctest
 julia> dayahead_offset = AnchoredOffset(StaticOffset(Day(-1)), :target);
 
-julia> apply(dayahead_offset, target, content_end, sim_now)
+julia> apply(dayahead_offset, target, last_observation, sim_now)
 AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 1, tz"America/Winnipeg"))
 ```
 
@@ -229,7 +229,7 @@ On a normal day it jumps back a day.
 julia> lax_target = HourEnding(LaxZonedDateTime(anchor(target)))
 AnchoredInterval{-1 hour,LaxZonedDateTime,Open,Closed}(2016-08-12T01:00:00-05:00)
 
-julia> apply(dayahead_offset, lax_target, content_end, sim_now)
+julia> apply(dayahead_offset, lax_target, last_observation, sim_now)
 AnchoredInterval{-1 hour,LaxZonedDateTime,Open,Closed}(2016-08-11T01:00:00-05:00)
 ```
 
@@ -238,7 +238,7 @@ On the day after daylight savings it jumps back 2 days.
 julia> dst_day = HourEnding(LaxZonedDateTime(DateTime(2016, 3, 13, 2), tz"America/Winnipeg"))
 AnchoredInterval{-1 hour,LaxZonedDateTime,Open,Closed}(2016-03-13T02:00:00-DNE)
 
-julia> apply(dayahead_offset, dst_day + Day(1), content_end, sim_now)
+julia> apply(dayahead_offset, dst_day + Day(1), last_observation, sim_now)
 AnchoredInterval{-1 hour,LaxZonedDateTime,Open,Closed}(2016-03-12T02:00:00-06:00)
 ```
 
@@ -246,7 +246,7 @@ Note that the DST offset must be applied after the `StaticOffset` or we will sim
 ```jldoctest bidpricing
 julia> wrong_offset = DynamicOffset(;fallback=Day(-1), match=t->isvalid(t))+ StaticOffset(Day(-1));
 
-julia> apply(wrong_offset, dst_day + Day(1), content_end, sim_now)
+julia> apply(wrong_offset, dst_day + Day(1), last_observation, sim_now)
 AnchoredInterval{-1 hour,LaxZonedDateTime,Open,Closed}(2016-03-13T02:00:00-DNE)
 ```
 
@@ -287,7 +287,7 @@ Now if you `fetch(query)`, for each of the 24 target dates you'll get three valu
 one for the latest date/time (at or earlier than the target date) that is the same hour of
 week as the target date but that is also "available" at `sim_now`.
 
-> What is `content_end`? Where does it come from?
+> What is `last_observation`? Where does it come from?
 
 Essentially, it represents the most recent available data (for a given data source) as of
 `sim_now`, and it is calculated by pulling metadata from [S3DB](https://gitlab.invenia.ca/invenia/S3DB.jl).

@@ -3,14 +3,14 @@
         offsets::Vector{<:SourceOffset},
         horizon::Horizon,
         sim_now::T,
-        content_end::ZonedDateTime
+        last_observation::ZonedDateTime
     ) where T<:Union{ZonedDateTime, LaxZonedDateTime} -> (Vector{T}, Vector{T}, Matrix{T})
 
     observations(
         offsets::Vector{<:SourceOffset},
         horizon::Horizon,
         sim_now::Vector{T},
-        content_end::Vector{ZonedDateTime}
+        last_observation::Vector{ZonedDateTime}
     ) where T<:Union{ZonedDateTime, LaxZonedDateTime} -> (Vector{T}, Vector{T}, Matrix{T})
 
 Generates forecast or training observation intervals for a single `sim_now` or series of
@@ -46,7 +46,7 @@ end
 julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
-julia> content_end = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
+julia> last_observation = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
 2016-08-11T02:00:00-05:00
 
 julia> offsets = [LatestOffset(), StaticOffset(Day(1))]
@@ -57,7 +57,7 @@ julia> offsets = [LatestOffset(), StaticOffset(Day(1))]
 julia> horizon = Horizon(; step=Hour(1), span=Day(1))
 Horizon(step=Hour(1), span=Day(1))
 
-julia> s, t, o = observations(offsets, horizon, sim_now, content_end);
+julia> s, t, o = observations(offsets, horizon, sim_now, last_observation);
 
 julia> s
 24-element Array{ZonedDateTime,1}:
@@ -142,7 +142,7 @@ values of `t` with `LatestOffset` applied, while the second would contain the va
 with a `StaticOffset` of one day applied.
 
 ```jldoctest
-julia> content_end = [ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")] .- [Day(2), Day(1), Day(0)]
+julia> last_observation = [ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")] .- [Day(2), Day(1), Day(0)]
 3-element Array{ZonedDateTime,1}:
  2016-08-09T02:00:00-05:00
  2016-08-10T02:00:00-05:00
@@ -162,7 +162,7 @@ julia> sim_now = [ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")] .- [D
  2016-08-10T02:30:00-05:00
  2016-08-11T02:30:00-05:00
 
-julia> s, t, o = observations(offsets, horizon, sim_now, content_end);
+julia> s, t, o = observations(offsets, horizon, sim_now, last_observation);
 
 julia> s
 72-element Array{ZonedDateTime,1}:
@@ -243,12 +243,12 @@ function observations(
     offsets::Vector{<:SourceOffset},
     horizon::Horizon,
     sim_now::NowType,
-    content_end::ZonedDateTime,
+    last_observation::ZonedDateTime,
 )
     t = collect(targets(horizon, sim_now))
     o = repeat(t; outer=(1, length(offsets)))
     for (i, offset) in enumerate(offsets)
-        o[:, i] = map(dt -> apply(offset, dt, content_end, sim_now), o[:, i])
+        o[:, i] = map(dt -> apply(offset, dt, last_observation, sim_now), o[:, i])
     end
 
     return (fill(sim_now, length(t)), t, o)
@@ -258,9 +258,9 @@ function observations(
     offsets::Vector{<:SourceOffset},
     horizon::Horizon,
     sim_now::Vector{<:NowType},
-    content_end::Vector{ZonedDateTime},
+    last_observation::Vector{ZonedDateTime},
 )
-    tuple = map((s, c) -> observations(offsets, horizon, s, c), sim_now, content_end)
+    tuple = map((s, c) -> observations(offsets, horizon, s, c), sim_now, last_observation)
 
     return map((1, 2, 3)) do i
         mapreduce(x -> x[i], vcat, tuple)
