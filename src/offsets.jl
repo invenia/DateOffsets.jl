@@ -37,23 +37,6 @@ function OffsetOrigins(
     OffsetOrigins(target, T(sim_now))
 end
 
-# Delete this function when https://github.com/invenia/Intervals.jl/issues/146 is finished
-"""
-    flooroffset(target::$TargetType, P::Type=Hour)
-
-Floor the `target`. This will be removed when Interval rounding is implemented.
-"""
-function flooroffset(target::TargetType, P::Type=Hour)
-    T = typeof(target)
-    x = if T <: AnchoredInterval
-        T(floor(anchor(target), P))
-    else
-        convert(T, floor(target, P))
-    end
-
-    return x
-end
-
 """
     dynamicoffset(
         target::$TargetType;
@@ -145,10 +128,10 @@ StaticOffset(period::Period) = StaticOffset(Target(), period)
 (offset::StaticOffset)(o::OffsetOrigins) = offset.origin(o) + offset.period
 
 """
-    FloorOffset(origin::Function=Target())
+    FloorOffset(origin::Function=Target(), T::Type=Hour)
 
 Create a callable object. When applied to an `OffsetOrigins`, the object floors
-result from `origin` to create the observation interval.
+an `AnchoredInterval` result from `origin` to create the observation interval.
 """
 struct FloorOffset <: DateOffset
     origin::SourceOffset
@@ -156,4 +139,4 @@ struct FloorOffset <: DateOffset
 
     FloorOffset(origin, T=Hour) = new(origin, T)
 end
-(offset::FloorOffset)(o::OffsetOrigins) = flooroffset(offset.origin(o), offset.T)
+(offset::FloorOffset)(o::OffsetOrigins) = floor(offset.origin(o), offset.T)
