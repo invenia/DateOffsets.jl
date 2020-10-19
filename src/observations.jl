@@ -44,7 +44,7 @@ end
 julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
-julia> marketwide_offset(o) = flooroffset(dynamicoffset(o.target, if_after=o.sim_now))
+julia> marketwide_offset(o) = floor(dynamicoffset(o.target, if_after=o.sim_now), Hour)
 marketwide_offset (generic function with 1 method)
 
 julia> offsets = [marketwide_offset, StaticOffset(Day(1))]
@@ -140,7 +140,7 @@ values of `t` with `marketwide_offset` applied, while the second would contain t
 with a `StaticOffset` of one day applied.
 
 ```jldoctest
-julia> marketwide_offset(o) = flooroffset(dynamicoffset(o.target, if_after=o.sim_now))
+julia> marketwide_offset(o) = floor(dynamicoffset(o.target, if_after=o.sim_now), Hour)
 marketwide_offset (generic function with 1 method)
 
 julia> offsets = [marketwide_offset, StaticOffset(Day(1))]

@@ -116,7 +116,7 @@ together to avoid difficulty when reading logs.
 julia> StaticOffset(FloorOffset(DynamicOffset(Target(); fallback=Day(-1), if_after=SimNow()), Hour), Hour(-1))
 StaticOffset(FloorOffset(DynamicOffset(Target(), -1 day, SimNow(), DateOffsets.always), Hour), -1 hour)
 
-julia> long_offset(o) = flooroffset(dynamicoffset(o.target; fallback=Day(-1), if_after=o.sim_now), Hour) - Hour(1)
+julia> long_offset(o) = floor(dynamicoffset(o.target; fallback=Day(-1), if_after=o.sim_now), Hour) - Hour(1)
 long_offset (generic function with 1 method)
 
 julia> long_offset(origins)

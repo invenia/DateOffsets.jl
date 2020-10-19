@@ -14,7 +14,6 @@ export
     DynamicOffset,
     FloorOffset,
     dynamicoffset,
-    flooroffset,
     Target,
     SimNow,
     targets,
