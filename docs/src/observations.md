@@ -25,9 +25,8 @@ observations
 ```@repl
 using DateOffsets, TimeZones, Dates
 sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
-last_observation = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
-offsets = [LatestOffset(), StaticOffset(Day(1))]
-s, t, o = observations(offsets, Horizon(), sim_now, last_observation);
+offsets = [FloorOffset(SimNow()), StaticOffset(Day(1))]
+s, t, o = observations(offsets, Horizon(), sim_now);
 s
 t
 o

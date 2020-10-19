@@ -9,7 +9,7 @@ makedocs(;
     pages=[
         "Home"=>"index.md",
         "Horizons"=>"horizons.md",
-        "Source Offsets"=>"sourceoffsets.md",
+        "Offsets"=>"offsets.md",
         "Observation Dates"=>"observations.md",
         "Index"=>"apiindex.md"
     ],
