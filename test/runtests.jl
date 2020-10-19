@@ -6,9 +6,11 @@ using LaxZonedDateTimes
 using Test
 using TimeZones
 
+using DateOffsets: OffsetOrigins
+
 @testset "DateOffsets" begin
     include("horizons.jl")
-    include("sourceoffsets.jl")
+    include("offsets.jl")
     include("observations.jl")
 
     # Note: The output of the doctests currently require an older version of Julia

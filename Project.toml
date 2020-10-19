@@ -1,7 +1,7 @@
 name = "DateOffsets"
 uuid = "7f78979c-33b5-5b34-98a4-c64efb759df4"
 authors = ["Invenia Technical Computing"]
-version = "1.2.0"
+version = "2.0.0-DEV"
 
 [deps]
 AutoHashEquals = "15f4f7f2-30c1-5605-9d31-71845cf9641f"

@@ -1,4 +1,4 @@
-struct Horizon <: DateOffset
+struct Horizon
     start_func::Function
     step::Period
     span::Period
@@ -24,26 +24,9 @@ you wanted to generate targets for the day **after** tomorrow, you might do this
 horizon = Horizon(; start_fn=sim_now -> ceil(sim_now, Day) + Day(1))
 ```
 """
-function Horizon(start_func::Function; step=Hour(1), span=Day(1))
-    return Horizon(start_func, step, span)
-end
-
-function Horizon(; step=Hour(1), span=Day(1), start_fn=_start_func)
-    if start_fn !== _start_func
-        Base.depwarn(string(
-            "`Horizon(; start_fn=func, kwargs...)` is deprecated; use ",
-            "`Horizon(func; kwargs...)` instead.",
-        ), :Horizon)
-    end
-
-    return Horizon(start_fn, step, span)
-end
-
-#= POST-DEPRECATION
 function Horizon(start_func::Function=_start_func; step=Hour(1), span=Day(1))
     return Horizon(start_func, step, span)
 end
-=#
 
 function Base.:(==)(a::Horizon, b::Horizon)
     return a.step == b.step && a.span == b.span && a.start_func == b.start_func
