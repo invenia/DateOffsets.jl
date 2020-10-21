@@ -10,8 +10,9 @@ makedocs(;
         "Home"=>"index.md",
         "Horizons"=>"horizons.md",
         "Offsets"=>"offsets.md",
-        "Observation Dates"=>"observations.md",
-        "Index"=>"apiindex.md"
+        "Observations"=>"observations.md",
+        "Production Use Cases"=>"use_cases.md",
+        "API"=>"api.md"
     ],
     repo="https://gitlab.invenia.ca/invenia/DateOffsets.jl/blob/{commit}{path}#L{line}",
     sitename="DateOffsets.jl",

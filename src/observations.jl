@@ -259,4 +259,3 @@ function observations(
         mapreduce(x -> x[i], vcat, tuple)
     end
 end
-

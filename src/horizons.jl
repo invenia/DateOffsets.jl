@@ -9,13 +9,15 @@ _start_func(sim_now) = ceil(sim_now, Day)
 """
     Horizon(start_func=sim_now -> ceil(sim_now, Day); step=Hour(1), span=Day(1)) -> Horizon
 
-Constructs a `Horizon`, which allows a `sim_now` to be translated into a series of
+Construct a `Horizon`, which allows a `sim_now` to be translated into a series of
 `AnchoredInterval`s representing forecast targets.
 
-`step` specifies the duration of the `AnchoredInterval` targets that will be generated. If
-no `step` is specified, the targets will be of type `HourEnding` by default.
+The `step` specifies the duration of the `AnchoredInterval` targets that will be generated,
+whereas the `span` specifies how the combined duration of all targets.
+If neither of these are specified, the targets will be of type `HourEnding` and span 1 day
+by default.
 
-`start_fn` specifies how `sim_now` should be modified (rounding, applying offsets, etc.)
+The `start_fn` specifies how `sim_now` should be modified (rounding, applying offsets, etc.)
 before targets are generated. The default of `sim_now -> ceil(sim_now, Day)` indicates that
 the `sim_now` supplied should be rounded up to the start of the next day. If, for example,
 you wanted to generate targets for the day **after** tomorrow, you might do this:
@@ -55,8 +57,7 @@ end
 """
     targets(horizon::Horizon, sim_now::Union{ZonedDateTime, LaxZonedDateTime}) -> StepRange
 
-Generates the appropriate target intervals for a batch of forecasts, given a `horizon` and a
-`sim_now`.
+Generate the appropriate target intervals given a `horizon` and a `sim_now`.
 
 Since `sim_now` is time zone–aware, Daylight Saving Time will be properly accounted for:
 no target dates will be produced for hours that don't exist in the time zone and hours that

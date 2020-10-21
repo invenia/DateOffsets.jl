@@ -1,124 +1,56 @@
-# DateOffsets.jl
+# DateOffsets
 
-```@meta
-CurrentModule = DateOffsets
+DateOffsets.jl provides types and functions to generate observation dates with specific properties.
+These dates can be used to construct the inputs and outputs of models using [Features.jl](https://gitlab.invenia.ca/invenia/research/Features.jl).
 
-DocTestSetup = quote
-    using DateOffsets, Intervals, TimeZones, Dates
+Users should be aware of the data that EIS is expected to have access to at bid time in Production as this will inform which `DateOffset`s to use.
+There are 3 components to understanding how to use DateOffsets.jl:
+1. How to define your targets using [Horizons](@ref horizons).
+2. How to decide the required [DateOffsets](@ref date-offsets) based on the data availability.
+3. How to construct [observation intervals](@ref observation-intervals) from the offsets.
 
-    # This is a hack to have nice printing that doesn't include module names.
-    # https://github.com/JuliaDocs/Documenter.jl/issues/944
-    @eval Main begin
-        using DateOffsets, Intervals, TimeZones, Dates
-    end
-end
-```
+For a definition of the terms used in this package, see the [glossary](#glossary) below.
 
-[![latest](https://img.shields.io/badge/docs-latest-blue.svg)](https://invenia.pages.invenia.ca/DateOffsets.jl/)
-[![build status](https://gitlab.invenia.ca/invenia/DateOffsets.jl/badges/master/build.svg)](https://gitlab.invenia.ca/invenia/DateOffsets.jl/commits/master)
-[![coverage](https://gitlab.invenia.ca/invenia/DateOffsets.jl/badges/master/coverage.svg)](https://gitlab.invenia.ca/invenia/DateOffsets.jl/commits/master)
+## [Why Date Offsets?](@id why-date-offsets)
 
-[DateOffsets.jl](https://gitlab.invenia.ca/invenia/DateOffsets.jl) provides types and
-functions necessary to generate dates with specific temporal offsets for use in training
-and forecasting. Date offsets are important for defining data features with
-[DataFeatures.jl](https://gitlab.invenia.ca/invenia/DataFeatures.jl).
+Time-series forecasting using grid data comes with a number of challenges:
+1. Data for particular grids and sources are made available at different times.
+2. Data that is available is typically lagged by some amount of time.
+3. Grids operate in various timezones and DST transitions change the number of hours in a day.
+4. We do not have an [accurate release history](https://gitlab.invenia.ca/invenia/brainstorming-bonanza/-/issues/117) of the data published by the grids.
 
-### Horizon Type
+The first two points in particular are relevant to the [bid process timeline](https://gitlab.invenia.ca/invenia/wiki/blob/master/eis/intro-to-eis.md#bid-process-timeline-and-data-availability) when [EIS](https://gitlab.invenia.ca/invenia/eis) runs in production. 
+The diagram below illustrates the latest availability of three different kinds of feeds at bid time.
 
-[Horizons](@ref) allow the user to define the forecast targets in relation to the time the forecast runs (`sim_now`).
-These targets will typically be `HourEnding` values.
-See the [Intervals.jl documentation](https://invenia.github.io/Intervals.jl/latest/)
-for more information.
+Trying to manually generate observations for each target in a model would require users to write code that addresses each of the edge cases above.
+This alone would be an overly difficult task in itself, but as our use-cases continue to arise, the code would likely grow in complexity and become evermore difficult to maintain and overly brittle with time.
+This approach is not only impractical from an engineering perspective, it also increases the risk of generating incomplete or incorrect data which jeopardizes the model training.
 
-The relationship between `sim_now` and the targets is usually one-to-many, e.g.
-for a single `sim_now` you will usually generate 24 target hours for the following day:
+A more robust approach, that recognises the complexities of time-series data mentioned above and scales with our needs, is therefore more desireable.
+This highlights the most important aspect of using DateOffsets.jl: **knowing the data that EIS is expected to have access to at bid time and which observations you need to use as a result**.
 
-```jldoctest
-julia> using DateOffsets, Intervals, TimeZones, Dates
+![3-line-diagram](assets/3-line-diagram.png)
 
-julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
-2016-08-11T02:30:00-05:00
+## Glossary
 
-julia> horizon = Horizon(; step=Hour(1), span=Day(1))
-Horizon(step=Hour(1), span=Day(1))
+There are many terms used in relation to fetching data from the database, some of which can be erroneously used interchangeably.
+For that reason, we define below the terms used throughout DateOffsets.jl to avoid any confusion:
 
-julia> collect(targets(horizon, sim_now))
-24-element Array{AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed},1}:
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 2, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 3, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 4, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 5, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 6, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 7, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 8, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 9, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 10, tz"America/Winnipeg"))
- ⋮
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 16, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 17, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 18, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 19, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 20, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 21, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 22, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 23, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 13, tz"America/Winnipeg"))
-```
+**Horizon**: A type that is used, in conjunction with the `sim_now`, to define the targets for a forecaster, which are calculated by calling [`DateOffsets.targets`](ref).
 
-### DateOffset Type
+**Target**: An interval in time, usually in the future, for which we want to predict some quantity of interest. 
+The most common target is an `HourEnding` interval -- for when we want to predict delta LMPs -- although we sometimes use `DayEnding` intervals when we predict something _once_ for the target day, e.g. cliquing the nodes in [`NodeSelection`](https://invenia.pages.invenia.ca/NodeSelection.jl/).
 
-[`DateOffset`](@ref)s allow the user to define the relationship between a forecast
-target (or `sim_now`) and the "observation interval" they wish to use in their model.
+**Observation**: An interval in time, usually in the past, that is associated with a target and used as input to a forecaster either for training or predicting for that target.
 
-The relationship between a target date and an observation interval is one-to-one (applying
-a single offset to a single target interval will return a single observation interval).
+**Origin**: An interval in time, usually the `sim_now` or target, that is used as a starting point from which observations are derived.
+The `OffsetOrigins` container stores these values, which serves as the input to [`DateOffset`](@ref)s
 
-Offsets are defined as callable objects that operate on a single [`OffsetOrigins`](@ref).
-An `OffsetOrigins` contains timing information, namely `sim_now` (the time the simulation
-is running) and `target`, a forecast target.
-These are both stored as `AnchoredIntervals`, typically `HourEnding`.
+**Offset**: A step in time, taken relative to an origin, that is used to construct an observation for some target.
 
-For convenience, the fields in `OffsetOrigins` are accessible through special kinds of `DateOffsets`:
-[`Target`](@ref) and [`SimNow`](@ref).
+**Validity**: A term used in [S3DB](https://invenia.pages.invenia.ca/S3DB.jl/api/api.html#S3DB.Query-Tuple{}) and [DataFeeds](https://gitlab.invenia.ca/invenia/Datafeeds/Retrievers/-/blob/2a19a8dbb7c33659b47ab79429f3cae08c464676/docs/nodal_availability.md#table-columns) to refer to the interval of time for which a data entry in the database is "valid".
+The entry that overlaps with the desired observation interval is the one that is fetched from the database.
+For instance, LMP data resolved at 5-minute intervals will have disjoint validity intervals spanning 5 minutes, but their hourly aggregate will have a validity of 1 hour spanning the same length of time.
 
-```jldoctest offsets
-julia> using DateOffsets, Intervals, TimeZones, Dates
-
-julia> sim_now = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
-2016-08-11T02:00:00-05:00
-
-julia> target = HourEnding(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
-AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
-
-julia> origins = DateOffsets.OffsetOrigins(target, sim_now);
-
-julia> StaticOffset(Day(-1))
-StaticOffset(Target(), -1 day)
-
-julia> StaticOffset(Day(-1))(origins)
-AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 1, tz"America/Winnipeg"))
-```
-
-One or more `DateOffset`s must be defined for each `DataFeature`, but the user will
-probably not apply these offsets manually, as this is handled via a call to
-[`observations`](@ref).
-
-More information and examples can be found in [Date Offsets](@ref).
-
-#### Functions as offsets
-
-Offsets can also be defined as functions that operate on a single [`OffsetOrigins`](@ref).
-It is recommended to create a named function rather than nesting more than 3 `DateOffsets`
-together to avoid difficulty when reading logs.
-
-```jldoctest offsets
-julia> StaticOffset(FloorOffset(DynamicOffset(Target(); fallback=Day(-1), if_after=SimNow()), Hour), Hour(-1))
-StaticOffset(FloorOffset(DynamicOffset(Target(), -1 day, SimNow(), DateOffsets.always), Hour), -1 hour)
-
-julia> long_offset(o) = floor(dynamicoffset(o.target; fallback=Day(-1), if_after=o.sim_now), Hour) - Hour(1)
-long_offset (generic function with 1 method)
-
-julia> long_offset(origins)
-AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, tz"America/Winnipeg"))
-```
+**Release Date**: The time at which a piece of data is available to be fetched from the database.
+As we don't have [accurate release date](https://gitlab.invenia.ca/invenia/brainstorming-bonanza/-/issues/117) information, we often [cheat](https://gitlab.invenia.ca/invenia/wiki/-/tree/master/research#what-is-meant-by-cheating-in-backruns) when fetching data from the database, a practice which can sometimes lead to [Data Leakage](https://en.wikipedia.org/wiki/Leakage_(machine_learning)).
