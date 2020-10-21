@@ -1,6 +1,5 @@
 module DateOffsets
 
-using AutoHashEquals
 using Dates
 using Intervals
 using LaxZonedDateTimes
