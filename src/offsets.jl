@@ -2,10 +2,10 @@
     DateOffset
 
 A callable type that takes an [`OffsetOrigins`](@ref) and returns a single `AnchoredInterval`.
-Used to determine the observations to query for model training.
+Used to determine the observation intervals for time-series forecasting.
 
-It is preferred to use named functions over `DateOffsets` for any complex calculations.
-`DateOffsets` are preferred over anonymous functions in order to keep the logs readable.
+To keep logs readable, it is preferred to use named functions over nesting multiple (3+)
+`DateOffsets`. Similarly, anonymous functions are not advised.
 """
 abstract type DateOffset end
 
@@ -45,8 +45,8 @@ end
         match=always
     )
 
-Take steps of `fallback` size away from the `target` until the resulting value
-returns `true` when given to `match` and is less than or equal to `if_after`.
+Take steps of `fallback` size away from the `target` if it occurs later than `if_after` and
+until the resulting value returns `true` when given to `match`.
 """
 function dynamicoffset(target::TargetType; fallback::Period=Day(-1), if_after=target, match=always)
     T = typeof(target)
@@ -86,8 +86,8 @@ end
         match::Function=alwaysmatch
     )
 
-Create a callable object. Applies [`dynamicoffset`](@ref) to an `OffsetOrigins`, to create
-the observation interval.
+Create a callable object that applies [`dynamicoffset`](@ref) to an `OffsetOrigins`, by
+default the [`Target`](@ref), to create the observation interval.
 
 It is preferred to create a named function containing [`dynamicoffset`](@ref) instead of
 using a `DynamicOffset` in situations where several `DateOffsets` would otherwise be nested.
@@ -114,11 +114,11 @@ end
 """
     StaticOffset([origin::SourceOffset], period::Period)
 
-Create a callable object. When applied to an `OffsetOrigins`, the
-object adds the `period` to the result from `origin` to create the observation interval.
+Create a callable object. When applied to an `OffsetOrigins` it adds the `period` to the
+result from `origin`, by default the [`Target`](@ref), to create the observation interval.
 
-It is preferred to create a named function instead of a using StaticOffset in situations where
-`origin` is not an accessor to a field in `OffsetOrigins`.
+It is preferred to create a named function instead of a using StaticOffset in situations
+where `origin` is not an accessor to a field in `OffsetOrigins`.
 """
 struct StaticOffset <: DateOffset
     origin::SourceOffset
@@ -130,8 +130,8 @@ StaticOffset(period::Period) = StaticOffset(Target(), period)
 """
     FloorOffset(origin::Function=Target(), T::Type=Hour)
 
-Create a callable object. When applied to an `OffsetOrigins`, the object floors
-an `AnchoredInterval` result from `origin` to create the observation interval.
+Create a callable object. When applied to an `OffsetOrigins`, the object floors result from
+`origin` to create the observation interval.
 """
 struct FloorOffset <: DateOffset
     origin::SourceOffset

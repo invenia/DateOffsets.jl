@@ -1,21 +1,24 @@
-# Horizons
+# [Horizons](@id horizons)
 
-A [`Horizon`](@ref) is a composite type that allows the user to define the relationship
-between the time at which a forecast runs (`sim_now`) and the target intervals of that
-forecast.
+A [`Horizon`](@ref) is a composite type that allows the user to define the relationship between the time at which a forecast runs (`sim_now`) and the target intervals of that forecast.
+The value returned by [`targets`](@ref) will typically be [`HourEnding`](https://invenia.github.io/Intervals.jl/stable/#HourEnding-and-HE-1) intervals, although other types are also supported.
+See the [Intervals.jl documentation](https://invenia.github.io/Intervals.jl/stable/) for more information.
 
-These forecast targets will typically be `HourEnding` values, although other interval
-types are also supported. See the [Intervals.jl documentation](https://invenia.github.io/Intervals.jl/stable/)
-for more information about intervals.
+## The Horizon Type
 
-## API
+The relationship between `sim_now` and the targets is one-to-many, e.g. for a single `sim_now` you will usually generate 24 target hours for the following day.
+This is determined by the optional `step` and `span` keyword arguments passed into the `Horizon` constructor, which default to `step=Hour(1)`, `span=Day(1)`.
+However, it is possible to specify other values, e.g. `step=Day(1)`.
 
-```@docs
-Horizon
-targets
-```
+Although our typical use case covers one day at one hour resolution, the behaviour can be more complex than one might initially guess.
+For instance, since many markets observe Daylight Savings Time (DST), it means 23 or 25 hours will be generated at the DST transitions.
+Furthermore, defining when the targets actually _start_ relative to the `sim_now` is not governed by a fixed offset but by the `start_fn` argument for the constructor.
 
-## Examples
+[`Horizon`](@ref) takes care of this variability behind the scenes so you don't have to.
+
+## Example
+
+In this example we construct the default `Horizon`, which spans 1 day in steps of 1 hour, thereby creating 24 target intervals.
 
 ```@meta
 DocTestSetup = quote
@@ -29,13 +32,11 @@ DocTestSetup = quote
 end
 ```
 
-### Basic Constructor
-
 ```jldoctest
 julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
-julia> horizon = Horizon(; step=Hour(1), span=Day(1))
+julia> horizon = Horizon(; step=Hour(1), span=Day(1))  # 24 target interval spanning 1 day
 Horizon(step=Hour(1), span=Day(1))
 
 julia> collect(targets(horizon, sim_now))
@@ -60,54 +61,6 @@ julia> collect(targets(horizon, sim_now))
  AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 22, tz"America/Winnipeg"))
  AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 23, tz"America/Winnipeg"))
  AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 13, tz"America/Winnipeg"))
-```
-
-## FAQ
-
-> Why not just use a vector of `Period`s (like `Hour(1):Hour(24)`) to represent the
-> relationship between `sim_now` and the targets?
-
-Because the relationship is more complex than one might initially guess. (Take a look at
-the `start_fn` keyword argument for the constructor, for example.)
-
-Additionally, our typical use case covers one day at one hour resolution. Since many
-markets observe DST, this may mean 23 or 25 hours (and as of v0.6, Julia does not support
-`Hour(1):Hour(1):Day(1)`).
-
-Finally, such a vector would still result in `ZonedDateTime` values, rather than
-`AnchoredInterval`s.
-
-> Are the values returned by `targets` always in hour ending format?
-
-The format of the return value is determined by the optional `step` keyword argument passed
-into the `Horizon` constructor, which defaults to `Hour(1)` if none is provided. However, it
-is possible to specify another value:
-
-```jldoctest
-julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
-2016-08-11T02:30:00-05:00
-
-julia> horizon = Horizon(; step=Minute(15), span=Hour(4))
-Horizon(step=Minute(15), span=Hour(4))
-
-julia> collect(targets(horizon, sim_now))
-16-element Array{AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed},1}:
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 0, 15, tz"America/Winnipeg"))
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 0, 30, tz"America/Winnipeg"))
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 0, 45, tz"America/Winnipeg"))
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, 15, tz"America/Winnipeg"))
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, 30, tz"America/Winnipeg"))
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, 45, tz"America/Winnipeg"))
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 2, tz"America/Winnipeg"))
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 2, 15, tz"America/Winnipeg"))
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 2, 30, tz"America/Winnipeg"))
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 2, 45, tz"America/Winnipeg"))
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 3, tz"America/Winnipeg"))
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 3, 15, tz"America/Winnipeg"))
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 3, 30, tz"America/Winnipeg"))
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 3, 45, tz"America/Winnipeg"))
- AnchoredInterval{-15 minutes,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 4, tz"America/Winnipeg"))
 ```
 
 ```@meta
