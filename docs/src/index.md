@@ -1,7 +1,7 @@
 # DateOffsets
 
 DateOffsets.jl provides types and functions to generate observation dates with specific properties.
-These dates can be used to construct the inputs and outputs of models using [Features.jl](https://gitlab.invenia.ca/invenia/research/Features.jl).
+These dates can be used to construct the inputs and outputs of models using [Features.jl](https://gitlab.invenia.ca/invenia/Features.jl).
 
 Users should be aware of the data that EIS is expected to have access to at bid time in Production as this will inform which `DateOffset`s to use.
 There are 3 components to understanding how to use DateOffsets.jl:
@@ -26,7 +26,7 @@ Trying to manually generate observations for each target in a model would requir
 This alone would be an overly difficult task in itself, but as our use-cases continue to arise, the code would likely grow in complexity and become evermore difficult to maintain and overly brittle with time.
 This approach is not only impractical from an engineering perspective, it also increases the risk of generating incomplete or incorrect data which jeopardizes the model training.
 
-A more robust approach, that recognises the complexities of time-series data mentioned above and scales with our needs, is therefore more desireable.
+A more robust approach, that recognises the complexities of time-series data mentioned above and scales with our needs, is therefore more desirable.
 This highlights the most important aspect of using DateOffsets.jl: **knowing the data that EIS is expected to have access to at bid time and which observations you need to use as a result**.
 
 ![3-line-diagram](assets/3-line-diagram.png)
