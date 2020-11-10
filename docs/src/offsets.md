@@ -112,7 +112,7 @@ AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, t
 
 ### DynamicOffset
 
-A `DynamicOffset` can be used when one wants apply a `fallback` step when some special condition is met.
+A `DynamicOffset` can be used when one wants apply a `fallback` step repeatedly until some special condition is met.
 Here, we apply a `fallback` of 1 week for all targets that occur _after_ the `SimNow()`.
 Note there is also a `match` keyword argument that one can use to define an additional condition to be met, e.g. `match=t->isaweekend(t)`.
 
