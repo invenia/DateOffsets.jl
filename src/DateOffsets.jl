@@ -15,6 +15,7 @@ export
     dynamicoffset,
     Target,
     SimNow,
+    GlobalSimNow,
     targets,
     observations
 

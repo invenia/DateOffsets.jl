@@ -18,23 +18,26 @@ const SourceOffset = Union{Function, DateOffset}
     OffsetOrigins(
         target::AnchoredInterval,
         sim_now::NowType
+        global_sim_now::NowType
     )
 
 Construct a container for the specific times from which any offset can be defined,
-namely: the `target` and `sim_now`.
+namely: the `target`, `sim_now` and `global_sim_now`.
 
 Observation intervals are computed by applying the `DateOffset` to the origin.
 """
 struct OffsetOrigins{T<:AnchoredInterval}
     target::T
     sim_now::T
+    global_sim_now::T
 end
 
 function OffsetOrigins(
     target::T,
     sim_now::NowType,
+    global_sim_now::NowType=sim_now,
 ) where T <: AnchoredInterval
-    OffsetOrigins(target, T(sim_now))
+    OffsetOrigins(target, T(sim_now), T(global_sim_now))
 end
 
 """
@@ -58,10 +61,20 @@ end
 """
     SimNow()
 
-Create a callable object. When applied to an `OffsetOrigins`, the object returns the `sim_now`.
+Create a callable object.
+When applied to an `OffsetOrigins`, the object returns the `sim_now` of the training day.
 """
 struct SimNow <: DateOffset end
 (::SimNow)(o::OffsetOrigins) = o.sim_now
+
+"""
+    GlobalSimNow()
+
+Create a callable object.
+When applied to an `OffsetOrigins`, the object returns the `global_sim_now` for the entire query.
+"""
+struct GlobalSimNow <: DateOffset end
+(::GlobalSimNow)(o::OffsetOrigins) = o.global_sim_now
 
 """
     Target()

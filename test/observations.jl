@@ -115,34 +115,45 @@ winnipeg = tz"America/Winnipeg"
 
     @testset "multiple dates" begin
         horizon = Horizon(; step=Hour(1), span=Day(1))
-        sim_now = [
-            ZonedDateTime(2016, 8, 9, 6, 15, winnipeg),
+
+        sim_now = ZonedDateTime(2016, 8, 11, 6, 15, winnipeg)
+        window = Day(0):Day(1):Day(2)
+        training_nows = [
+            ZonedDateTime(2016, 8, 11, 6, 15, winnipeg),
             ZonedDateTime(2016, 8, 10, 6, 15, winnipeg),
-            ZonedDateTime(2016, 8, 11, 6, 15, winnipeg)
+            ZonedDateTime(2016, 8, 9, 6, 15, winnipeg),
         ]
 
-        s, t, o = observations([SimNow()], horizon, sim_now)
+        s, t, o = observations([SimNow(), GlobalSimNow()], horizon, window, sim_now)
 
         @test s isa Vector{ZonedDateTime}
         @test t isa Vector{<:HourEnding{ZonedDateTime}}
         @test o isa Matrix{<:HourEnding{ZonedDateTime}}
 
-        @test s == repeat(sim_now, inner=24)
-        @test t == vcat([collect(targets(horizon, s)) for s in sim_now]...)
-        @test o == reshape(repeat(HourEnding.(sim_now), inner=24), (72, 1))
+        @test s == repeat(training_nows, inner=24)
+        @test t == vcat([collect(targets(horizon, s)) for s in training_nows]...)
+        @test o ==  hcat(
+            repeat(HourEnding.(training_nows), inner=24),
+            fill(HourEnding(sim_now), 72),
+        )
 
+        training_nows = [
+            ZonedDateTime(2016, 8, 9, 6, 15, winnipeg),
+            ZonedDateTime(2016, 8, 10, 6, 15, winnipeg),
+            ZonedDateTime(2016, 8, 11, 6, 15, winnipeg),
+        ]
         offsets = [
             StaticOffset(Hour(-1)),
             marketwide_offset,
         ]
-        s, t, o = observations(offsets, horizon, sim_now)
+        s, t, o = observations(offsets, horizon, training_nows, sim_now)
 
         @test s isa Vector{ZonedDateTime}
         @test t isa Vector{<:HourEnding{ZonedDateTime}}
         @test o isa Matrix{<:HourEnding{ZonedDateTime}}
 
-        @test s == repeat(sim_now, inner=24)
-        @test t == vcat([collect(targets(horizon, s)) for s in sim_now]...)
+        @test s == repeat(training_nows, inner=24)
+        @test t == vcat([collect(targets(horizon, s)) for s in training_nows]...)
         expected = hcat(
             t .- Hour(1),
             [

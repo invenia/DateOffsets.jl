@@ -63,6 +63,41 @@ winnipeg = tz"America/Winnipeg"
             @test offset(OffsetOrigins(target, sim_now)) == HourEnding(sim_now + Hour(2))
         end
     end
+
+    @testset "GlobalSimNow" begin
+        @testset "basic" begin
+            offset = GlobalSimNow()
+            @test offset isa DateOffset
+
+            sim_now = ZonedDateTime(2016, 8, 11, 3, winnipeg)
+            training_sim_now = sim_now - Hour(3)
+
+            target = HourEnding(ZonedDateTime(2016, 8, 11, 8, winnipeg))
+            @test offset(OffsetOrigins(target, sim_now)) isa AnchoredInterval
+            @test offset(OffsetOrigins(target, sim_now)) == HourEnding(sim_now)
+
+            target = HourEnding(ZonedDateTime(2016, 8, 11, 1, winnipeg))
+            @test offset(OffsetOrigins(target, sim_now)) == HourEnding(sim_now)
+
+            sim_now = ZonedDateTime(2016, 8, 12, 4, winnipeg)
+            @test offset(OffsetOrigins(target, sim_now)) == HourEnding(sim_now)
+        end
+
+        @testset "CompoundOffset" begin
+            sim_now = ZonedDateTime(2016, 8, 11, 3, 30, winnipeg)
+            training_now = ZonedDateTime(2016, 8, 11, 3, 30, winnipeg) - Day(1)
+            offset = StaticOffset(GlobalSimNow(), Hour(2))
+
+            target = HE(ZonedDateTime(2016, 8, 11, 5, winnipeg))
+            @test offset(OffsetOrigins(target, training_now, sim_now)) == HourEnding(sim_now + Hour(2))
+
+            target = HE(ZonedDateTime(2016, 8, 10, 1, winnipeg))
+            @test offset(OffsetOrigins(target, training_now, sim_now)) == HourEnding(sim_now + Hour(2))
+
+            sim_now = ZonedDateTime(2016, 8, 12, 1, 30, winnipeg)
+            @test offset(OffsetOrigins(target, training_now, sim_now)) == HourEnding(sim_now + Hour(2))
+        end
+    end
 end
 
 @testset "StaticOffset" begin
