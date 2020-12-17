@@ -185,6 +185,37 @@ winnipeg = tz"America/Winnipeg"
         ]
     end
 
+    @testset "timezone" begin
+        horizon = Horizon(winnipeg)
+        sim_now = ZonedDateTime(2016, 1, 1, 9, 35, winnipeg)
+
+        results = targets(horizon, astimezone(sim_now, tz"UTC"))
+
+        @test results == targets(horizon, sim_now)
+        @test results == collect(
+            HourEnding(ZonedDateTime(2016, 1, 2, 1, winnipeg)):
+            HourEnding(ZonedDateTime(2016, 1, 3, winnipeg))
+        )
+
+        # Check kwargs are set correctly
+        horizon = Horizon(winnipeg; step=Hour(2), span=Day(2))
+
+        @test collect(targets(horizon, astimezone(sim_now, tz"UTC"))) == collect(
+            AnchoredInterval{Hour(-2)}(ZonedDateTime(2016, 1, 2, 2, winnipeg)):
+            AnchoredInterval{Hour(-2)}(ZonedDateTime(2016, 1, 4, winnipeg))
+        )
+
+        # DST
+        sim_now = ZonedDateTime(2016, 11, 5, 9, 35, winnipeg)
+        results = collect(targets(Horizon(winnipeg), astimezone(sim_now, tz"UTC")))
+
+        @test length(results) == 25
+        @test results[1:2] == [
+            HourEnding(ZonedDateTime(2016, 11, 6, 1, winnipeg, 1)),
+            HourEnding(ZonedDateTime(2016, 11, 6, 1, winnipeg, 2)),
+        ]
+    end
+
     @testset "output" begin
         start_function(s) = ceil(s, Minute(15)) + Minute(30)
         horizon = Horizon(start_function, step=Minute(15), span=Day(5))
