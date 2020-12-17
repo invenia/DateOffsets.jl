@@ -30,6 +30,15 @@ function Horizon(start_func::Function=_start_func; step=Hour(1), span=Day(1))
     return Horizon(start_func, step, span)
 end
 
+_tz_start_func(tz::TimeZone) = (sim_now) -> _start_func(astimezone(sim_now, tz))
+"""
+    Horizon(tz::TimeZone; span=Day(1), step=Hour(1)) -> Horizon
+
+Construct a `Horizon` that creates forecast targets in the timezone `tz` 
+using the default `start_fn`.
+"""
+Horizon(tz::TimeZone; kwargs...) = Horizon(_tz_start_func(tz); kwargs...)
+
 function Base.:(==)(a::Horizon, b::Horizon)
     return a.step == b.step && a.span == b.span && a.start_func == b.start_func
 end
