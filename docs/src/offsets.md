@@ -49,15 +49,15 @@ julia> sim_now = ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg")
 2016-08-11T02:00:00-05:00
 
 julia> target = HourEnding(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
-AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
+AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
 
 julia> origins = DateOffsets.OffsetOrigins(target, sim_now);
 
 julia> StaticOffset(Day(-1))
-StaticOffset(Target(), -1 day)
+StaticOffset(Target(), Day(-1))
 
 julia> StaticOffset(Day(-1))(origins)
-AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 1, tz"America/Winnipeg"))
+AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 1, tz"America/Winnipeg"))
 ```
 
 See the [examples](#examples) below and the [production use cases](@ref use-cases) for more information.
@@ -73,13 +73,13 @@ This is shown by the following example:
 
 ```jldoctest offsets
 julia> StaticOffset(FloorOffset(DynamicOffset(Target(); fallback=Day(-1), if_after=SimNow()), Hour), Hour(-1))
-StaticOffset(FloorOffset(DynamicOffset(Target(), -1 day, SimNow(), DateOffsets.always), Hour), -1 hour)
+StaticOffset(FloorOffset(DynamicOffset(Target(), Day(-1), SimNow(), DateOffsets.always), Hour), Hour(-1))
 
 julia> long_offset(o) = floor(dynamicoffset(o.target; fallback=Day(-1), if_after=o.sim_now), Hour) - Hour(1)
 long_offset (generic function with 1 method)
 
 julia> long_offset(origins)
-AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, tz"America/Winnipeg"))
+AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, tz"America/Winnipeg"))
 ```
 
 ## Examples
@@ -92,7 +92,7 @@ julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
 julia> target = HourEnding(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
-AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
+AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
 
 julia> origins = DateOffsets.OffsetOrigins(target, sim_now);
 ```
@@ -104,10 +104,10 @@ In this case, we are applying a lag of 1 hour, which is applied to the target ho
 
 ```jldoctest examples
 julia> static_offset = StaticOffset(Hour(-1))
-StaticOffset(Target(), -1 hour)
+StaticOffset(Target(), Hour(-1))
 
 julia> static_offset(origins)
-AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, tz"America/Winnipeg"))
+AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, tz"America/Winnipeg"))
 ```
 
 ### DynamicOffset
@@ -118,10 +118,10 @@ Note there is also a `match` keyword argument that one can use to define an addi
 
 ```jldoctest examples
 julia> match_hourofweek = DynamicOffset(; if_after=SimNow(), fallback=Week(-1))
-DynamicOffset(Target(), -1 week, SimNow(), DateOffsets.always)
+DynamicOffset(Target(), Week(-1), SimNow(), DateOffsets.always)
 
 julia> match_hourofweek(origins)
-AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 5, 1, tz"America/Winnipeg"))
+AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 5, 1, tz"America/Winnipeg"))
 ```
 
 ### FloorOffset
@@ -134,7 +134,7 @@ julia> flooredtarget = FloorOffset(Target(), Day)
 FloorOffset(Target(), Day)
 
 julia> flooredtarget(origins)
-AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, tz"America/Winnipeg"))
+AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, tz"America/Winnipeg"))
 ```
 
 ### CustomOffset
@@ -150,7 +150,7 @@ julia> offset_fn(o) = (hour(last(o.sim_now)) ≥ 18) ? HourEnding(ceil(o.sim_now
 offset_fn (generic function with 1 method)
 
 julia> offset_fn(origins)
-AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
+AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
 ```
 
 ```@meta
