@@ -1,7 +1,7 @@
 name = "DateOffsets"
 uuid = "7f78979c-33b5-5b34-98a4-c64efb759df4"
 authors = ["Invenia Technical Computing"]
-version = "2.1.0"
+version = "2.2.0"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
