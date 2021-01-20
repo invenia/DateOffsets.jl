@@ -18,26 +18,26 @@ const SourceOffset = Union{Function, DateOffset}
     OffsetOrigins(
         target::AnchoredInterval,
         sim_now::NowType
-        global_sim_now::NowType
+        bid_time::NowType
     )
 
 Construct a container for the specific times from which any offset can be defined,
-namely: the `target`, `sim_now` and `global_sim_now`.
+namely: the `target`, `sim_now` and `bid_time`.
 
 Observation intervals are computed by applying the `DateOffset` to the origin.
 """
 struct OffsetOrigins{T<:AnchoredInterval}
     target::T
     sim_now::T
-    global_sim_now::T
+    bid_time::T
 end
 
 function OffsetOrigins(
     target::T,
     sim_now::NowType,
-    global_sim_now::NowType=sim_now,
+    bid_time::NowType=sim_now,
 ) where T <: AnchoredInterval
-    OffsetOrigins(target, T(sim_now), T(global_sim_now))
+    OffsetOrigins(target, T(sim_now), T(bid_time))
 end
 
 """
@@ -62,19 +62,21 @@ end
     SimNow()
 
 Create a callable object.
-When applied to an `OffsetOrigins`, the object returns the `sim_now` of the training day.
+When applied to an `OffsetOrigins`, the object returns the `sim_now` of the training day
+(the `bid_time` offset by the query `window`).
 """
 struct SimNow <: DateOffset end
 (::SimNow)(o::OffsetOrigins) = o.sim_now
 
 """
-    GlobalSimNow()
+    BidTime()
 
 Create a callable object.
-When applied to an `OffsetOrigins`, the object returns the `global_sim_now` for the entire query.
+When applied to an `OffsetOrigins`, the object returns the `bid_time` for the query
+(the simulated time at which the entire query is run).
 """
-struct GlobalSimNow <: DateOffset end
-(::GlobalSimNow)(o::OffsetOrigins) = o.global_sim_now
+struct BidTime <: DateOffset end
+(::BidTime)(o::OffsetOrigins) = o.bid_time
 
 """
     Target()

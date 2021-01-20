@@ -15,7 +15,7 @@ export
     dynamicoffset,
     Target,
     SimNow,
-    GlobalSimNow,
+    BidTime,
     targets,
     observations
 

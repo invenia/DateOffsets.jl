@@ -117,121 +117,126 @@ winnipeg = tz"America/Winnipeg"
         horizon = Horizon(; step=Hour(1), span=Day(1))
 
         sim_now = ZonedDateTime(2016, 8, 11, 6, 15, winnipeg)
-        window = Day(0):Day(1):Day(2)
-        training_nows = [
-            ZonedDateTime(2016, 8, 11, 6, 15, winnipeg),
-            ZonedDateTime(2016, 8, 10, 6, 15, winnipeg),
-            ZonedDateTime(2016, 8, 9, 6, 15, winnipeg),
-        ]
 
-        s, t, o = observations([SimNow(), GlobalSimNow()], horizon, window, sim_now)
-
-        @test s isa Vector{ZonedDateTime}
-        @test t isa Vector{<:HourEnding{ZonedDateTime}}
-        @test o isa Matrix{<:HourEnding{ZonedDateTime}}
-
-        @test s == repeat(training_nows, inner=24)
-        @test t == vcat([collect(targets(horizon, s)) for s in training_nows]...)
-        @test o ==  hcat(
-            repeat(HourEnding.(training_nows), inner=24),
-            fill(HourEnding(sim_now), 72),
-        )
-
-        training_nows = [
-            ZonedDateTime(2016, 8, 9, 6, 15, winnipeg),
-            ZonedDateTime(2016, 8, 10, 6, 15, winnipeg),
-            ZonedDateTime(2016, 8, 11, 6, 15, winnipeg),
-        ]
-        offsets = [
-            StaticOffset(Hour(-1)),
-            marketwide_offset,
-        ]
-        s, t, o = observations(offsets, horizon, training_nows, sim_now)
-
-        @test s isa Vector{ZonedDateTime}
-        @test t isa Vector{<:HourEnding{ZonedDateTime}}
-        @test o isa Matrix{<:HourEnding{ZonedDateTime}}
-
-        @test s == repeat(training_nows, inner=24)
-        @test t == vcat([collect(targets(horizon, s)) for s in training_nows]...)
-        expected = hcat(
-            t .- Hour(1),
-            [
-                HourEnding(ZonedDateTime(2016, 8, 9, 1, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 2, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 3, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 4, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 5, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 6, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 7, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 8, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 9, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 10, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 11, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 12, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 13, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 14, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 15, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 16, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 17, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 18, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 19, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 20, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 21, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 22, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 8, 23, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 0, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 1, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 2, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 3, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 4, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 5, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 6, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 7, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 8, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 9, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 10, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 11, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 12, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 13, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 14, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 15, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 16, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 17, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 18, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 19, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 20, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 21, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 22, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 9, 23, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 0, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 11, 1, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 11, 2, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 11, 3, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 11, 4, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 11, 5, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 11, 6, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 7, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 8, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 9, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 10, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 11, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 12, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 13, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 14, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 15, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 16, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 17, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 18, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 19, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 20, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 21, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 22, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 10, 23, winnipeg)),
-                HourEnding(ZonedDateTime(2016, 8, 11, 0, winnipeg)),
+        @testset "window" begin
+            window = Day(0):Day(1):Day(2)
+            training_sim_nows = [
+                ZonedDateTime(2016, 8, 11, 6, 15, winnipeg),
+                ZonedDateTime(2016, 8, 10, 6, 15, winnipeg),
+                ZonedDateTime(2016, 8, 9, 6, 15, winnipeg),
             ]
-        )
-        @test o == expected
+
+            s, t, o = observations([SimNow(), BidTime()], horizon, window, sim_now)
+
+            @test s isa Vector{ZonedDateTime}
+            @test t isa Vector{<:HourEnding{ZonedDateTime}}
+            @test o isa Matrix{<:HourEnding{ZonedDateTime}}
+
+            @test s == repeat(training_sim_nows, inner=24)
+            @test t == vcat([collect(targets(horizon, s)) for s in training_sim_nows]...)
+            @test o ==  hcat(
+                repeat(HourEnding.(training_sim_nows), inner=24),
+                fill(HourEnding(sim_now), 72),
+            )
+        end
+
+        @testset "vector" begin
+            training_sim_nows = [
+                ZonedDateTime(2016, 8, 9, 6, 15, winnipeg),
+                ZonedDateTime(2016, 8, 10, 6, 15, winnipeg),
+                ZonedDateTime(2016, 8, 11, 6, 15, winnipeg),
+            ]
+            offsets = [
+                StaticOffset(Hour(-1)),
+                marketwide_offset,
+            ]
+            s, t, o = observations(offsets, horizon, training_sim_nows, sim_now)
+
+            @test s isa Vector{ZonedDateTime}
+            @test t isa Vector{<:HourEnding{ZonedDateTime}}
+            @test o isa Matrix{<:HourEnding{ZonedDateTime}}
+
+            @test s == repeat(training_sim_nows, inner=24)
+            @test t == vcat([collect(targets(horizon, s)) for s in training_sim_nows]...)
+            expected = hcat(
+                t .- Hour(1),
+                [
+                    HourEnding(ZonedDateTime(2016, 8, 9, 1, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 2, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 3, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 4, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 5, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 6, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 7, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 8, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 9, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 10, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 11, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 12, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 13, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 14, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 15, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 16, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 17, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 18, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 19, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 20, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 21, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 22, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 8, 23, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 0, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 1, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 2, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 3, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 4, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 5, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 6, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 7, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 8, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 9, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 10, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 11, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 12, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 13, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 14, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 15, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 16, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 17, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 18, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 19, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 20, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 21, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 22, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 9, 23, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 0, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 11, 1, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 11, 2, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 11, 3, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 11, 4, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 11, 5, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 11, 6, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 7, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 8, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 9, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 10, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 11, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 12, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 13, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 14, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 15, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 16, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 17, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 18, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 19, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 20, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 21, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 22, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 10, 23, winnipeg)),
+                    HourEnding(ZonedDateTime(2016, 8, 11, 0, winnipeg)),
+                ]
+            )
+            @test o == expected
+        end
     end
 
     @testset "spring forward" begin
