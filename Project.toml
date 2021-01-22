@@ -1,7 +1,7 @@
 name = "DateOffsets"
 uuid = "7f78979c-33b5-5b34-98a4-c64efb759df4"
 authors = ["Invenia Technical Computing"]
-version = "2.1.0"
+version = "2.2.0"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
@@ -14,7 +14,7 @@ Documenter = "0.25"
 Intervals = "1.5"
 LaxZonedDateTimes = "1"
 TimeZones = "0.9, 0.10, 0.11, 1"
-julia = "1"
+julia = "1.5"
 
 [extras]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"

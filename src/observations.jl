@@ -49,8 +49,8 @@ marketwide_offset (generic function with 1 method)
 
 julia> offsets = [marketwide_offset, StaticOffset(Day(1))]
 2-element Array{Any,1}:
- marketwide_offset
- StaticOffset(Target(), 1 day)
+ marketwide_offset (generic function with 1 method)
+ StaticOffset(Target(), Day(1))
 
 julia> horizon = Horizon(; step=Hour(1), span=Day(1))
 Horizon(step=Hour(1), span=Day(1))
@@ -81,30 +81,30 @@ julia> s
  2016-08-11T02:30:00-05:00
 
 julia> t
-24-element Array{AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed},1}:
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 2, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 3, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 4, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 5, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 6, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 7, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 8, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 9, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 10, tz"America/Winnipeg"))
+24-element Array{AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed},1}:
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 2, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 3, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 4, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 5, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 6, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 7, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 8, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 9, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 10, tz"America/Winnipeg"))
  ⋮
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 16, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 17, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 18, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 19, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 20, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 21, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 22, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 23, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 13, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 16, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 17, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 18, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 19, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 20, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 21, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 22, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 23, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 13, tz"America/Winnipeg"))
 
 julia> o
-24×2 Array{AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed},2}:
+24×2 Array{AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed},2}:
  (2016-08-11 HE01-05:00]  (2016-08-13 HE01-05:00]
  (2016-08-11 HE02-05:00]  (2016-08-13 HE02-05:00]
  (2016-08-10 HE03-05:00]  (2016-08-13 HE03-05:00]
@@ -145,8 +145,8 @@ marketwide_offset (generic function with 1 method)
 
 julia> offsets = [marketwide_offset, StaticOffset(Day(1))]
 2-element Array{Any,1}:
- marketwide_offset
- StaticOffset(Target(), 1 day)
+ marketwide_offset (generic function with 1 method)
+ StaticOffset(Target(), Day(1))
 
 julia> horizon = Horizon(; step=Hour(1), span=Day(1))
 Horizon(step=Hour(1), span=Day(1))
@@ -183,30 +183,30 @@ julia> s
  2016-08-11T02:30:00-05:00
 
 julia> t
-72-element Array{AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed},1}:
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 1, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 2, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 3, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 4, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 5, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 6, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 7, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 8, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 9, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 10, tz"America/Winnipeg"))
+72-element Array{AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed},1}:
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 1, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 2, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 3, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 4, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 5, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 6, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 7, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 8, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 9, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 10, tz"America/Winnipeg"))
  ⋮
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 16, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 17, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 18, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 19, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 20, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 21, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 22, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 23, tz"America/Winnipeg"))
- AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 13, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 16, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 17, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 18, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 19, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 20, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 21, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 22, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 23, tz"America/Winnipeg"))
+ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 13, tz"America/Winnipeg"))
 
 julia> o
-72×2 Array{AnchoredInterval{-1 hour,ZonedDateTime,Open,Closed},2}:
+72×2 Array{AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed},2}:
  (2016-08-09 HE01-05:00]  (2016-08-11 HE01-05:00]
  (2016-08-09 HE02-05:00]  (2016-08-11 HE02-05:00]
  (2016-08-08 HE03-05:00]  (2016-08-11 HE03-05:00]
