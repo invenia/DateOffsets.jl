@@ -36,7 +36,7 @@ This highlights the most important aspect of using DateOffsets.jl: **knowing the
 There are many terms used in relation to fetching data from the database, some of which can be erroneously used interchangeably.
 For that reason, we define below the terms used throughout DateOffsets.jl to avoid any confusion:
 
-**Horizon**: A type that is used, in conjunction with the `sim_now`, to define the targets for a forecaster, which are calculated by calling [`DateOffsets.targets`](ref).
+**Horizon**: A type that is used, in conjunction with the `sim_now`, to define the targets for a forecaster, which are calculated by calling [`DateOffsets.targets`](@ref).
 
 **Bid Time**: The time we are simulating running bid at during simulation runs.
 When running dailybid in EIS bid time is equal to `ElectricityMarkets.ops_start` for the market on that day.
