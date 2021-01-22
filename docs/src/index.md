@@ -19,7 +19,7 @@ Time-series forecasting using grid data comes with a number of challenges:
 3. Grids operate in various timezones and DST transitions change the number of hours in a day.
 4. We do not have an [accurate release history](https://gitlab.invenia.ca/invenia/brainstorming-bonanza/-/issues/117) of the data published by the grids.
 
-The first two points in particular are relevant to the [bid process timeline](https://gitlab.invenia.ca/invenia/wiki/blob/master/eis/intro-to-eis.md#bid-process-timeline-and-data-availability) when [EIS](https://gitlab.invenia.ca/invenia/eis) runs in production. 
+The first two points in particular are relevant to the [bid process timeline](https://gitlab.invenia.ca/invenia/wiki/blob/master/eis/intro-to-eis.md#bid-process-timeline-and-data-availability) when [EIS](https://gitlab.invenia.ca/invenia/eis) runs in production.
 The diagram below illustrates the latest availability of three different kinds of feeds at bid time.
 
 Trying to manually generate observations for each target in a model would require users to write code that addresses each of the edge cases above.
@@ -38,7 +38,13 @@ For that reason, we define below the terms used throughout DateOffsets.jl to avo
 
 **Horizon**: A type that is used, in conjunction with the `sim_now`, to define the targets for a forecaster, which are calculated by calling [`DateOffsets.targets`](ref).
 
-**Target**: An interval in time, usually in the future, for which we want to predict some quantity of interest. 
+**Bid Time**: The time we are simulating running bid at during simulation runs.
+When running dailybid in EIS bid time is equal to `ElectricityMarkets.ops_start` for the market on that day.
+In higher level code it may be referred to as a "global" `sim_now`.
+
+**Sim Now**: The "local" `sim_now`. This represents a training day for a simulated `bid_time`.
+
+**Target**: An interval in time, usually in the future, for which we want to predict some quantity of interest.
 The most common target is an `HourEnding` interval -- for when we want to predict delta LMPs -- although we sometimes use `DayEnding` intervals when we predict something _once_ for the target day, e.g. cliquing the nodes in [`NodeSelection`](https://invenia.pages.invenia.ca/NodeSelection.jl/).
 
 **Observation**: An interval in time, usually in the past, that is associated with a target and used as input to a forecaster either for training or predicting for that target.
