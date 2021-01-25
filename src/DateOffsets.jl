@@ -7,7 +7,6 @@ using TimeZones
 
 export
     DateOffset,
-    SourceOffset,
     Horizon,
     StaticOffset,
     DynamicOffset,

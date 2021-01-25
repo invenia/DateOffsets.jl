@@ -96,7 +96,7 @@ But for targets where the hour of day is _after_ the `sim_now`, data is not yet 
 The way to do this is to apply a [`DynamicOffset`](@ref) (falling back 1 day) after the `sim_now`.
 
 ```jldoctest pn
-julia> realtime_offset(o) = floor(dynamicoffset(o.target; fallback=Day(-1), if_after=o.sim_now), Hour);
+julia> realtime_offset = FloorOffset(DynamicOffset(Target(); fallback=Day(-1), if_after=SimNow()), Hour);
 
 julia> realtime_offset(origins)
 AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 1, tz"America/Winnipeg"))
@@ -125,11 +125,16 @@ julia> dayahead_offset(origins)
 AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 1, tz"America/Winnipeg"))
 ```
 
-However, if the previous day's hour does not have data or does not exist due to DST, we want to jump back an additional day. 
-So we add a [`DynamicOffset`](@ref) but convert it to a function to avoid a long type when logging:
+However, if the previous day's hour does not have data or does not exist due to DST, we want to jump back an additional day.
+So we add a [`DynamicOffset`](@ref) but create our own type to avoid a long type when logging:
 
 ```jldoctest bidpricing
-julia> dayahead_offset(o) = floor(dynamicoffset(o.target - Day(1); fallback=Day(-1), match=isvalid, if_after=o.target), Hour);
+julia> struct DSTSafeOffset <: DateOffset end
+
+julia> (::DSTSafeOffset)(o) = floor(dynamicoffset(o.target - Day(1); fallback=Day(-1), match=isvalid, if_after=o.target), Hour)
+
+julia> dayahead_offset = DSTSafeOffset()
+DSTSafeOffset()
 ```
 On a normal day it jumps back a day.
 
@@ -154,9 +159,11 @@ AnchoredInterval{Hour(-1),LaxZonedDateTime,Open,Closed}(2016-03-12T02:00:00-06:0
 Note that the DST offset must be applied after the `StaticOffset` or we will simply step back to the invalid hour.
 
 ```jldoctest bidpricing
-julia> wrong_offset(o) = floor(dynamicoffset(o.target; fallback=Day(-1), match=t->isvalid(t), if_after=o.target) - Day(1), Hour);
+julia> struct WrongOffset <: DateOffset end
 
-julia> wrong_offset(DateOffsets.OffsetOrigins(dst_day + Day(1), sim_now))
+julia> (::WrongOffset)(o) = floor(dynamicoffset(o.target; fallback=Day(-1), match=t->isvalid(t), if_after=o.target) - Day(1), Hour)
+
+julia> WrongOffset()(DateOffsets.OffsetOrigins(dst_day + Day(1), sim_now))
 AnchoredInterval{Hour(-1),LaxZonedDateTime,Open,Closed}(2016-03-13T02:00:00-DNE)
 ```
 

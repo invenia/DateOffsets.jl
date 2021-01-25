@@ -368,18 +368,21 @@ end
     end
 end
 
+struct CustomOffset <: DateOffset end
+
 @testset "CustomOffset" begin
-    offset_fn(o) = (hour(anchor(o.sim_now)) ≥ 18) ? HE(anchor(o.sim_now)) : o.target
+    (::CustomOffset)(o) = (hour(anchor(o.sim_now)) ≥ 18) ? HE(anchor(o.sim_now)) : o.target
+    offset = CustomOffset()
 
     sim_now_base = ZonedDateTime(2016, 8, 10, 0, 31, 12, winnipeg)
     target = HourEnding(ZonedDateTime(2016, 8, 11, 2, winnipeg))
     for h in 0:17
         sim_now = sim_now_base + Hour(h)
-        @test offset_fn(OffsetOrigins(target, sim_now)) == target
+        @test offset(OffsetOrigins(target, sim_now)) == target
     end
     for h in 18:23
         sim_now = sim_now_base + Hour(h)
-        @test offset_fn(OffsetOrigins(target, sim_now)) == HE(sim_now)
+        @test offset(OffsetOrigins(target, sim_now)) == HE(sim_now)
     end
 end
 
