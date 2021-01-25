@@ -20,7 +20,7 @@
         bid_time::T,
     ) where T<:Union{ZonedDateTime, LaxZonedDateTime} -> (Vector{T}, Vector{T}, Matrix{T})
 
-GGenerates forecast or training observation intervals for a given `bid_time` and training
+Generates forecast or training observation intervals for a given `bid_time` and training
 `window`, or a series of training `sim_now`s and any number of `offsets`. This is
 accomplished by using the `horizon` to generate target intervals for the `sim_now`,
 duplicating the targets for each element in `offsets`, and applying each offset to its
@@ -149,7 +149,9 @@ Expected results for the call below:
 period) and `o` would be a 72x2 matrix. Each element of `s` would be equal to one of the
 three `sim_now`s produced by `sim_now .- window`, and the elements of `t` would be the target
 intervals returned by calling `targets(horizon, sim_now)` for each `sim_now`.
-The first column of `o` would contain the values of `t` with `marketwide_offset` applied,
+The first column of `o` would contain the values of `t` with `SimNow()` offset applied,
+of which there are 3 unique values, while the second would contain the values of `t` with 
+`BidTime()` offset applied, which are all the same value.
 while the second would contain the values of `t` with a `StaticOffset` of one day applied.
 
 ```jldoctest

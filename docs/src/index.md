@@ -38,11 +38,12 @@ For that reason, we define below the terms used throughout DateOffsets.jl to avo
 
 **Horizon**: A type that is used, in conjunction with the `sim_now`, to define the targets for a forecaster, which are calculated by calling [`DateOffsets.targets`](@ref).
 
-**Bid Time**: The time we are simulating running bid at during simulation runs.
-When running dailybid in EIS bid time is equal to `ElectricityMarkets.ops_start` for the market on that day.
-In higher level code it may be referred to as a "global" `sim_now`.
+**Bid Time**: This is the time at which [EIS dailybid](https://gitlab.invenia.ca/invenia/wiki/blob/master/production/bid-process.md) commences for a given market, defined by `ElectricityMarkets.ops_start`.
+For a backrun, or just forecasting, it represents the "simulated" bid time for the task.
+There is only one "bid time" for a given day of bidding, hence, in higher level code, it may also be referred to as the "global" `sim_now`.
 
-**Sim Now**: The "local" `sim_now`. This represents a training day for a simulated `bid_time`.
+**Sim Now**: For a given `BidTime` this represents the "local" `sim_now` for the corresponding training days.
+There are typically many training `sim_now`s for a given day of bidding.
 
 **Target**: An interval in time, usually in the future, for which we want to predict some quantity of interest.
 The most common target is an `HourEnding` interval -- for when we want to predict delta LMPs -- although we sometimes use `DayEnding` intervals when we predict something _once_ for the target day, e.g. cliquing the nodes in [`NodeSelection`](https://invenia.pages.invenia.ca/NodeSelection.jl/).
