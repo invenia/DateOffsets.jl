@@ -11,8 +11,6 @@ abstract type DateOffset end
 
 Base.broadcastable(a::DateOffset) = Ref(a)
 
-const SourceOffset = Union{Function, DateOffset}
-
 """
     OffsetOrigins{T}(target::T, sim_now::T) where T::AnchoredInterval
     OffsetOrigins(
@@ -87,17 +85,17 @@ struct Target <: DateOffset end
 (::Target)(o::OffsetOrigins) = o.target
 
 struct DynamicOffset <: DateOffset
-    target::SourceOffset
+    target::DateOffset
     fallback::Period
-    if_after::Union{SourceOffset, TargetType}
+    if_after::Union{DateOffset, TargetType}
     match::Function
 end
 
 """
     DynamicOffset(
-        target::Function=Target();
+        target::DateOffset=Target();
         fallback::Period=Day(-1),
-        if_after::Function=Target(),
+        if_after::DateOffset=Target(),
         match::Function=alwaysmatch
     )
 
@@ -127,7 +125,7 @@ function (offset::DynamicOffset)(o::OffsetOrigins)
 end
 
 """
-    StaticOffset([origin::SourceOffset], period::Period)
+    StaticOffset([origin::DateOffset], period::Period)
 
 Create a callable object. When applied to an `OffsetOrigins` it adds the `period` to the
 result from `origin`, by default the [`Target`](@ref), to create the observation interval.
@@ -136,20 +134,20 @@ It is preferred to create a named function instead of a using StaticOffset in si
 where `origin` is not an accessor to a field in `OffsetOrigins`.
 """
 struct StaticOffset <: DateOffset
-    origin::SourceOffset
+    origin::DateOffset
     period::Period
 end
 StaticOffset(period::Period) = StaticOffset(Target(), period)
 (offset::StaticOffset)(o::OffsetOrigins) = offset.origin(o) + offset.period
 
 """
-    FloorOffset(origin::Function=Target(), T::Type=Hour)
+    FloorOffset(origin::DateOffset=Target(), T::Type=Hour)
 
 Create a callable object. When applied to an `OffsetOrigins`, the object floors result from
 `origin` to create the observation interval.
 """
 struct FloorOffset <: DateOffset
-    origin::SourceOffset
+    origin::DateOffset
     T::Type
 
     FloorOffset(origin, T=Hour) = new(origin, T)

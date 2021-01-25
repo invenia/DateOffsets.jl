@@ -1,20 +1,20 @@
 """
     observations(
-        offsets::Vector{<:SourceOffset},
+        offsets::Vector{<:DateOffset},
         horizon::Horizon,
         sim_now::T,
         bid_time::T=sim_now
     ) where T<:Union{ZonedDateTime, LaxZonedDateTime} -> (Vector{T}, Vector{T}, Matrix{T})
 
     observations(
-        offsets::Vector{<:SourceOffset},
+        offsets::Vector{<:DateOffset},
         horizon::Horizon,
         sim_nows::Vector{T},
         bid_time::T,
     ) where T<:Union{ZonedDateTime, LaxZonedDateTime} -> (Vector{T}, Vector{T}, Matrix{T})
 
     observations(
-        offsets::Vector{<:SourceOffset},
+        offsets::Vector{<:DateOffset},
         horizon::Horizon,
         window::AbstractVector{Period},
         bid_time::T,
@@ -57,12 +57,15 @@ end
 julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
-julia> marketwide_offset(o) = floor(dynamicoffset(o.target, if_after=o.sim_now), Hour)
-marketwide_offset (generic function with 1 method)
+julia> struct MarketwideOffset <: DateOffset end;
+
+julia> (::MarketwideOffset)(o) = floor(dynamicoffset(o.target; if_after=o.sim_now), Hour);
+
+julia> marketwide_offset = MarketwideOffset();
 
 julia> offsets = [marketwide_offset, StaticOffset(Day(1))]
-2-element Array{Any,1}:
- marketwide_offset (generic function with 1 method)
+2-element Array{DateOffset,1}:
+ MarketwideOffset()
  StaticOffset(Target(), Day(1))
 
 julia> horizon = Horizon(; step=Hour(1), span=Day(1))
@@ -150,7 +153,7 @@ period) and `o` would be a 72x2 matrix. Each element of `s` would be equal to on
 three `sim_now`s produced by `sim_now .- window`, and the elements of `t` would be the target
 intervals returned by calling `targets(horizon, sim_now)` for each `sim_now`.
 The first column of `o` would contain the values of `t` with `SimNow()` offset applied,
-of which there are 3 unique values, while the second would contain the values of `t` with 
+of which there are 3 unique values, while the second would contain the values of `t` with
 `BidTime()` offset applied, which are all the same value.
 while the second would contain the values of `t` with a `StaticOffset` of one day applied.
 
@@ -247,7 +250,7 @@ DocTestSetup = nothing
 ```
 """
 function observations(
-    offsets::Vector,
+    offsets::Vector{<:DateOffset},
     horizon::Horizon,
     sim_now::NowType,
     bid_time::NowType=sim_now,
@@ -262,7 +265,7 @@ function observations(
 end
 
 function observations(
-    offsets::Vector,
+    offsets::Vector{<:DateOffset},
     horizon::Horizon,
     sim_now::Vector{<:NowType},
     bid_time::NowType,

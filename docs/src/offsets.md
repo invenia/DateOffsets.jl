@@ -142,15 +142,18 @@ AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 
 
 The above examples are typical of the offsets used in our forecasters based on the features that are currently used in production.
 Users may wish to generate different offsets to be used with new features.
-To do this, one should define a named function that takes as input an [`OffsetOrigins`](@ref offsetorigins) and returns an `Interval`.
+To do this, one can either chain existing DateOffsets together if that produces the desired offset or define a callable subtype of DateOffset that operates on an [`OffsetOrigins`](@ref offsetorigins) and returns an `Interval`.
 
-Here, the offset function returns the target if the `sim_now` is earlier than 6pm, else it returns the `sim_now` rounded up to the nearest hour.
+Here, the offset returns the target if the `sim_now` is earlier than 6pm, else it returns the `sim_now` rounded up to the nearest hour.
 
 ```jldoctest examples
-julia> offset_fn(o) = (hour(last(o.sim_now)) ≥ 18) ? HourEnding(ceil(o.sim_now, Hour)) : o.target
-offset_fn (generic function with 1 method)
+julia> struct TooLateOffset <: DateOffset
+       cutoff::Hour
+       end
 
-julia> offset_fn(origins)
+julia> (offset::TooLateOffset)(o) = Hour(last(o.sim_now)) ≥ offset.cutoff ? HourEnding(ceil(o.sim_now, Hour)) : o.target
+
+julia> TooLateOffset(Hour(18))(origins)
 AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
 ```
 

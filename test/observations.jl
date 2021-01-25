@@ -1,7 +1,9 @@
 winnipeg = tz"America/Winnipeg"
 
+struct MarketwideOffset <: DateOffset end
+(::MarketwideOffset)(o) = floor(dynamicoffset(o.target; if_after=o.sim_now), Hour)
 @testset "observations" begin
-    marketwide_offset(o) = floor(dynamicoffset(o.target; if_after=o.sim_now), Hour)
+    marketwide_offset = MarketwideOffset()
 
     @testset "no available targets" begin
         # None of the target dates are available (this is typically the case if the input
