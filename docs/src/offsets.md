@@ -5,7 +5,7 @@ The relationship between the target and observation can also be defined by any f
 
 ## [`OffsetOrigins`](@id offsetorigins)
 
-The `OffsetOrigins` container stores the important timing information relevant to forecasting as intervals, namely, the `sim_now` and the forecast `target`. 
+The `OffsetOrigins` container stores the important timing information relevant to forecasting as intervals, namely, the `sim_now`, `bid_time` and the forecast `target`.
 The `sim_now` and `target` are important because the [availability of data](@ref why-date-offsets) in production is usually bounded by one of these times, so they serve as useful "origins" for our offsets.
 
 ## The `DateOffset` Type
@@ -20,8 +20,9 @@ These include:
 * [`FloorOffset`](@ref)
 
 Additionally, the times defined in [`OffsetOrigins`](@ref offsetorigins) can also be used as "special" kinds of `DateOffsets`, since these are also frequently used:
-* [`Target()`](@ref) 
+* [`Target()`](@ref)
 * [`SimNow()`](@ref)
+* [`BidTime()`](@ref)
 
 One or more [`DateOffset`](@ref)s must be defined for each `Feature`.
 Users are not expected to apply these offsets manually as this is handled via a call to [`observations`](@ref) when the feature is fetched.

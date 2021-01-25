@@ -19,7 +19,7 @@ Time-series forecasting using grid data comes with a number of challenges:
 3. Grids operate in various timezones and DST transitions change the number of hours in a day.
 4. We do not have an [accurate release history](https://gitlab.invenia.ca/invenia/brainstorming-bonanza/-/issues/117) of the data published by the grids.
 
-The first two points in particular are relevant to the [bid process timeline](https://gitlab.invenia.ca/invenia/wiki/blob/master/eis/intro-to-eis.md#bid-process-timeline-and-data-availability) when [EIS](https://gitlab.invenia.ca/invenia/eis) runs in production. 
+The first two points in particular are relevant to the [bid process timeline](https://gitlab.invenia.ca/invenia/wiki/blob/master/eis/intro-to-eis.md#bid-process-timeline-and-data-availability) when [EIS](https://gitlab.invenia.ca/invenia/eis) runs in production.
 The diagram below illustrates the latest availability of three different kinds of feeds at bid time.
 
 Trying to manually generate observations for each target in a model would require users to write code that addresses each of the edge cases above.
@@ -36,9 +36,16 @@ This highlights the most important aspect of using DateOffsets.jl: **knowing the
 There are many terms used in relation to fetching data from the database, some of which can be erroneously used interchangeably.
 For that reason, we define below the terms used throughout DateOffsets.jl to avoid any confusion:
 
-**Horizon**: A type that is used, in conjunction with the `sim_now`, to define the targets for a forecaster, which are calculated by calling [`DateOffsets.targets`](ref).
+**Horizon**: A type that is used, in conjunction with the `sim_now`, to define the targets for a forecaster, which are calculated by calling [`DateOffsets.targets`](@ref).
 
-**Target**: An interval in time, usually in the future, for which we want to predict some quantity of interest. 
+**Bid Time**: This is the time at which [EIS dailybid](https://gitlab.invenia.ca/invenia/wiki/blob/master/production/bid-process.md) commences for a given market, defined by `ElectricityMarkets.ops_start`.
+For a backrun, or just forecasting, it represents the "simulated" bid time for the task.
+There is only one "bid time" for a given day of bidding, hence, in higher level code, it may also be referred to as the "global" `sim_now`.
+
+**Sim Now**: For a given `BidTime` this represents the "local" `sim_now` for the corresponding training days.
+There are typically many training `sim_now`s for a given day of bidding.
+
+**Target**: An interval in time, usually in the future, for which we want to predict some quantity of interest.
 The most common target is an `HourEnding` interval -- for when we want to predict delta LMPs -- although we sometimes use `DayEnding` intervals when we predict something _once_ for the target day, e.g. cliquing the nodes in [`NodeSelection`](https://invenia.pages.invenia.ca/NodeSelection.jl/).
 
 **Observation**: An interval in time, usually in the past, that is associated with a target and used as input to a forecaster either for training or predicting for that target.

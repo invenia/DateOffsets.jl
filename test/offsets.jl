@@ -19,7 +19,7 @@ winnipeg = tz"America/Winnipeg"
             @test offset(OffsetOrigins(target, sim_now)) == target
         end
 
-        @testset "CompoundOffset" begin
+        @testset "nested" begin
             sim_now = ZonedDateTime(2016, 8, 11, 3, winnipeg)
             offset = StaticOffset(Target(), Hour(2))
 
@@ -49,7 +49,7 @@ winnipeg = tz"America/Winnipeg"
             @test offset(OffsetOrigins(target, sim_now)) == HourEnding(sim_now)
         end
 
-        @testset "CompoundOffset" begin
+        @testset "nested" begin
             sim_now = ZonedDateTime(2016, 8, 11, 3, 30, winnipeg)
             offset = StaticOffset(SimNow(), Hour(2))
 
@@ -61,6 +61,47 @@ winnipeg = tz"America/Winnipeg"
 
             sim_now = ZonedDateTime(2016, 8, 12, 1, 30, winnipeg)
             @test offset(OffsetOrigins(target, sim_now)) == HourEnding(sim_now + Hour(2))
+        end
+    end
+
+    @testset "BidTime" begin
+        @testset "basic" begin
+            offset = BidTime()
+            @test offset isa DateOffset
+
+            bid_time = ZonedDateTime(2016, 8, 11, 3, winnipeg)
+            sim_now = bid_time - Hour(3)
+
+            target = HourEnding(ZonedDateTime(2016, 8, 11, 8, winnipeg))
+            @test offset(OffsetOrigins(target, sim_now, bid_time)) isa AnchoredInterval
+            @test offset(OffsetOrigins(target, sim_now, bid_time)) == HourEnding(bid_time)
+
+            target = HourEnding(ZonedDateTime(2016, 8, 11, 1, winnipeg))
+            @test offset(OffsetOrigins(target, sim_now, bid_time)) == HourEnding(bid_time)
+
+            sim_now = ZonedDateTime(2016, 8, 12, 4, winnipeg)
+            @test offset(OffsetOrigins(target, sim_now, bid_time)) == HourEnding(bid_time)
+
+            bid_time = ZonedDateTime(2016, 8, 12, 5, winnipeg)
+            @test offset(OffsetOrigins(target, sim_now, bid_time)) == HourEnding(bid_time)
+        end
+
+        @testset "nested" begin
+            bid_time = ZonedDateTime(2016, 8, 11, 3, 30, winnipeg)
+            sim_now = ZonedDateTime(2016, 8, 11, 3, 30, winnipeg) - Day(1)
+            offset = StaticOffset(BidTime(), Hour(2))
+
+            target = HE(ZonedDateTime(2016, 8, 11, 5, winnipeg))
+            @test offset(OffsetOrigins(target, sim_now, bid_time)) == HourEnding(bid_time + Hour(2))
+
+            target = HE(ZonedDateTime(2016, 8, 10, 1, winnipeg))
+            @test offset(OffsetOrigins(target, sim_now, bid_time)) == HourEnding(bid_time + Hour(2))
+
+            sim_now = ZonedDateTime(2016, 8, 12, 1, 30, winnipeg)
+            @test offset(OffsetOrigins(target, sim_now, bid_time)) == HourEnding(bid_time + Hour(2))
+
+            bid_time = ZonedDateTime(2016, 8, 12, 7, 30, winnipeg)
+            @test offset(OffsetOrigins(target, sim_now, bid_time)) == HourEnding(bid_time + Hour(2))
         end
     end
 end
