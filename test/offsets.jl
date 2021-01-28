@@ -369,9 +369,9 @@ end
 end
 
 struct CustomOffset <: DateOffset end
+(::CustomOffset)(o) = (hour(anchor(o.sim_now)) ≥ 18) ? HE(anchor(o.sim_now)) : o.target
 
 @testset "CustomOffset" begin
-    (::CustomOffset)(o) = (hour(anchor(o.sim_now)) ≥ 18) ? HE(anchor(o.sim_now)) : o.target
     offset = CustomOffset()
 
     sim_now_base = ZonedDateTime(2016, 8, 10, 0, 31, 12, winnipeg)
@@ -383,6 +383,135 @@ struct CustomOffset <: DateOffset end
     for h in 18:23
         sim_now = sim_now_base + Hour(h)
         @test offset(OffsetOrigins(target, sim_now)) == HE(sim_now)
+    end
+end
+
+@testset "repr/print" begin
+    @testset "default printing" begin
+        mixed = vcat(
+            StaticOffset.(BidTime(), Hour.(-1:3)),
+            DynamicOffset(Target(), if_after=BidTime()),
+            FloorOffset(SimNow()),
+            Target(),
+        )
+
+        custom = fill(CustomOffset(), 15)
+
+        @testset "$name" for (name, offsets) in [("mixed", mixed), ("custom", custom)]
+            str = repr(offsets)
+            @test sprint(print, offsets) == str
+            @test sprint(show, offsets) == str
+
+            @test startswith(str, "[$(offsets[1]), $(offsets[2])")
+            @test !startswith(str, "[$(offsets[1]), $(offsets[2]), $(offsets[3]), ")
+
+            @test endswith(str, "$(offsets[end-1]), $(offsets[end])]")
+            @test !endswith(str, ", $(offsets[end-2]), $(offsets[end-1]), $(offsets[end])]")
+
+            str = repr(offsets, context=:compact=>false)
+            @test sprint(print, offsets, context=:compact=>false) == str
+            @test sprint(show, offsets, context=:compact=>false) == str
+
+            @test startswith(str, "[$(offsets[1]), $(offsets[2]), $(offsets[3]), ")
+            @test all(occursin.(repr.(offsets), str))
+            @test endswith(str, ", $(offsets[end-2]), $(offsets[end-1]), $(offsets[end])]")
+        end
+    end
+
+    static_offsets = StaticOffset.(SimNow(), Hour.(1:8))
+    short_offsets = "StaticOffset.(SimNow(), [Hour(1), Hour(2)  …  Hour(7), Hour(8)])"
+    long_offsets = "StaticOffset.(SimNow(), $(Hour.(1:8)))"
+
+    @testset "StaticOffset" begin
+        str = repr(static_offsets)
+        @test sprint(print, static_offsets) == str
+        @test sprint(show, static_offsets) == str
+
+        @test str == short_offsets
+
+        str = repr(static_offsets, context=:compact=>false)
+        @test sprint(print, static_offsets, context=:compact=>false) == str
+        @test sprint(show, static_offsets, context=:compact=>false) == str
+
+        @test str == long_offsets
+
+        # Revert to default printing when origins don't match
+        str_mixed = repr(vcat(static_offsets, StaticOffset(Target(), Hour(1))))
+        @test startswith(str_mixed, "[$(static_offsets[1]), $(static_offsets[2])")
+    end
+
+    @testset "FloorOffset" begin
+        offsets = FloorOffset.(static_offsets)
+
+        str = repr(offsets)
+        @test sprint(print, offsets) == str
+        @test sprint(show, offsets) == str
+
+        @test str == "FloorOffset.($short_offsets, Hour)"
+
+        str = repr(offsets, context=:compact=>false)
+        @test sprint(print, offsets, context=:compact=>false) == str
+        @test sprint(show, offsets, context=:compact=>false) == str
+
+        @test str == "FloorOffset.($long_offsets, Hour)"
+
+        @testset "period change" begin
+            offsets = FloorOffset.([BidTime(), SimNow(), Target()])
+            str = repr(offsets)
+            @test str == "FloorOffset.([BidTime(), SimNow(), Target()], Hour)"
+
+            offsets = FloorOffset.([BidTime(), SimNow(), Target()], Day)
+            str = repr(offsets)
+            @test str == "FloorOffset.([BidTime(), SimNow(), Target()], Day)"
+
+            # Revert to default printing when periods don't match
+            hour_offset = FloorOffset(SimNow(), Hour)
+            day_offset = FloorOffset(SimNow(), Day)
+            offsets = repeat([day_offset, hour_offset], inner=10)
+            str = repr(offsets)
+            @test str == "[$day_offset, $day_offset  …  $hour_offset, $hour_offset]"
+
+            str = repr(offsets, context=:compact=>false)
+            @test startswith(str, "[$day_offset, $day_offset, $day_offset")
+            @test endswith(str, "$hour_offset, $hour_offset, $hour_offset]")
+        end
+    end
+
+    @testset "DynamicOffset" begin
+        offsets = DynamicOffset.(static_offsets)
+
+        str = repr(offsets)
+        @test sprint(print, offsets) == str
+        @test sprint(show, offsets) == str
+
+        @test str == "DynamicOffset.($short_offsets, Day(-1), Target(), DateOffsets.always)"
+
+        str = repr(offsets, context=:compact=>false)
+        @test sprint(print, offsets, context=:compact=>false) == str
+        @test sprint(show, offsets, context=:compact=>false) == str
+
+        @test str == "DynamicOffset.($long_offsets, Day(-1), Target(), DateOffsets.always)"
+
+        @testset "field change" begin
+            offsets = DynamicOffset.([BidTime(), SimNow()])
+            str = repr(offsets)
+            @test str == "DynamicOffset.([BidTime(), SimNow()], Day(-1), Target(), DateOffsets.always)"
+
+            offsets = DynamicOffset.([BidTime(), SimNow()], Hour(-1), SimNow(), isvalid)
+            str = repr(offsets)
+            @test str == "DynamicOffset.([BidTime(), SimNow()], Hour(-1), SimNow(), isvalid)"
+
+            # Revert to default printing when fields don't match
+            hour_offset = DynamicOffset(SimNow(), fallback=Hour(-1))
+            day_offset = DynamicOffset(SimNow(), fallback=Day(-1))
+            offsets = repeat([day_offset, hour_offset], inner=10)
+            str = repr(offsets)
+            @test str == "[$day_offset, $day_offset  …  $hour_offset, $hour_offset]"
+
+            str = repr(offsets, context=:compact=>false)
+            @test startswith(str, "[$day_offset, $day_offset, $day_offset, ")
+            @test endswith(str, ", $hour_offset, $hour_offset, $hour_offset]")
+        end
     end
 end
 

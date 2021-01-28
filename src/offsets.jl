@@ -153,3 +153,68 @@ struct FloorOffset <: DateOffset
     FloorOffset(origin, T=Hour) = new(origin, T)
 end
 (offset::FloorOffset)(o::OffsetOrigins) = floor(offset.origin(o), offset.T)
+
+# Offset lists are usually long so only print the first and last few
+function _show_list(io::IO, offsets::AbstractVector, max_shown::Int=4)
+    print(io, "[")
+
+    if length(offsets) > max_shown && get(io, :limit, false)
+        half = floor(Int, max_shown/2)
+
+        join(io, repr.(offsets[1:half]), ", ")
+        print(io, "  …  ")
+        join(io, repr.(offsets[end-(half-1):end]), ", ")
+    else
+        join(io, repr.(offsets), ", ")
+    end
+
+    print(io, "]")
+end
+
+function Base.show(io::IO, offsets::Vector{<:DateOffset})
+    if get(io, :compact, true)
+       io = IOContext(io, :limit=>true)
+    end
+
+    _show_list(io, offsets)
+end
+
+function Base.show(io::IO, offsets::Vector{StaticOffset})
+    if get(io, :compact, true)
+       io = IOContext(io, :limit=>true)
+    end
+
+    all(o -> o.origin == offsets[1].origin, offsets) || return _show_list(io, offsets)
+
+    print(io, StaticOffset, ".(" , offsets[1].origin, ", ")
+    _show_list(io, getfield.(offsets, :period))
+    print(io, ")")
+
+end
+
+function Base.show(io::IO, offsets::Vector{FloorOffset})
+    if get(io, :compact, true)
+       io = IOContext(io, :limit=>true)
+    end
+
+    all(o -> o.T == offsets[1].T, offsets) || return _show_list(io, offsets)
+
+    print(io, FloorOffset, ".(")
+    show(io, getfield.(offsets, :origin))
+    print(io, ", ", offsets[1].T, ")")
+
+end
+
+function Base.show(io::IO, offsets::Vector{DynamicOffset})
+    if get(io, :compact, true)
+       io = IOContext(io, :limit=>true)
+    end
+
+    get_fields(o) = o.fallback, o.if_after, o.match
+
+    all(o -> get_fields(o) == get_fields(offsets[1]), offsets) || return _show_list(io, offsets)
+
+    print(io, DynamicOffset, ".(")
+    show(io, getfield.(offsets, :target))
+    print(io, ", ", join(repr.(get_fields(offsets[1])), ", "), ")")
+end
