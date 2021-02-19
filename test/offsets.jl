@@ -515,3 +515,22 @@ end
     end
 end
 
+@testset "isless" begin
+    @test SimNow() < Target() < BidTime()
+
+    @test DynamicOffset(fallback=Day(-1), if_after=SimNow()) < DynamicOffset(fallback=Hour(-1), if_after=SimNow())
+
+    @test StaticOffset(Day(-1)) < StaticOffset(Hour(-1))
+    @test StaticOffset(SimNow(), Hour(-1)) < StaticOffset(Target(), Day(-3))
+
+    @test FloorOffset(Target(), Hour) < Target()
+    @test FloorOffset(Target(), Day) < FloorOffset(Target(), Hour)
+
+    # isless automatically defined for new offsets
+    @test CustomOffset() < BidTime()
+
+    unsorted = vcat(StaticOffset.(BidTime(), Hour.(-1:3)), FloorOffset(SimNow()), Target())
+    expected = vcat(FloorOffset(SimNow()), Target(), StaticOffset.(BidTime(), Hour.(-1:3)))
+    # The order of offsets doesn't matter too much, but sorting should work
+    @test sort(unsorted) == expected
+end
