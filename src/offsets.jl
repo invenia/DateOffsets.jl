@@ -38,6 +38,15 @@ function OffsetOrigins(
     OffsetOrigins(target, T(sim_now), T(bid_time))
 end
 
+function Base.isless(a::DateOffset, b::DateOffset)
+    # Check results of offsets against some generic set of dates
+    # Specified date to the minute to make sure floored dates don't match
+    date = ZonedDateTime(1, 1, 1, 1, 30, tz"UTC")
+    o = OffsetOrigins(HourEnding(date + Hour(1)), HourEnding(date), HourEnding(date + Day(1)))
+
+    return isless(a(o), b(o))
+end
+
 """
     dynamicoffset(
         target::$TargetType;
@@ -140,6 +149,11 @@ end
 StaticOffset(period::Period) = StaticOffset(Target(), period)
 (offset::StaticOffset)(o::OffsetOrigins) = offset.origin(o) + offset.period
 
+function Base.isless(a::StaticOffset, b::StaticOffset)
+    a.origin == b.origin && return isless(a.period, b.period)
+    return isless(a.origin, b.origin)
+end
+
 """
     FloorOffset(origin::DateOffset=Target(), T::Type=Hour)
 
@@ -202,7 +216,6 @@ function Base.show(io::IO, offsets::Vector{FloorOffset})
     print(io, FloorOffset, ".(")
     show(io, getfield.(offsets, :origin))
     print(io, ", ", offsets[1].T, ")")
-
 end
 
 function Base.show(io::IO, offsets::Vector{DynamicOffset})
