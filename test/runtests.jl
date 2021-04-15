@@ -13,5 +13,7 @@ using DateOffsets: OffsetOrigins
     include("offsets.jl")
     include("observations.jl")
 
-    doctest(DateOffsets)
+    if VERSION >= v"1.6.0"
+        doctest(DateOffsets)
+    end
 end
