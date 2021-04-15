@@ -23,7 +23,7 @@ julia> sim_now = ZonedDateTime(2016, 8, 11, 2, 30, tz"America/Winnipeg")
 2016-08-11T02:30:00-05:00
 
 julia> target = HourEnding(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
-AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
+HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
 
 julia> origins = DateOffsets.OffsetOrigins(target, sim_now);
 
@@ -39,7 +39,7 @@ julia> load_offset = Target()
 Target()
 
 julia> load_offset(origins)
-AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
+HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America/Winnipeg"))
 ```
 
 Similar offsets can be seen throughout our packages.
@@ -62,27 +62,27 @@ julia> price_offsets[1]
 StaticOffset(FloorOffset(SimNow(), Hour), Hour(0))
 
 julia> map(p->p(origins), price_offsets)
-1730-element Array{AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed},1}:
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 1, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 23, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 22, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 21, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 20, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 19, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 18, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 17, tz"America/Winnipeg"))
+1730-element Vector{HourEnding{ZonedDateTime, Open, Closed}}:
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 11, 2, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 11, 1, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 11, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 10, 23, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 10, 22, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 10, 21, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 10, 20, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 10, 19, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 10, 18, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 10, 17, tz"America/Winnipeg"))
  ⋮
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 5, 31, 9, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 5, 31, 8, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 5, 31, 7, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 5, 31, 6, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 5, 31, 5, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 5, 31, 4, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 5, 31, 3, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 5, 31, 2, tz"America/Winnipeg"))
- AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 5, 31, 1, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 5, 31, 9, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 5, 31, 8, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 5, 31, 7, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 5, 31, 6, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 5, 31, 5, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 5, 31, 4, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 5, 31, 3, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 5, 31, 2, tz"America/Winnipeg"))
+ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 5, 31, 1, tz"America/Winnipeg"))
 ```
 
 ### Use Case 3: `realtime_marketwide` in [PortfolioNets](https://invenia.pages.invenia.ca/PortfolioNets.jl/)
@@ -99,7 +99,7 @@ The way to do this is to apply a [`DynamicOffset`](@ref) (falling back 1 day) af
 julia> realtime_offset = FloorOffset(DynamicOffset(Target(); fallback=Day(-1), if_after=SimNow()), Hour);
 
 julia> realtime_offset(origins)
-AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 1, tz"America/Winnipeg"))
+HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 11, 1, tz"America/Winnipeg"))
 ```
 
 It is important to note that, in this example, the rounding to the hour happens _after_ jumping back.
@@ -107,10 +107,10 @@ For example `late_target` below occurs 15 minutes after `sim_now` so we jump bac
 
 ```jldoctest pn
 julia> late_target = HourEnding(ZonedDateTime(2016, 8, 12, 2, 45, tz"America/Winnipeg"))
-AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 12, 2, 45, tz"America/Winnipeg"))
+HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 12, 2, 45, tz"America/Winnipeg"))
 
 julia> realtime_offset(DateOffsets.OffsetOrigins(late_target, sim_now))
-AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 10, 2, tz"America/Winnipeg"))
+HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 10, 2, tz"America/Winnipeg"))
 ```
 
 ### Use Case 4: Dayahead Marketwide in [BidPricing](https://invenia.pages.invenia.ca/BidPricing.jl/)
@@ -122,7 +122,7 @@ For a given target hour, we want to use the dayahead price from the same hour th
 julia> dayahead_offset = FloorOffset(StaticOffset(Day(-1)));
 
 julia> dayahead_offset(origins)
-AnchoredInterval{Hour(-1),ZonedDateTime,Open,Closed}(ZonedDateTime(2016, 8, 11, 1, tz"America/Winnipeg"))
+HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 11, 1, tz"America/Winnipeg"))
 ```
 
 However, if the previous day's hour does not have data or does not exist due to DST, we want to jump back an additional day.
@@ -140,20 +140,20 @@ On a normal day it jumps back a day.
 
 ```jldoctest bidpricing
 julia> lax_target = HourEnding(LaxZonedDateTime(anchor(target)))
-AnchoredInterval{Hour(-1),LaxZonedDateTime,Open,Closed}(2016-08-12T01:00:00-05:00)
+HourEnding{LaxZonedDateTime, Open, Closed}(2016-08-12T01:00:00-05:00)
 
 julia> dayahead_offset(DateOffsets.OffsetOrigins(lax_target, sim_now))
-AnchoredInterval{Hour(-1),LaxZonedDateTime,Open,Closed}(2016-08-11T01:00:00-05:00)
+HourEnding{LaxZonedDateTime, Open, Closed}(2016-08-11T01:00:00-05:00)
 ```
 
 On the day after daylight savings it jumps back 2 days.
 
 ```jldoctest bidpricing
 julia> dst_day = HourEnding(LaxZonedDateTime(DateTime(2016, 3, 13, 2), tz"America/Winnipeg"))
-AnchoredInterval{Hour(-1),LaxZonedDateTime,Open,Closed}(2016-03-13T02:00:00-DNE)
+HourEnding{LaxZonedDateTime, Open, Closed}(2016-03-13T02:00:00-DNE)
 
 julia> dayahead_offset(DateOffsets.OffsetOrigins(dst_day + Day(1), sim_now))
-AnchoredInterval{Hour(-1),LaxZonedDateTime,Open,Closed}(2016-03-12T02:00:00-06:00)
+HourEnding{LaxZonedDateTime, Open, Closed}(2016-03-12T02:00:00-06:00)
 ```
 
 Note that the DST offset must be applied after the `StaticOffset` or we will simply step back to the invalid hour.
@@ -164,7 +164,7 @@ julia> struct WrongOffset <: DateOffset end
 julia> (::WrongOffset)(o) = floor(dynamicoffset(o.target; fallback=Day(-1), match=t->isvalid(t), if_after=o.target) - Day(1), Hour)
 
 julia> WrongOffset()(DateOffsets.OffsetOrigins(dst_day + Day(1), sim_now))
-AnchoredInterval{Hour(-1),LaxZonedDateTime,Open,Closed}(2016-03-13T02:00:00-DNE)
+HourEnding{LaxZonedDateTime, Open, Closed}(2016-03-13T02:00:00-DNE)
 ```
 
 ```@meta

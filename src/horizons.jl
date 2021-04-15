@@ -34,7 +34,7 @@ _tz_start_func(tz::TimeZone) = (sim_now) -> _start_func(astimezone(sim_now, tz))
 """
     Horizon(tz::TimeZone; span=Day(1), step=Hour(1)) -> Horizon
 
-Construct a `Horizon` that creates forecast targets in the timezone `tz` 
+Construct a `Horizon` that creates forecast targets in the timezone `tz`
 using the default `start_fn`.
 """
 Horizon(tz::TimeZone; kwargs...) = Horizon(_tz_start_func(tz); kwargs...)
