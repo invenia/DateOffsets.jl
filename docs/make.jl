@@ -19,4 +19,5 @@ makedocs(;
     authors="Invenia Technical Computing Corporation",
     strict = true,
     checkdocs = :none,
+    doctest=(VERSION >= v"1.6"),  # Doctests require Julia 1.6+
 )
