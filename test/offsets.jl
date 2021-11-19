@@ -533,4 +533,8 @@ end
     expected = vcat(FloorOffset(SimNow()), Target(), StaticOffset.(BidTime(), Hour.(-1:3)))
     # The order of offsets doesn't matter too much, but sorting should work
     @test sort(unsorted) == expected
+
+    # Check for https://gitlab.invenia.ca/invenia/DateOffsets.jl/-/issues/46
+    isvalid_offset = DynamicOffset(; match=isvalid)
+    @test !(isvalid_offset < isvalid_offset)
 end

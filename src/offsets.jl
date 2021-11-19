@@ -41,7 +41,7 @@ end
 function Base.isless(a::DateOffset, b::DateOffset)
     # Check results of offsets against some generic set of dates
     # Specified date to the minute to make sure floored dates don't match
-    date = ZonedDateTime(1, 1, 1, 1, 30, tz"UTC")
+    date = LaxZonedDateTime(DateTime(1, 1, 1, 1, 30), tz"UTC")
     o = OffsetOrigins(HourEnding(date + Hour(1)), HourEnding(date), HourEnding(date + Day(1)))
 
     return isless(a(o), b(o))
