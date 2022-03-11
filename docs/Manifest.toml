@@ -43,10 +43,10 @@ uuid = "e2d170a0-9d28-54be-80f0-106bbe20a464"
 version = "1.0.0"
 
 [[DateOffsets]]
-deps = ["Dates", "Intervals", "LaxZonedDateTimes", "TimeZones"]
+deps = ["Dates", "Intervals", "LaxZonedDateTimes", "Mocking", "TimeZones"]
 path = ".."
 uuid = "7f78979c-33b5-5b34-98a4-c64efb759df4"
-version = "3.1.1"
+version = "3.2.0"
 
 [[Dates]]
 deps = ["Printf"]
@@ -167,9 +167,9 @@ uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 
 [[Libiconv_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "8e924324b2e9275a51407a4e06deb3455b1e359f"
+git-tree-sha1 = "cba7b560fcc00f8cd770fa85a498cbc1d63ff618"
 uuid = "94ce4f54-9a6c-5748-9c1c-f9c7231a4531"
-version = "1.16.0+7"
+version = "1.16.0+8"
 
 [[LinearAlgebra]]
 deps = ["Libdl"]
