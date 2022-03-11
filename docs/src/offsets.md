@@ -18,6 +18,7 @@ These include:
 * [`StaticOffset`](@ref)
 * [`DynamicOffset`](@ref)
 * [`FloorOffset`](@ref)
+* [`Now`](@ref)
 
 Additionally, the times defined in [`OffsetOrigins`](@ref offsetorigins) can also be used as "special" kinds of `DateOffsets`, since these are also frequently used:
 * [`Target()`](@ref)

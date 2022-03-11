@@ -3,6 +3,7 @@ module DateOffsets
 using Dates
 using Intervals
 using LaxZonedDateTimes
+using Mocking
 using TimeZones
 
 export
@@ -15,6 +16,7 @@ export
     Target,
     SimNow,
     BidTime,
+    Now,
     targets,
     observations
 

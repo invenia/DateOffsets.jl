@@ -19,6 +19,7 @@ DateOffsets.OffsetOrigins
 Target
 SimNow
 BidTime
+Now
 
 dynamicoffset
 ```

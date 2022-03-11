@@ -93,6 +93,15 @@ Create a callable object. When applied to an `OffsetOrigins`, the object returns
 struct Target <: DateOffset end
 (::Target)(o::OffsetOrigins) = o.target
 
+"""
+    Now()
+
+Create a callable object. When applied to an `OffsetOrigins`, the object returns `now()` in
+the timezone of the `sim_now`.
+"""
+struct Now <: DateOffset end
+(::Now)(o::OffsetOrigins{T}) where T = T(@mock(now(timezone(o.sim_now))))
+
 struct DynamicOffset <: DateOffset
     target::DateOffset
     fallback::Period

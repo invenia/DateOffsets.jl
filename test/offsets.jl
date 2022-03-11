@@ -104,6 +104,50 @@ winnipeg = tz"America/Winnipeg"
             @test offset(OffsetOrigins(target, sim_now, bid_time)) == HourEnding(bid_time + Hour(2))
         end
     end
+
+    @testset "Now" begin
+
+        dt = DateTime(2016, 9, 30, 3, 15, 59, 699)
+        now_patch = @patch now(t) = ZonedDateTime(dt, t)
+        expected = AnchoredInterval{Hour(-1)}(ZonedDateTime(dt, winnipeg))
+
+        @testset "basic" begin
+            offset = Now()
+            @test offset isa DateOffset
+
+            sim_now = ZonedDateTime(2016, 8, 11, 3, winnipeg)
+
+            Mocking.apply(now_patch) do
+                target = HourEnding(ZonedDateTime(2016, 8, 11, 8, winnipeg))
+                @test offset(OffsetOrigins(target, sim_now)) == expected
+
+                target = HourEnding(ZonedDateTime(2016, 8, 11, 1, winnipeg))
+                @test offset(OffsetOrigins(target, sim_now)) == expected
+
+                sim_now = ZonedDateTime(2016, 8, 12, 4, winnipeg)
+                @test offset(OffsetOrigins(target, sim_now)) == expected
+
+                target = HourEnding(ZonedDateTime(2016, 8, 11, 1, tz"UTC"))
+                @test offset(OffsetOrigins(target, sim_now)) == expected
+
+                sim_now = ZonedDateTime(2016, 8, 12, 4, tz"UTC")
+                @test offset(OffsetOrigins(target, sim_now)) != expected
+            end
+        end
+
+        @testset "nested" begin
+            Mocking.apply(now_patch) do
+                sim_now = ZonedDateTime(2016, 8, 11, 3, winnipeg)
+                offset = StaticOffset(Now(), Hour(2))
+
+                target = HE(ZonedDateTime(2016, 8, 11, 5, winnipeg))
+                @test offset(OffsetOrigins(target, sim_now)) == expected + Hour(2)
+
+                target = HE(ZonedDateTime(2016, 8, 10, 1, winnipeg))
+                @test offset(OffsetOrigins(target, sim_now)) == expected + Hour(2)
+            end
+        end
+    end
 end
 
 @testset "StaticOffset" begin

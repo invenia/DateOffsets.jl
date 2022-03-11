@@ -1,18 +1,20 @@
 name = "DateOffsets"
 uuid = "7f78979c-33b5-5b34-98a4-c64efb759df4"
 authors = ["Invenia Technical Computing"]
-version = "3.1.2"
+version = "3.2.0"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Intervals = "d8418881-c3e1-53bb-8760-2df7ec849ed5"
 LaxZonedDateTimes = "e4c54217-8d3e-5504-a69c-0db1bad43e12"
+Mocking = "78c3b35d-d492-501b-9361-3d52fe80e533"
 TimeZones = "f269a46b-ccf7-5d73-abea-4c690281aa53"
 
 [compat]
 Documenter = "0.25"
 Intervals = "1.5"
 LaxZonedDateTimes = "1"
+Mocking = "0.7"
 TimeZones = "0.9, 0.10, 0.11, 1"
 julia = "1.5"
 
