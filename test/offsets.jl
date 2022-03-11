@@ -126,6 +126,12 @@ winnipeg = tz"America/Winnipeg"
 
                 sim_now = ZonedDateTime(2016, 8, 12, 4, winnipeg)
                 @test offset(OffsetOrigins(target, sim_now)) == expected
+
+                target = HourEnding(ZonedDateTime(2016, 8, 11, 1, tz"UTC"))
+                @test offset(OffsetOrigins(target, sim_now)) == expected
+
+                sim_now = ZonedDateTime(2016, 8, 12, 4, tz"UTC")
+                @test offset(OffsetOrigins(target, sim_now)) != expected
             end
         end
 
