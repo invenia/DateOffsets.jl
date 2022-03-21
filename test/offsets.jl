@@ -135,6 +135,20 @@ winnipeg = tz"America/Winnipeg"
             end
         end
 
+        @testset "LaxZonedDateTime" begin
+            offset = Now()
+            @test offset isa DateOffset
+
+            sim_now = ZonedDateTime(2016, 8, 11, 3, winnipeg)
+            target = HourEnding(LaxZonedDateTime(DateTime(2016, 8, 11, 8), winnipeg))
+
+            lzdt_expected = AnchoredInterval{Hour(-1)}(LaxZonedDateTime(dt, winnipeg))
+
+            Mocking.apply(now_patch) do
+                @test offset(OffsetOrigins(target, sim_now)) == lzdt_expected
+            end
+        end
+
         @testset "nested" begin
             Mocking.apply(now_patch) do
                 sim_now = ZonedDateTime(2016, 8, 11, 3, winnipeg)
