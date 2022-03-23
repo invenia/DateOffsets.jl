@@ -100,7 +100,7 @@ Create a callable object. When applied to an `OffsetOrigins`, the object returns
 the timezone of the `sim_now`.
 """
 struct Now <: DateOffset end
-(::Now)(o::OffsetOrigins{T}) where T = T(@mock(now(timezone(o.sim_now))))
+(::Now)(o::OffsetOrigins{T}) where T = T(@mock(now(timezone(anchor(o.sim_now)))))
 
 struct DynamicOffset <: DateOffset
     target::DateOffset
