@@ -96,11 +96,15 @@ struct Target <: DateOffset end
 """
     Now()
 
-Create a callable object. When applied to an `OffsetOrigins`, the object returns `now()` in
-the timezone of the `sim_now`.
+Create a callable object. When applied to an `OffsetOrigins`, the object returns the time
+`Now()` was constructed in the timezone of the `sim_now`.
 """
-struct Now <: DateOffset end
-(::Now)(o::OffsetOrigins{T}) where T = T(@mock(now(timezone(anchor(o.sim_now)))))
+struct Now <: DateOffset
+    utc_time::ZonedDateTime
+
+    Now() = new(@mock(now(tz"UTC")))
+end
+(n::Now)(o::OffsetOrigins{T}) where T = T(astimezone(n.utc_time, timezone(anchor(o.sim_now))))
 
 struct DynamicOffset <: DateOffset
     target::DateOffset
