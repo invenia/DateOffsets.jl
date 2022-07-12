@@ -2,6 +2,7 @@ winnipeg = tz"America/Winnipeg"
 
 struct MarketwideOffset <: DateOffset end
 (::MarketwideOffset)(o) = floor(dynamicoffset(o.target; if_after=o.sim_now), Hour)
+
 @testset "observations" begin
     marketwide_offset = MarketwideOffset()
 
@@ -127,6 +128,36 @@ struct MarketwideOffset <: DateOffset end
             )
             @test o == expected
         end
+
+        @testset "multiple windows" begin
+
+            window = [Day(0):Day(1):Day(2), Day(4):Day(1):Day(6), Day(8):Day(1):Day(10)]
+
+            training_sim_nows = [
+                ZonedDateTime(2016, 8, 11, 6, 15, winnipeg),
+                ZonedDateTime(2016, 8, 10, 6, 15, winnipeg),
+                ZonedDateTime(2016, 8, 9, 6, 15, winnipeg),
+                ZonedDateTime(2016, 8, 7, 6, 15, winnipeg),
+                ZonedDateTime(2016, 8, 6, 6, 15, winnipeg),
+                ZonedDateTime(2016, 8, 5, 6, 15, winnipeg),
+                ZonedDateTime(2016, 8, 3, 6, 15, winnipeg),
+                ZonedDateTime(2016, 8, 2, 6, 15, winnipeg),
+                ZonedDateTime(2016, 8, 1, 6, 15, winnipeg),
+            ]
+
+            s, t, o = observations([SimNow(), BidTime()], horizon, window, sim_now)
+
+            @test s isa Vector{ZonedDateTime}
+            @test t isa Vector{<:HourEnding{ZonedDateTime}}
+            @test o isa Matrix{<:HourEnding{ZonedDateTime}}
+
+            @test s == repeat(training_sim_nows, inner=24)
+            @test t == vcat([collect(targets(horizon, s)) for s in training_sim_nows]...)
+            @test o == hcat(
+                repeat(HourEnding.(training_sim_nows), inner=24),
+                fill(HourEnding(sim_now), 24 * 3 * 3),
+            )
+        end
     end
 
     @testset "spring forward" begin
@@ -181,4 +212,5 @@ struct MarketwideOffset <: DateOffset end
         # AMB Interval at [1,3]
         @test o == [target_dates .+ Hour(2) target_dates .+ Hour(24) target_dates .+ Day(1)]
     end
+
 end
