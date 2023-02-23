@@ -1,7 +1,7 @@
 # [Observation Intervals](@id observation-intervals)
 
 An observation interval (or "observation date") is the span of time associated with a piece of data used to generate a forecast or train a model.
-The [`observations`](@ref) function translates a set of [`DateOffset`](@ref)s into the desired observation intervals for the data to be fetched from the [`S3DB.jl`](https://invenia.pages.invenia.ca/S3DB.jl/).
+The [`observations`](@ref) function translates a set of [`DateOffset`](@ref)s into the desired observation intervals for the data to be fetched from the [`S3DB.jl`](https://invenia.pages.invenia.ca/eis-product-team/S3DB.jl/).
 
 For example, say it's `2016-08-11T09:00` and we want to predict the electrical load for tomorrow at noon. 
 Our target is the interval between 11:00 and 12:00 on 2016-08-12, which we can abbreviate `(2016-08-12 HE12]`. 

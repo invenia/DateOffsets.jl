@@ -28,7 +28,7 @@ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America
 julia> origins = DateOffsets.OffsetOrigins(target, sim_now);
 
 ```
-## Use Case 1: Dayahead Load in [GPForecasters](https://invenia.pages.invenia.ca/GPForecasters.jl/)
+## Use Case 1: Dayahead Load in [GPForecasters](https://invenia.pages.invenia.ca/learned-strategies/GPForecasters.jl/)
 
 The simplest usage of `DateOffsets` is in GPForecasters which naively fetches its features and filters them afterwards.
 The dayahead load table consists of forecasts so we can depend on it to always have values for all hours of the target day.
@@ -44,7 +44,7 @@ HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 12, 1, tz"America
 
 Similar offsets can be seen throughout our packages.
 
-## Use Case 2: Dayahead Price and Realtime Price in [NodeSelection](https://invenia.pages.invenia.ca/NodeSelection.jl/)
+## Use Case 2: Dayahead Price and Realtime Price in [NodeSelection](https://invenia.pages.invenia.ca/grid-behaviour/NodeSelection.jl/)
 
 In NodeSelection.jl, we are interested in cliquing the nodes based on the correlation of their delta LMPs (dayahead - realtime).
 Although the markets publish the dayahead price for the whole day, the realtime price is only available up to `sim_now`.
@@ -113,7 +113,7 @@ julia> realtime_offset(DateOffsets.OffsetOrigins(late_target, sim_now))
 HourEnding{ZonedDateTime, Open, Closed}(ZonedDateTime(2016, 8, 10, 2, tz"America/Winnipeg"))
 ```
 
-### Use Case 4: Dayahead Marketwide in [BidPricing](https://invenia.pages.invenia.ca/BidPricing.jl/)
+### Use Case 4: Dayahead Marketwide in [BidPricing](https://invenia.pages.invenia.ca/grid-behaviour/BidPricing.jl/)
 
 Since BidPricing only uses the dayahead price and not the deltas, we have access to data for the _entire_ bid day, not just up to `sim_now`.
 For a given target hour, we want to use the dayahead price from the same hour the day before. We can easily do this with just a [`StaticOffset`](@ref).

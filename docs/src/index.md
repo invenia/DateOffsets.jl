@@ -46,7 +46,7 @@ There is only one "bid time" for a given day of bidding, hence, in higher level 
 There are typically many training `sim_now`s for a given day of bidding.
 
 **Target**: An interval in time, usually in the future, for which we want to predict some quantity of interest.
-The most common target is an `HourEnding` interval -- for when we want to predict delta LMPs -- although we sometimes use `DayEnding` intervals when we predict something _once_ for the target day, e.g. cliquing the nodes in [`NodeSelection`](https://invenia.pages.invenia.ca/NodeSelection.jl/).
+The most common target is an `HourEnding` interval -- for when we want to predict delta LMPs -- although we sometimes use `DayEnding` intervals when we predict something _once_ for the target day, e.g. cliquing the nodes in [`NodeSelection`](https://invenia.pages.invenia.ca/grid-behaviour/NodeSelection.jl/).
 
 **Observation**: An interval in time, usually in the past, that is associated with a target and used as input to a forecaster either for training or predicting for that target.
 
@@ -55,7 +55,7 @@ The `OffsetOrigins` container stores these values, which serves as the input to 
 
 **Offset**: A step in time, taken relative to an origin, that is used to construct an observation for some target.
 
-**Validity**: A term used in [S3DB](https://invenia.pages.invenia.ca/S3DB.jl/api/api.html#S3DB.Query-Tuple{}) and [DataFeeds](https://gitlab.invenia.ca/invenia/Datafeeds/Retrievers/-/blob/2a19a8dbb7c33659b47ab79429f3cae08c464676/docs/nodal_availability.md#table-columns) to refer to the interval of time for which a data entry in the database is "valid".
+**Validity**: A term used in [S3DB](https://invenia.pages.invenia.ca/eis-product-team/S3DB.jl/api/api.html#S3DB.Query-Tuple{}) and [DataFeeds](https://gitlab.invenia.ca/invenia/Datafeeds/Retrievers/-/blob/2a19a8dbb7c33659b47ab79429f3cae08c464676/docs/nodal_availability.md#table-columns) to refer to the interval of time for which a data entry in the database is "valid".
 The entry that overlaps with the desired observation interval is the one that is fetched from the database.
 For instance, LMP data resolved at 5-minute intervals will have disjoint validity intervals spanning 5 minutes, but their hourly aggregate will have a validity of 1 hour spanning the same length of time.
 
